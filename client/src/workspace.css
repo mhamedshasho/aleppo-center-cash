@@ -1,0 +1,7 @@
+.workspace-switcher { width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 28px; padding: 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; color: #eff8f4; background: rgba(255,255,255,.08); text-align: right; }
+.workspace-switcher:hover { background: rgba(255,255,255,.14); }
+.workspace-switcher > div:nth-child(2) { min-width: 0; flex: 1; }
+.workspace-switcher span, .workspace-switcher strong, .workspace-switcher small { display: block; }
+.workspace-switcher span { color: #9fc4b6; font-size: 9px; }
+.workspace-switcher strong { margin-top: 2px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.workspace-id { margin-top: 4px; color: #83b7a6; font: 500 8px/1.2 monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }

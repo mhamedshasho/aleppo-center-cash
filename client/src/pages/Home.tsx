@@ -129,8 +129,8 @@ function calculateTotals(accounts: Account[]) {
   );
 }
 
-export default function Home() {
-  const [isUnlocked, setIsUnlocked] = useState(() => hasAuthSession());
+export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null } = {}) {
+  const [isUnlocked, setIsUnlocked] = useState(() => Boolean(cloudUser) || hasAuthSession());
   const [keyValue, setKeyValue] = useState("");
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [storageReady, setStorageReady] = useState(false);
@@ -365,7 +365,7 @@ export default function Home() {
           </div>
           <button className="close-mobile" onClick={() => setShowMobileNav(false)} aria-label="إغلاق القائمة"><X size={20} /></button>
         </div>
-        <div className="workspace-switcher"><div className="workspace-avatar">AC</div><div><span>المساحة الحالية</span><strong>مركز حلب</strong></div><ChevronDown size={15} /></div>
+        <button className="workspace-switcher" title="انسخ Workspace ID للشريك" onClick={() => { if (cloudWorkspace?.id) { void navigator.clipboard?.writeText(cloudWorkspace.id); toast.success("اننسخ Workspace ID — ابعته للشريك"); } }}><div className="workspace-avatar">AC</div><div><span>المساحة الحالية</span><strong>{cloudWorkspace?.name ?? "مركز حلب"}</strong><small className="workspace-id" dir="ltr">{cloudWorkspace?.id ?? "محلي"}</small></div><ChevronDown size={15} /></button>
         <div className="nav-group-label">التنقّل</div>
         <nav className="main-nav">
           {navItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id || (id === "accounts" && view === "account") ? "active" : ""} onClick={() => { setView(id); setShowMobileNav(false); }}><Icon size={18} /><span>{label}</span>{id === "accounts" && <b>{accounts.length}</b>}</button>)}

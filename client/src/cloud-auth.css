@@ -1,0 +1,9 @@
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; margin: 24px 0 20px; border-radius: 14px; background: #eef3ef; }
+.auth-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; border-radius: 10px; color: #78908b; background: transparent; font-size: 12px; font-weight: 700; }
+.auth-tabs button.active { color: #173f47; background: #fff; box-shadow: 0 4px 12px rgba(24,53,58,.08); }
+.login-card .secondary-btn.full { width: 100%; margin-top: 12px; }
+.auth-signout { display: block; margin: 18px auto 0; }
+.onboarding-card .field-label { margin-top: 14px; }
+.cloud-loading { min-height: 100vh; display: grid; place-content: center; gap: 12px; justify-items: center; color: #315a5f; background: #f5f6f3; font-size: 14px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
