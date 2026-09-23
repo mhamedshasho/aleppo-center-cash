@@ -64,6 +64,27 @@ export async function writeAccounts(accounts: LocalAccount[]) {
   });
 }
 
+export async function readSetting(key: string): Promise<string | null> {
+  if (typeof indexedDB === "undefined") return null;
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(`setting:${key}`);
+    request.onsuccess = () => resolve((request.result as string | undefined) ?? null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function writeSetting(key: string, value: string): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+  const database = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(DATA_STORE, "readwrite");
+    transaction.objectStore(DATA_STORE).put(value, `setting:${key}`);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
 export async function snapshotAccounts(accounts: LocalAccount[]) {
   if (typeof indexedDB === "undefined") return;
   const database = await openDatabase();
