@@ -28,6 +28,7 @@ const DB_VERSION = 1;
 const DATA_STORE = "app-data";
 const AUDIT_STORE = "audit-log";
 const ACCOUNTS_KEY = "accounts";
+const SNAPSHOT_KEY = "accounts-before-import";
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -60,6 +61,27 @@ export async function writeAccounts(accounts: LocalAccount[]) {
     transaction.objectStore(DATA_STORE).put(accounts, ACCOUNTS_KEY);
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function snapshotAccounts(accounts: LocalAccount[]) {
+  if (typeof indexedDB === "undefined") return;
+  const database = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(DATA_STORE, "readwrite");
+    transaction.objectStore(DATA_STORE).put(structuredClone(accounts), SNAPSHOT_KEY);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function restoreSnapshot(): Promise<LocalAccount[] | null> {
+  if (typeof indexedDB === "undefined") return null;
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(SNAPSHOT_KEY);
+    request.onsuccess = () => resolve((request.result as LocalAccount[] | undefined) ?? null);
+    request.onerror = () => reject(request.error);
   });
 }
 

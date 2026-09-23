@@ -247,3 +247,6 @@ button:active { transform: scale(.975); }
 .payment-filters button:hover, .payment-filters button.active { color: #3f8e72; background: #fff; box-shadow: 0 2px 7px rgba(44,82,67,.07); }
 .payment-filters button.active.credit { color: #3f966f; }.payment-filters button.active.debit { color: #b96f46; }
 @media (max-width: 560px) { .payment-toolbar { align-items: stretch; flex-direction: column; }.payment-filters { justify-content: center; }.payment-count { align-self: flex-start; } }
+
+.danger-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; padding: 0 13px; color: #aa5b4d; background: #fff5f1; border: 1px solid #f3d6ce; border-radius: 11px; font-size: 11px; font-weight: 700; }
+.danger-btn:hover { color: #fff; background: #aa5b4d; border-color: #aa5b4d; }

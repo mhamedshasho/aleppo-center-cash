@@ -30,8 +30,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { addAuditEntry, downloadJson, downloadPng, readAccounts, readAuditEntries, writeAccounts } from "@/lib/localStore";
+import { addAuditEntry, downloadJson, downloadPng, readAccounts, readAuditEntries, restoreSnapshot, snapshotAccounts, writeAccounts } from "@/lib/localStore";
 import { jsPDF } from "jspdf";
+import { authenticateKey, hasAuthSession } from "@/lib/auth";
+import { validateAccounts, validatePaymentDraft } from "@/lib/validation";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -128,7 +130,7 @@ function calculateTotals(accounts: Account[]) {
 }
 
 export default function Home() {
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(() => hasAuthSession());
   const [keyValue, setKeyValue] = useState("");
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [storageReady, setStorageReady] = useState(false);
@@ -187,6 +189,14 @@ export default function Home() {
     setShowAccountModal(true);
   };
 
+  const attemptUnlock = async () => {
+    const result = await authenticateKey(keyValue);
+    if (result.ok) {
+      setIsUnlocked(true);
+      setKeyValue("");
+    } else toast.error(result.message);
+  };
+
   const addAccount = () => {
     if (!newAccountName.trim() || !newAccountOwner.trim()) {
       toast.error("اكتب اسم الحساب وصاحب الحساب أولاً");
@@ -218,11 +228,12 @@ export default function Home() {
   };
 
   const addPayment = () => {
-    const amount = Number(paymentDraft.amount);
-    if (!paymentDraft.name.trim() || !amount || amount <= 0) {
-      toast.error("اكتب اسم الدفعة والمبلغ بشكل صحيح");
+    const validationError = validatePaymentDraft(paymentDraft);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
+    const amount = Number(paymentDraft.amount);
     const payment: Payment = { id: editingPaymentId ?? Date.now(), name: paymentDraft.name.trim(), amount, currency: paymentDraft.currency, type: paymentDraft.type, date: paymentDraft.date };
     setAccounts((current) => current.map((account) => account.id === selectedAccountId ? { ...account, payments: editingPaymentId ? account.payments.map((item) => item.id === editingPaymentId ? payment : item) : [payment, ...account.payments] } : account));
     void recordAudit(editingPaymentId ? "update" : "create", "payment", payment.name);
@@ -239,6 +250,17 @@ export default function Home() {
     void recordAudit("delete", "payment", payment.name);
     toast.success("انحذفت الدفعة");
   };
+
+  const deleteAccount = (accountId: number) => {
+    const account = accounts.find((item) => item.id === accountId);
+    if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\nالحذف محلي وما في تراجع تلقائي.`)) return;
+    setAccounts((current) => current.filter((item) => item.id !== accountId));
+    setSelectedAccountId(accounts.find((item) => item.id !== accountId)?.id ?? 0);
+    setView("accounts");
+    void recordAudit("delete", "account", account.name);
+    toast.success("انحذف الحساب وكل حركاته");
+  };
+
   const openPaymentEditor = (payment: Payment) => {
     setEditingPaymentId(payment.id);
     setPaymentDraft({ name: payment.name, amount: String(payment.amount), currency: payment.currency, type: payment.type, date: payment.date });
@@ -287,13 +309,25 @@ export default function Home() {
     if (!file) return;
     try {
       const payload = JSON.parse(await file.text()) as { accounts?: Account[] };
-      if (!Array.isArray(payload.accounts) || !payload.accounts.every((account) => account && typeof account.name === "string" && Array.isArray(account.payments))) throw new Error("invalid");
+      if (!validateAccounts(payload.accounts)) throw new Error("invalid");
       if (!window.confirm("الاستيراد رح يستبدل البيانات الحالية. متأكد؟\nاعمل نسخة JSON حالية قبل التأكيد إذا بدك rollback.")) return;
-      setAccounts(payload.accounts);
+      const previousAccounts = accounts;
+      await snapshotAccounts(previousAccounts);
+      try {
+        await writeAccounts(payload.accounts);
+        setAccounts(payload.accounts);
+      } catch {
+        const snapshot = await restoreSnapshot();
+        if (snapshot) {
+          setAccounts(snapshot);
+          await writeAccounts(snapshot);
+        }
+        throw new Error("rollback");
+      }
       await recordAudit("import", "backup", file.name);
       toast.success("رجّعنا النسخة الاحتياطية بنجاح");
     } catch {
-      toast.error("الملف مو نسخة Aleppo Center Cash صالحة");
+      toast.error("الاستيراد فشل ورجّعنا آخر نسخة آمنة");
     }
   };
 
@@ -311,9 +345,9 @@ export default function Home() {
           <label className="field-label" htmlFor="key">مفتاح الدخول</label>
           <div className="key-input-wrap">
             <LockKeyhole size={17} />
-            <input id="key" type="password" value={keyValue} onChange={(event) => setKeyValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && keyValue === "aleppo center") setIsUnlocked(true); }} placeholder="اكتب المفتاح هون" autoFocus />
+            <input id="key" type="password" value={keyValue} onChange={(event) => setKeyValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void attemptUnlock(); }} placeholder="اكتب المفتاح هون" autoFocus />
           </div>
-          <button className="primary-btn full" onClick={() => keyValue === "aleppo center" ? setIsUnlocked(true) : toast.error("المفتاح مو صحيح")}>فوت على الحسابات <ArrowLeft size={17} /></button>
+          <button className="primary-btn full" onClick={() => void attemptUnlock()}>فوت على الحسابات <ArrowLeft size={17} /></button>
           <div className="privacy-note"><ShieldCheck size={16} /> هذا المفتاح حماية بسيطة، مو تشفير كامل</div>
         </section>
         <footer className="login-footer">Aleppo Center Cash <span>© 2026</span></footer>
@@ -352,7 +386,7 @@ export default function Home() {
         <div className="content-wrap">
           {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={() => { setSelectedAccountId(1); setShowPaymentModal(true); }} onGoAccounts={() => setView("accounts")} />}
           {view === "accounts" && <AccountsView accounts={filteredAccounts} searchTerm={searchTerm} setSearchTerm={setSearchTerm} onOpenAccount={openAccount} onAddAccount={() => setShowAccountModal(true)} />}
-          {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onAddPayment={() => { setEditingPaymentId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} />}
+          {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} />}
           {view === "backup" && <BackupView auditEntries={auditEntries} onExport={exportBackup} onExportPdf={exportPdf} onExportPng={exportPng} onImport={handleImport} />}
         </div>
       </section>
@@ -373,7 +407,7 @@ function AccountsView({ accounts, searchTerm, setSearchTerm, onOpenAccount, onAd
   return <div className="page-enter"><div className="page-heading"><div><div className="eyebrow">دفتر الحسابات</div><h1>الحسابات <span className="heading-count">{accounts.length}</span></h1><p>كل زبون إلو حسابه، وكل حركة إلها مكانها.</p></div><button className="primary-btn" onClick={onAddAccount}><Plus size={18} /> حساب جديد</button></div><div className="toolbar"><div className="search-box"><Search size={18} /><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="دوّر على حساب أو اسم..." /></div><button className="filter-btn"><BarChart3 size={16} /> ترتيب: الأحدث <ChevronDown size={15} /></button></div>{accounts.length ? <div className="account-grid">{accounts.map((account) => <button key={account.id} className="account-card" onClick={() => onOpenAccount(account.id)}><div className="account-card-top"><div className={`account-avatar large-avatar ${account.accent}`}>{account.name.slice(0, 1)}</div><MoreHorizontal size={18} className="muted-icon" /></div><div className="account-card-copy"><h3>{account.name}</h3><p><UserRound size={14} /> {account.owner}</p></div><div className="account-card-footer"><div><span>عدد الحركات</span><strong>{account.payments.length}</strong></div><div className="card-arrow"><ArrowLeft size={17} /></div></div></button>)}</div> : <div className="surface-card empty-search"><Search size={25} /><h3>ما لقينا شي</h3><p>جرّب اسم تاني أو أضف حساب جديد.</p></div>}</div>;
 }
 
-function AccountDetail({ account, onBack, onEditAccount, onAddPayment, onEditPayment, onDeletePayment }: { account: Account; onBack: () => void; onEditAccount: () => void; onAddPayment: () => void; onEditPayment: (payment: Payment) => void; onDeletePayment: (id: number) => void }) {
+function AccountDetail({ account, onBack, onEditAccount, onDeleteAccount, onAddPayment, onEditPayment, onDeletePayment }: { account: Account; onBack: () => void; onEditAccount: () => void; onDeleteAccount: () => void; onAddPayment: () => void; onEditPayment: (payment: Payment) => void; onDeletePayment: (id: number) => void }) {
   const currencies: Currency[] = ["SYP", "USD"];
   const [paymentQuery, setPaymentQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<"all" | PaymentType>("all");
@@ -381,7 +415,7 @@ function AccountDetail({ account, onBack, onEditAccount, onAddPayment, onEditPay
     const matchesQuery = `${payment.name} ${payment.amount} ${payment.currency}`.toLowerCase().includes(paymentQuery.toLowerCase());
     return matchesQuery && (paymentFilter === "all" || payment.type === paymentFilter);
   });
-  return <div className="page-enter"><button className="back-btn" onClick={onBack}><ArrowRightIcon /> رجعة للحسابات</button><div className="detail-heading"><div className="detail-title"><div className={`account-avatar large-avatar ${account.accent}`}>{account.name.slice(0, 1)}</div><div><div className="eyebrow">حساب زبون</div><h1>{account.name}</h1><p><UserRound size={14} /> {account.owner}</p></div></div><div className="detail-actions"><button className="secondary-btn" onClick={onEditAccount}><Pencil size={15} /> تعديل الحساب</button><button className="primary-btn" onClick={onAddPayment}><Plus size={18} /> إضافة دفعة</button></div></div><div className="currency-summary-grid">{currencies.map((currency) => { const payments = account.payments.filter((payment) => payment.currency === currency); const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0); const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0); return <div className={`currency-card ${currency === "USD" ? "usd-card" : ""}`} key={currency}><div className="currency-card-head"><span className="currency-badge">{currency === "SYP" ? "ل.س" : "$"}</span><span>{currency === "SYP" ? "الليرة السورية" : "الدولار الأميركي"}</span></div><div className="currency-balance">{formatAmount(debit - credit, currency)}</div><div className="currency-lines"><span><i className="dot credit-dot" /> إلك <strong>{formatAmount(credit, currency)}</strong></span><span><i className="dot debit-dot" /> عليك <strong>{formatAmount(debit, currency)}</strong></span></div></div>; })}</div><section className="surface-card detail-payments"><div className="section-head"><div><h2>سجل الدفعات</h2><p>{filteredPayments.length} من {account.payments.length} حركات</p></div><span className="payment-count">{paymentFilter === "all" ? "كل الحركات" : paymentFilter === "credit" ? "إلك" : "عليك"}</span></div><div className="payment-toolbar"><div className="payment-search"><Search size={15} /><input value={paymentQuery} onChange={(event) => setPaymentQuery(event.target.value)} placeholder="دوّر باسم الدفعة..." /></div><div className="payment-filters"><button className={paymentFilter === "all" ? "active" : ""} onClick={() => setPaymentFilter("all")}>الكل</button><button className={paymentFilter === "credit" ? "active credit" : ""} onClick={() => setPaymentFilter("credit")}>إلك</button><button className={paymentFilter === "debit" ? "active debit" : ""} onClick={() => setPaymentFilter("debit")}>عليك</button></div></div>{filteredPayments.length ? <div className="payment-list full-list">{filteredPayments.map((payment) => <PaymentRow key={payment.id} payment={payment} onEdit={() => onEditPayment(payment)} onDelete={() => onDeletePayment(payment.id)} />)}</div> : <EmptyState text={account.payments.length ? "ما في حركات مطابقة" : "ما في دفعات بهالحساب لسا"} />}</section></div>;
+  return <div className="page-enter"><button className="back-btn" onClick={onBack}><ArrowRightIcon /> رجعة للحسابات</button><div className="detail-heading"><div className="detail-title"><div className={`account-avatar large-avatar ${account.accent}`}>{account.name.slice(0, 1)}</div><div><div className="eyebrow">حساب زبون</div><h1>{account.name}</h1><p><UserRound size={14} /> {account.owner}</p></div></div><div className="detail-actions"><button className="secondary-btn" onClick={onEditAccount}><Pencil size={15} /> تعديل الحساب</button><button className="danger-btn" onClick={onDeleteAccount}><Trash2 size={15} /> حذف الحساب</button><button className="primary-btn" onClick={onAddPayment}><Plus size={18} /> إضافة دفعة</button></div></div><div className="currency-summary-grid">{currencies.map((currency) => { const payments = account.payments.filter((payment) => payment.currency === currency); const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0); const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0); return <div className={`currency-card ${currency === "USD" ? "usd-card" : ""}`} key={currency}><div className="currency-card-head"><span className="currency-badge">{currency === "SYP" ? "ل.س" : "$"}</span><span>{currency === "SYP" ? "الليرة السورية" : "الدولار الأميركي"}</span></div><div className="currency-balance">{formatAmount(debit - credit, currency)}</div><div className="currency-lines"><span><i className="dot credit-dot" /> إلك <strong>{formatAmount(credit, currency)}</strong></span><span><i className="dot debit-dot" /> عليك <strong>{formatAmount(debit, currency)}</strong></span></div></div>; })}</div><section className="surface-card detail-payments"><div className="section-head"><div><h2>سجل الدفعات</h2><p>{filteredPayments.length} من {account.payments.length} حركات</p></div><span className="payment-count">{paymentFilter === "all" ? "كل الحركات" : paymentFilter === "credit" ? "إلك" : "عليك"}</span></div><div className="payment-toolbar"><div className="payment-search"><Search size={15} /><input value={paymentQuery} onChange={(event) => setPaymentQuery(event.target.value)} placeholder="دوّر باسم الدفعة..." /></div><div className="payment-filters"><button className={paymentFilter === "all" ? "active" : ""} onClick={() => setPaymentFilter("all")}>الكل</button><button className={paymentFilter === "credit" ? "active credit" : ""} onClick={() => setPaymentFilter("credit")}>إلك</button><button className={paymentFilter === "debit" ? "active debit" : ""} onClick={() => setPaymentFilter("debit")}>عليك</button></div></div>{filteredPayments.length ? <div className="payment-list full-list">{filteredPayments.map((payment) => <PaymentRow key={payment.id} payment={payment} onEdit={() => onEditPayment(payment)} onDelete={() => onDeletePayment(payment.id)} />)}</div> : <EmptyState text={account.payments.length ? "ما في حركات مطابقة" : "ما في دفعات بهالحساب لسا"} />}</section></div>;
 }
 
 function BackupView({ auditEntries, onExport, onExportPdf, onExportPng, onImport }: { auditEntries: { id: number; action: string; entity: string; label: string; createdAt: string }[]; onExport: () => void; onExportPdf: () => void; onExportPng: () => void; onImport: () => void }) {
