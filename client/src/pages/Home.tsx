@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { addAuditEntry, downloadJson, downloadPng, readAccounts, readAuditEntries, writeAccounts } from "@/lib/localStore";
+import { jsPDF } from "jspdf";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -257,19 +258,26 @@ export default function Home() {
     toast.success("نزلنا التقرير كصورة PNG");
   };
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     void recordAudit("export", "backup", "تقرير PDF");
-    const reportWindow = window.open("", "_blank", "width=900,height=720");
-    if (!reportWindow) {
-      toast.error("المتصفح منع نافذة التقرير، اسمح بالنوافذ المنبثقة وجرب مرة تانية");
-      return;
-    }
+    const dateStamp = new Date().toISOString().slice(0, 10);
     const rows = accounts.flatMap((account) => account.payments.map((payment) => `<tr><td>${escapeHtml(account.name)}</td><td>${escapeHtml(payment.name)}</td><td>${payment.type === "credit" ? "إلك" : "عليك"}</td><td>${escapeHtml(formatAmount(payment.amount, payment.currency))}</td><td>${escapeHtml(formatDate(payment.date))}</td></tr>`)).join("");
-    reportWindow.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>Aleppo Center Cash — تقرير</title><style>body{font-family:Arial,sans-serif;color:#18353a;padding:44px;direction:rtl}h1{color:#173f47;margin:0 0 6px}p{color:#718883}header{border-bottom:3px solid #65b18d;padding-bottom:20px;margin-bottom:28px}.summary{display:flex;gap:35px;margin-bottom:28px}.summary strong{display:block;font-size:24px;color:#2f896d;margin-top:5px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#173f47;color:white}th,td{padding:11px;text-align:right;border-bottom:1px solid #dfe7e2}small{color:#8aa09a}</style></head><body><header><h1>Aleppo Center Cash</h1><p>تقرير الحسابات والدفعات — ${escapeHtml(new Date().toLocaleDateString("ar-SY"))}</p></header><div class="summary"><div>عدد الحسابات<strong>${accounts.length}</strong></div><div>الرصيد الصافي<strong>${escapeHtml(formatAmount(totals.SYP.debit - totals.SYP.credit, "SYP"))}</strong></div><div>الرصيد بالدولار<strong>${escapeHtml(formatAmount(totals.USD.debit - totals.USD.credit, "USD"))}</strong></div></div><table><thead><tr><th>الحساب</th><th>الدفعة</th><th>النوع</th><th>المبلغ</th><th>التاريخ</th></tr></thead><tbody>${rows}</tbody></table><p><small>الملف غير مشفّر. خزّنه بمكان موثوق.</small></p></body></html>`);
-    reportWindow.document.close();
-    reportWindow.focus();
-    reportWindow.print();
-    toast("اختار Save as PDF من نافذة الطباعة. الملف غير مشفّر.");
+    const report = document.createElement("div");
+    report.dir = "rtl";
+    report.lang = "ar";
+    report.style.cssText = "position:fixed;left:-10000px;top:0;width:800px;padding:44px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;direction:rtl";
+    report.innerHTML = `<header style="border-bottom:3px solid #65b18d;padding-bottom:20px;margin-bottom:28px"><h1 style="color:#173f47;margin:0 0 6px;font-size:28px">Aleppo Center Cash</h1><p style="color:#718883">تقرير الحسابات والدفعات — ${escapeHtml(new Date().toLocaleDateString("ar-SY"))}</p></header><div style="display:flex;gap:35px;margin-bottom:28px"><div>عدد الحسابات<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${accounts.length}</strong></div><div>الرصيد الصافي<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.SYP.debit - totals.SYP.credit, "SYP"))}</strong></div><div>الرصيد بالدولار<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.USD.debit - totals.USD.credit, "USD"))}</strong></div></div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#173f47;color:white"><th style="padding:11px;text-align:right">الحساب</th><th style="padding:11px;text-align:right">الدفعة</th><th style="padding:11px;text-align:right">النوع</th><th style="padding:11px;text-align:right">المبلغ</th><th style="padding:11px;text-align:right">التاريخ</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#8aa09a;font-size:11px">الملف غير مشفّر. خزّنه بمكان موثوق.</p>`;
+    document.body.appendChild(report);
+    try {
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 800, autoPaging: "text" });
+      pdf.save(`aleppo-center-cash-report-${dateStamp}.pdf`);
+      toast.success("نزلنا تقرير PDF محلي على جهازك");
+    } catch {
+      toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية");
+    } finally {
+      report.remove();
+    }
   };
 
   const handleImport = () => importInputRef.current?.click();
