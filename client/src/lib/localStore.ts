@@ -1,5 +1,7 @@
 export type LocalPayment = {
   id: number;
+  remoteId?: string;
+  version?: number;
   name: string;
   amount: number;
   currency: "SYP" | "USD";
@@ -9,6 +11,8 @@ export type LocalPayment = {
 
 export type LocalAccount = {
   id: number;
+  remoteId?: string;
+  version?: number;
   name: string;
   owner: string;
   accent: string;
@@ -23,12 +27,21 @@ export type AuditEntry = {
   createdAt: string;
 };
 
+export type SyncQueueItem = {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  accounts: LocalAccount[];
+  createdAt: string;
+};
+
 const DB_NAME = "aleppo-center-cash";
 const DB_VERSION = 1;
 const DATA_STORE = "app-data";
 const AUDIT_STORE = "audit-log";
 const ACCOUNTS_KEY = "accounts";
 const SNAPSHOT_KEY = "accounts-before-import";
+const SYNC_QUEUE_KEY = "sync-queue";
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -103,6 +116,41 @@ export async function restoreSnapshot(): Promise<LocalAccount[] | null> {
     const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(SNAPSHOT_KEY);
     request.onsuccess = () => resolve((request.result as LocalAccount[] | undefined) ?? null);
     request.onerror = () => reject(request.error);
+  });
+}
+
+export async function readSyncQueue(): Promise<SyncQueueItem[]> {
+  if (typeof indexedDB === "undefined") return [];
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(SYNC_QUEUE_KEY);
+    request.onsuccess = () => resolve((request.result as SyncQueueItem[] | undefined) ?? []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function enqueueSyncSnapshot(item: Omit<SyncQueueItem, "id" | "createdAt">) {
+  if (typeof indexedDB === "undefined") return;
+  const queue = await readSyncQueue();
+  queue.push({ ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+  const database = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(DATA_STORE, "readwrite");
+    transaction.objectStore(DATA_STORE).put(queue.slice(-10), SYNC_QUEUE_KEY);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function removeSyncQueueItem(id: string) {
+  if (typeof indexedDB === "undefined") return;
+  const queue = (await readSyncQueue()).filter((item) => item.id !== id);
+  const database = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(DATA_STORE, "readwrite");
+    transaction.objectStore(DATA_STORE).put(queue, SYNC_QUEUE_KEY);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
   });
 }
 

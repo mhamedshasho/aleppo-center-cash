@@ -30,10 +30,11 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { addAuditEntry, downloadJson, downloadPng, readAccounts, readAuditEntries, restoreSnapshot, snapshotAccounts, writeAccounts } from "@/lib/localStore";
+import { addAuditEntry, downloadJson, downloadPng, enqueueSyncSnapshot, readAccounts, readAuditEntries, readSyncQueue, removeSyncQueueItem, restoreSnapshot, snapshotAccounts, writeAccounts } from "@/lib/localStore";
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validateAccounts, validatePaymentDraft } from "@/lib/validation";
+import { pullCloudAccounts, pushLocalAccounts, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -41,6 +42,8 @@ type View = "dashboard" | "accounts" | "account" | "backup";
 
 type Payment = {
   id: number;
+  remoteId?: string;
+  version?: number;
   name: string;
   amount: number;
   currency: Currency;
@@ -50,6 +53,8 @@ type Payment = {
 
 type Account = {
   id: number;
+  remoteId?: string;
+  version?: number;
   name: string;
   owner: string;
   accent: string;
@@ -129,7 +134,7 @@ function calculateTotals(accounts: Account[]) {
   );
 }
 
-export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null } = {}) {
+export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: string; email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null } = {}) {
   const [isUnlocked, setIsUnlocked] = useState(() => Boolean(cloudUser) || hasAuthSession());
   const [keyValue, setKeyValue] = useState("");
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
@@ -146,6 +151,9 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { emai
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
   const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [paymentDraft, setPaymentDraft] = useState({ name: "", amount: "", currency: "SYP" as Currency, type: "credit" as PaymentType, date: new Date().toISOString().slice(0, 10) });
+  const [syncState, setSyncState] = useState<"local" | "syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "local");
+  const skipSyncFingerprint = useRef<string | null>(null);
+  const syncTimer = useRef<number | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? accounts[0];
@@ -169,6 +177,83 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { emai
   useEffect(() => {
     if (storageReady) void writeAccounts(accounts);
   }, [accounts, storageReady]);
+
+  const syncAccounts = async (candidate: Account[]) => {
+    if (!cloudWorkspace || !cloudUser) return;
+    setSyncState("syncing");
+    try {
+      const pushed = await pushLocalAccounts(cloudWorkspace.id, cloudUser.id, candidate);
+      skipSyncFingerprint.current = JSON.stringify(pushed);
+      setAccounts(pushed);
+      await writeAccounts(pushed);
+      setSyncState("synced");
+    } catch (error) {
+      await enqueueSyncSnapshot({ workspaceId: cloudWorkspace.id, userId: cloudUser.id, accounts: candidate });
+      setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
+      toast.error(error instanceof SyncConflictError ? "في تعديل جديد من الجهاز التاني — حدّثنا الصفحة للمراجعة" : "ما في اتصال. حفظنا التعديل بطابور مزامنة محلي");
+    }
+  };
+
+  useEffect(() => {
+    if (!storageReady || !cloudWorkspace || !cloudUser) return;
+    let active = true;
+    void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
+      if (!active || remoteAccounts.length === 0) return;
+      skipSyncFingerprint.current = JSON.stringify(remoteAccounts);
+      setAccounts(remoteAccounts);
+      setSyncState("synced");
+    }).catch(() => {
+      if (active) setSyncState("offline");
+    });
+    return () => { active = false; };
+  }, [storageReady, cloudWorkspace?.id, cloudUser?.id]);
+
+  useEffect(() => {
+    if (!storageReady || !cloudWorkspace || !cloudUser) return;
+    const fingerprint = JSON.stringify(accounts);
+    if (skipSyncFingerprint.current === fingerprint) {
+      skipSyncFingerprint.current = null;
+      return;
+    }
+    if (syncTimer.current) window.clearTimeout(syncTimer.current);
+    syncTimer.current = window.setTimeout(() => { void syncAccounts(accounts); }, 650);
+    return () => { if (syncTimer.current) window.clearTimeout(syncTimer.current); };
+  }, [accounts, storageReady, cloudWorkspace?.id, cloudUser?.id]);
+
+  useEffect(() => {
+    if (!cloudWorkspace || !cloudUser) return;
+    const refresh = () => {
+      void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
+        if (remoteAccounts.length > 0) {
+          skipSyncFingerprint.current = JSON.stringify(remoteAccounts);
+          setAccounts(remoteAccounts);
+          setSyncState("synced");
+        }
+      }).catch(() => setSyncState("offline"));
+    };
+    const unsubscribe = subscribeToWorkspace(cloudWorkspace.id, refresh);
+    window.addEventListener("online", refresh);
+    return () => { unsubscribe(); window.removeEventListener("online", refresh); };
+  }, [cloudWorkspace?.id, cloudUser?.id]);
+
+  useEffect(() => {
+    if (!cloudWorkspace || !cloudUser) return;
+    void readSyncQueue().then(async (queue) => {
+      for (const item of queue.filter((queued) => queued.workspaceId === cloudWorkspace.id && queued.userId === cloudUser.id)) {
+        try {
+          const pushed = await pushLocalAccounts(item.workspaceId, item.userId, item.accounts);
+          skipSyncFingerprint.current = JSON.stringify(pushed);
+          setAccounts(pushed);
+          await writeAccounts(pushed);
+          await removeSyncQueueItem(item.id);
+          setSyncState("synced");
+        } catch (error) {
+          setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
+          break;
+        }
+      }
+    });
+  }, [cloudWorkspace?.id, cloudUser?.id]);
 
   const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
     const entry = { action, entity, label, id: Date.now(), createdAt: new Date().toISOString() };
@@ -380,7 +465,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { emai
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
           <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : view === "backup" ? "النسخ والتصدير" : selectedAccount?.name}</strong></div>
-          <div className="topbar-actions"><div className="saved-state"><span className="saved-dot" /> محفوظ محلياً</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
+          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`}><span className="saved-dot" /> {syncState === "syncing" ? "عم نزامن…" : syncState === "synced" ? "متزامن" : syncState === "offline" ? "محفوظ بالطابور" : syncState === "conflict" ? "في تعارض" : "محفوظ محلياً"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
         </header>
 
         <div className="content-wrap">
