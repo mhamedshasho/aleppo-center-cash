@@ -178,7 +178,7 @@ export default function CloudAuthGate() {
 
     if (mode === "signup" && signupCooldownUntil > Date.now()) {
       const seconds = Math.max(1, Math.ceil((signupCooldownUntil - Date.now()) / 1000));
-      toast.info(`تم طلب رسالة تأكيد قبل شوي. انتظر ${seconds} ثانية ولا تعيد الإرسال.`);
+      toast.info(`تم طلب رسالة تأكيد. انتظر ${seconds} ثانية فقط ولا تعيد الإرسال قبلها.`);
       return;
     }
     if (!isValidEmail(cleanEmail)) {
@@ -197,7 +197,7 @@ export default function CloudAuthGate() {
         : await signUpWithPassword(cleanEmail, password);
       if (result.error) throw result.error;
       if (mode === "signup" && !result.data.session) {
-        const cooldown = Date.now() + 10 * 60 * 1000;
+        const cooldown = Date.now() + 60 * 1000;
         localStorage.setItem("aleppo-center-signup-cooldown", String(cooldown));
         setSignupCooldownUntil(cooldown);
         toast.success("تم إنشاء الحساب. افتح رسالة التأكيد مرة واحدة، وبعدها فوت.");
@@ -209,7 +209,7 @@ export default function CloudAuthGate() {
       if (mode === "signup") {
         const raw = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
         if (raw.includes("email rate limit exceeded") || raw.includes("rate limit exceeded") || raw.includes("over_email_send_rate_limit")) {
-          const cooldown = Date.now() + 10 * 60 * 1000;
+          const cooldown = Date.now() + 60 * 1000;
           localStorage.setItem("aleppo-center-signup-cooldown", String(cooldown));
           setSignupCooldownUntil(cooldown);
         }
