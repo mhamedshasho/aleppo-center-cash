@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowDownLeft,
@@ -152,8 +153,15 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [paymentDraft, setPaymentDraft] = useState({ name: "", amount: "", currency: "SYP" as Currency, type: "credit" as PaymentType, date: new Date().toISOString().slice(0, 10) });
   const [syncState, setSyncState] = useState<"local" | "syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "local");
-  const skipSyncFingerprint = useRef<string | null>(null);
   const syncTimer = useRef<number | null>(null);
+  const syncInFlight = useRef(false);
+  const pendingSync = useRef<{ accounts: Account[]; deletedAccountIds: { id: string; version?: number }[]; deletedPaymentIds: { id: string; version?: number }[] } | null>(null);
+  const syncReadyRef = useRef(!cloudWorkspace || !cloudUser);
+  const latestSyncedFingerprint = useRef<string | null>(null);
+  const syncGeneration = useRef(0);
+  const refreshQueuedRef = useRef(false);
+  const deletedAccountIds = useRef(new Map<string, number | undefined>());
+  const deletedPaymentIds = useRef(new Map<string, number | undefined>());
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? accounts[0];
@@ -164,7 +172,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     let active = true;
     Promise.all([readAccounts(), readAuditEntries()]).then(([savedAccounts, savedAudit]) => {
       if (!active) return;
-      if (savedAccounts?.length) setAccounts(savedAccounts);
+      if (savedAccounts !== null) setAccounts(savedAccounts);
       setAuditEntries(savedAudit);
       setStorageReady(true);
     }).catch(() => {
@@ -178,82 +186,224 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     if (storageReady) void writeAccounts(accounts);
   }, [accounts, storageReady]);
 
-  const syncAccounts = async (candidate: Account[]) => {
-    if (!cloudWorkspace || !cloudUser) return;
-    setSyncState("syncing");
+  const mergeServerMetadata = (candidate: Account[], pushed: Account[]) => {
+    const pushedByAccountId = new Map(pushed.map((account) => [account.id, account]));
+    return candidate.map((account) => {
+      const serverAccount = pushedByAccountId.get(account.id);
+      if (!serverAccount) return account;
+      const pushedByPaymentId = new Map(serverAccount.payments.map((payment) => [payment.id, payment]));
+      return {
+        ...account,
+        remoteId: serverAccount.remoteId,
+        version: serverAccount.version,
+        payments: account.payments.map((payment) => {
+          const serverPayment = pushedByPaymentId.get(payment.id);
+          return serverPayment ? { ...payment, remoteId: serverPayment.remoteId, version: serverPayment.version } : payment;
+        }),
+      };
+    });
+  };
+
+  const syncAccounts = async (
+    candidate: Account[],
+    deletionOverrides?: {
+      deletedAccountIds?: { id: string; version?: number }[];
+      deletedPaymentIds?: { id: string; version?: number }[];
+    },
+  ) => {
+    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current) return;
+
+    const deletedAccounts = deletionOverrides?.deletedAccountIds ?? Array.from(deletedAccountIds.current, ([id, version]) => ({ id, version }));
+    const deletedPayments = deletionOverrides?.deletedPaymentIds ?? Array.from(deletedPaymentIds.current, ([id, version]) => ({ id, version }));
+
+    pendingSync.current = {
+      accounts: candidate,
+      deletedAccountIds: deletedAccounts,
+      deletedPaymentIds: deletedPayments,
+    };
+
+    if (syncInFlight.current) return;
+
+    syncInFlight.current = true;
+
     try {
-      const pushed = await pushLocalAccounts(cloudWorkspace.id, cloudUser.id, candidate);
-      skipSyncFingerprint.current = JSON.stringify(pushed);
-      setAccounts(pushed);
-      await writeAccounts(pushed);
-      setSyncState("synced");
-    } catch (error) {
-      await enqueueSyncSnapshot({ workspaceId: cloudWorkspace.id, userId: cloudUser.id, accounts: candidate });
-      setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
-      toast.error(error instanceof SyncConflictError ? "في تعديل جديد من الجهاز التاني — حدّثنا الصفحة للمراجعة" : "ما في اتصال. حفظنا التعديل بطابور مزامنة محلي");
+      while (pendingSync.current) {
+        const work = pendingSync.current;
+        pendingSync.current = null;
+        const generation = ++syncGeneration.current;
+        setSyncState("syncing");
+
+        try {
+          const pushed = await pushLocalAccounts(
+            cloudWorkspace.id,
+            cloudUser.id,
+            work.accounts,
+            work.deletedAccountIds,
+            work.deletedPaymentIds,
+          );
+
+          if (generation !== syncGeneration.current) continue;
+
+          const latestPending = pendingSync.current;
+          if (latestPending) {
+            pendingSync.current = {
+              accounts: mergeServerMetadata(latestPending.accounts, pushed),
+              deletedAccountIds: latestPending.deletedAccountIds,
+              deletedPaymentIds: latestPending.deletedPaymentIds,
+            };
+            continue;
+          }
+
+          const syncedAccounts = mergeServerMetadata(work.accounts, pushed);
+          latestSyncedFingerprint.current = JSON.stringify(syncedAccounts);
+          await writeAccounts(syncedAccounts);
+
+          if (generation !== syncGeneration.current) continue;
+
+          setAccounts(syncedAccounts);
+          for (const deletion of work.deletedAccountIds) deletedAccountIds.current.delete(deletion.id);
+          for (const deletion of work.deletedPaymentIds) deletedPaymentIds.current.delete(deletion.id);
+          setSyncState("synced");
+
+          if (refreshQueuedRef.current) {
+            refreshQueuedRef.current = false;
+            void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
+              if (!syncReadyRef.current || syncInFlight.current) return;
+              latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
+              setAccounts(remoteAccounts);
+              setSyncState("synced");
+            }).catch(() => setSyncState("offline"));
+          }
+        } catch (error) {
+          if (generation !== syncGeneration.current) continue;
+
+          await enqueueSyncSnapshot({
+            workspaceId: cloudWorkspace.id,
+            userId: cloudUser.id,
+            accounts: work.accounts,
+            deletedAccountIds: work.deletedAccountIds,
+            deletedPaymentIds: work.deletedPaymentIds,
+          });
+
+          setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
+          toast.error(
+            error instanceof SyncConflictError
+              ? "في تعديل جديد من الجهاز التاني — حدّث الصفحة للمراجعة"
+              : "ما في اتصال. حفظنا التعديل بطابور مزامنة محلي",
+          );
+        }
+      }
+    } finally {
+      syncInFlight.current = false;
+      if (pendingSync.current) void syncAccounts(pendingSync.current.accounts, {
+        deletedAccountIds: pendingSync.current.deletedAccountIds,
+        deletedPaymentIds: pendingSync.current.deletedPaymentIds,
+      });
     }
   };
 
   useEffect(() => {
-    if (!storageReady || !cloudWorkspace || !cloudUser) return;
+    if (!storageReady || !cloudWorkspace || !cloudUser) {
+      syncReadyRef.current = !cloudWorkspace || !cloudUser;
+      return;
+    }
+
+    syncReadyRef.current = false;
+    const generation = ++syncGeneration.current;
     let active = true;
+
     void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
-      if (!active || remoteAccounts.length === 0) return;
-      skipSyncFingerprint.current = JSON.stringify(remoteAccounts);
+      if (!active || generation !== syncGeneration.current) return;
+      latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
       setAccounts(remoteAccounts);
       setSyncState("synced");
+      syncReadyRef.current = true;
     }).catch(() => {
-      if (active) setSyncState("offline");
+      if (!active || generation !== syncGeneration.current) return;
+      setSyncState("offline");
     });
-    return () => { active = false; };
+
+    return () => {
+      active = false;
+    };
   }, [storageReady, cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
-    if (!storageReady || !cloudWorkspace || !cloudUser) return;
+    if (!storageReady || !cloudWorkspace || !cloudUser || !syncReadyRef.current) return;
+
     const fingerprint = JSON.stringify(accounts);
-    if (skipSyncFingerprint.current === fingerprint) {
-      skipSyncFingerprint.current = null;
-      return;
-    }
+    if (latestSyncedFingerprint.current === fingerprint) return;
+
     if (syncTimer.current) window.clearTimeout(syncTimer.current);
-    syncTimer.current = window.setTimeout(() => { void syncAccounts(accounts); }, 650);
-    return () => { if (syncTimer.current) window.clearTimeout(syncTimer.current); };
+    syncTimer.current = window.setTimeout(() => {
+      void syncAccounts(accounts);
+    }, 650);
+
+    return () => {
+      if (syncTimer.current) window.clearTimeout(syncTimer.current);
+    };
   }, [accounts, storageReady, cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
+
     const refresh = () => {
+      if (!syncReadyRef.current) return;
+      if (syncInFlight.current || pendingSync.current) {
+        refreshQueuedRef.current = true;
+        return;
+      }
+
+      const generation = ++syncGeneration.current;
       void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
-        if (remoteAccounts.length > 0) {
-          skipSyncFingerprint.current = JSON.stringify(remoteAccounts);
-          setAccounts(remoteAccounts);
-          setSyncState("synced");
-        }
+        if (generation !== syncGeneration.current || syncInFlight.current || pendingSync.current) return;
+        latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
+        setAccounts(remoteAccounts);
+        setSyncState("synced");
       }).catch(() => setSyncState("offline"));
     };
+
     const unsubscribe = subscribeToWorkspace(cloudWorkspace.id, refresh);
     window.addEventListener("online", refresh);
-    return () => { unsubscribe(); window.removeEventListener("online", refresh); };
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("online", refresh);
+    };
   }, [cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
-    if (!cloudWorkspace || !cloudUser) return;
+    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current) return;
+
     void readSyncQueue().then(async (queue) => {
-      for (const item of queue.filter((queued) => queued.workspaceId === cloudWorkspace.id && queued.userId === cloudUser.id)) {
-        try {
-          const pushed = await pushLocalAccounts(item.workspaceId, item.userId, item.accounts);
-          skipSyncFingerprint.current = JSON.stringify(pushed);
-          setAccounts(pushed);
-          await writeAccounts(pushed);
-          await removeSyncQueueItem(item.id);
-          setSyncState("synced");
-        } catch (error) {
-          setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
-          break;
-        }
+      const matching = queue
+        .filter((item) => item.workspaceId === cloudWorkspace.id && item.userId === cloudUser.id)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+      const latest = matching.at(-1);
+      if (!latest) return;
+
+      try {
+        const pushed = await pushLocalAccounts(
+          latest.workspaceId,
+          latest.userId,
+          latest.accounts,
+          latest.deletedAccountIds ?? [],
+          latest.deletedPaymentIds ?? [],
+        );
+        const syncedAccounts = mergeServerMetadata(latest.accounts, pushed);
+        latestSyncedFingerprint.current = JSON.stringify(syncedAccounts);
+        setAccounts(syncedAccounts);
+        await writeAccounts(syncedAccounts);
+        for (const item of matching) await removeSyncQueueItem(item.id);
+        for (const deletion of latest.deletedAccountIds ?? []) deletedAccountIds.current.delete(deletion.id);
+        for (const deletion of latest.deletedPaymentIds ?? []) deletedPaymentIds.current.delete(deletion.id);
+        setSyncState("synced");
+      } catch (error) {
+        setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
       }
     });
-  }, [cloudWorkspace?.id, cloudUser?.id]);
+  }, [cloudWorkspace?.id, cloudUser?.id, storageReady]);
 
   const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
     const entry = { action, entity, label, id: Date.now(), createdAt: new Date().toISOString() };
@@ -331,6 +481,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const deletePayment = (paymentId: number) => {
     const payment = selectedAccount?.payments.find((item) => item.id === paymentId);
     if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\nالحذف محلي وما في تراجع تلقائي.`)) return;
+    if (payment.remoteId) deletedPaymentIds.current.set(payment.remoteId, payment.version);
     setAccounts((current) => current.map((account) => account.id === selectedAccountId ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) } : account));
     void recordAudit("delete", "payment", payment.name);
     toast.success("انحذفت الدفعة");
@@ -339,6 +490,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const deleteAccount = (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
     if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\nالحذف محلي وما في تراجع تلقائي.`)) return;
+    if (account.remoteId) deletedAccountIds.current.set(account.remoteId, account.version);
+    for (const payment of account.payments) {
+      if (payment.remoteId) deletedPaymentIds.current.set(payment.remoteId, payment.version);
+    }
     setAccounts((current) => current.filter((item) => item.id !== accountId));
     setSelectedAccountId(accounts.find((item) => item.id !== accountId)?.id ?? 0);
     setView("accounts");
@@ -388,7 +543,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   const handleImport = () => importInputRef.current?.click();
-  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -521,5 +676,5 @@ function PaymentRow({ payment, accountName, compact, onEdit, onDelete }: { payme
 }
 
 function EmptyState({ text }: { text: string }) { return <div className="empty-state"><Sparkles size={20} /><span>{text}</span><small>لما تضيف حركة، رح تظهر هون</small></div>; }
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) { return <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="modal-card"><div className="modal-head"><h2>{title}</h2><button className="icon-btn" onClick={onClose} aria-label="إغلاق"><X size={19} /></button></div>{children}</section></div>; }
+function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) { return <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="modal-card"><div className="modal-head"><h2>{title}</h2><button className="icon-btn" onClick={onClose} aria-label="إغلاق"><X size={19} /></button></div>{children}</section></div>; }
 function ArrowRightIcon() { return <ArrowLeft size={16} />; }
