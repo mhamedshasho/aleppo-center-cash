@@ -47,23 +47,6 @@ function getAuthErrorMessage(error: unknown, mode: Mode) {
 }
 type WorkspaceState = { id: string; name: string; role: "owner" | "member" } | null;
 
-const WORKSPACE_CACHE_PREFIX = "aleppo-center-workspace:";
-
-function getWorkspaceCache(userId: string): WorkspaceState {
-  try {
-    return JSON.parse(localStorage.getItem(`${WORKSPACE_CACHE_PREFIX}${userId}`) ?? "null") as WorkspaceState;
-  } catch {
-    return null;
-  }
-}
-
-function setWorkspaceCache(userId: string, workspace: WorkspaceState) {
-  try {
-    if (workspace) localStorage.setItem(`${WORKSPACE_CACHE_PREFIX}${userId}`, JSON.stringify(workspace));
-    else localStorage.removeItem(`${WORKSPACE_CACHE_PREFIX}${userId}`);
-  } catch {}
-}
-
 export default function CloudAuthGate() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSupabaseSession>>>(null);
   const [workspace, setWorkspace] = useState<WorkspaceState>(null);
@@ -152,8 +135,7 @@ export default function CloudAuthGate() {
             ? { id: data.workspace_id, role: data.role, name: workspaceRow?.name ?? "مركز حلب" }
             : null;
           setWorkspace(nextWorkspace);
-          setWorkspaceCache(session.user.id, nextWorkspace);
-          setWorkspaceLoading(false);
+                    setWorkspaceLoading(false);
           return;
         }
 
@@ -162,8 +144,7 @@ export default function CloudAuthGate() {
 
       if (active) {
         setWorkspace(null);
-        setWorkspaceCache(session.user.id, null);
-        setWorkspaceLoading(false);
+                setWorkspaceLoading(false);
         toast.error("تعذر التحقق من مساحة العمل. لم نفتح بيانات محلية قديمة.");
       }
     };
@@ -256,8 +237,7 @@ export default function CloudAuthGate() {
       const createdWorkspace = { id: data, name: workspaceName.trim(), role: "owner" } as WorkspaceState;
       toast.success("انعملت مساحة المحل");
       setWorkspace(createdWorkspace);
-      setWorkspaceCache(session.user.id, createdWorkspace);
-    } catch (error) {
+          } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إنشاء مساحة العمل");
     } finally {
       setBusy(false);
@@ -273,8 +253,7 @@ export default function CloudAuthGate() {
       const joinedWorkspace = { id: workspaceId.trim(), name: data?.name ?? "مركز حلب", role: "member" } as WorkspaceState;
       toast.success("انضمّيت لمساحة المحل");
       setWorkspace(joinedWorkspace);
-      setWorkspaceCache(session?.user.id ?? "", joinedWorkspace);
-    } catch (error) {
+          } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر الانضمام. تأكد من Workspace ID");
     } finally {
       setBusy(false);
@@ -282,7 +261,7 @@ export default function CloudAuthGate() {
   };
 
   if (loading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نجهّز الدخول…</div>;
-  if (!isSupabaseConfigured || !supabase) return <Home />;
+  if (!isSupabaseConfigured || !supabase) return <main className="cloud-loading"><strong>Cloud Only</strong><span>الاتصال بـ Supabase غير مهيأ. الوضع المحلي غير متاح.</span></main>;
   if (session && workspace) return <Home cloudUser={session.user} cloudWorkspace={workspace} />;
   if (session && workspaceLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نتحقق من مساحة المحل…</div>;
 
