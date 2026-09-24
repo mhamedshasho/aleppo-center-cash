@@ -47,6 +47,23 @@ function getAuthErrorMessage(error: unknown, mode: Mode) {
 }
 type WorkspaceState = { id: string; name: string; role: "owner" | "member" } | null;
 
+const WORKSPACE_CACHE_PREFIX = "aleppo-center-workspace:";
+
+function getWorkspaceCache(userId: string): WorkspaceState {
+  try {
+    return JSON.parse(localStorage.getItem(`${WORKSPACE_CACHE_PREFIX}${userId}`) ?? "null") as WorkspaceState;
+  } catch {
+    return null;
+  }
+}
+
+function setWorkspaceCache(userId: string, workspace: WorkspaceState) {
+  try {
+    if (workspace) localStorage.setItem(`${WORKSPACE_CACHE_PREFIX}${userId}`, JSON.stringify(workspace));
+    else localStorage.removeItem(`${WORKSPACE_CACHE_PREFIX}${userId}`);
+  } catch {}
+}
+
 export default function CloudAuthGate() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSupabaseSession>>>(null);
   const [workspace, setWorkspace] = useState<WorkspaceState>(null);
@@ -88,23 +105,33 @@ export default function CloudAuthGate() {
       return;
     }
     let active = true;
-    void supabase
-      .from("workspace_members")
-      .select("workspace_id, role, workspaces(name)")
-      .eq("user_id", session.user.id)
-      .eq("active", true)
-      .order("joined_at", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data, error }) => {
+    const cachedWorkspace = getWorkspaceCache(session.user.id);
+    if (cachedWorkspace) setWorkspace(cachedWorkspace);
+
+    const loadWorkspace = async () => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { data, error } = await supabase
+          .from("workspace_members")
+          .select("workspace_id, role, workspaces(name)")
+          .eq("user_id", session.user.id)
+          .eq("active", true)
+          .order("joined_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
         if (!active) return;
-        if (error) {
-          toast.error("تعذر قراءة مساحة العمل");
+        if (!error) {
+          const workspaceRow = Array.isArray(data?.workspaces) ? data?.workspaces[0] : data?.workspaces;
+          const nextWorkspace = data ? { id: data.workspace_id, role: data.role, name: workspaceRow?.name ?? "مركز حلب" } : null;
+          setWorkspace(nextWorkspace);
+          setWorkspaceCache(session.user.id, nextWorkspace);
           return;
         }
-        const workspaceRow = Array.isArray(data?.workspaces) ? data?.workspaces[0] : data?.workspaces;
-        setWorkspace(data ? { id: data.workspace_id, role: data.role, name: workspaceRow?.name ?? "مركز حلب" } : null);
-      });
+        if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, 400));
+      }
+      if (!cachedWorkspace) toast.error("تعذر قراءة مساحة العمل");
+    };
+
+    void loadWorkspace();
     return () => { active = false; };
   }, [session]);
 
@@ -154,11 +181,13 @@ export default function CloudAuthGate() {
       if (existingError) throw existingError;
       if (existing) {
         const existingWorkspace = Array.isArray(existing.workspaces) ? existing.workspaces[0] : existing.workspaces;
-        setWorkspace({
+        const existingWorkspaceState = {
           id: existing.workspace_id,
           name: existingWorkspace?.name ?? "مركز حلب",
           role: existing.role,
-        });
+        } as WorkspaceState;
+        setWorkspace(existingWorkspaceState);
+        setWorkspaceCache(session.user.id, existingWorkspaceState);
         toast.info("عندك مساحة عمل موجودة، فتحناها بدل إنشاء مساحة جديدة");
         return;
       }
@@ -168,8 +197,10 @@ export default function CloudAuthGate() {
         display_name: displayName.trim(),
       });
       if (error) throw error;
+      const createdWorkspace = { id: data, name: workspaceName.trim(), role: "owner" } as WorkspaceState;
       toast.success("انعملت مساحة المحل");
-      setWorkspace({ id: data, name: workspaceName.trim(), role: "owner" });
+      setWorkspace(createdWorkspace);
+      setWorkspaceCache(session.user.id, createdWorkspace);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إنشاء مساحة العمل");
     } finally {
@@ -183,8 +214,10 @@ export default function CloudAuthGate() {
     try {
       const { data, error } = await supabase.rpc("join_workspace", { target_workspace: workspaceId.trim() });
       if (error) throw error;
+      const joinedWorkspace = { id: workspaceId.trim(), name: data?.name ?? "مركز حلب", role: "member" } as WorkspaceState;
       toast.success("انضمّيت لمساحة المحل");
-      setWorkspace({ id: workspaceId.trim(), name: data?.name ?? "مركز حلب", role: "member" });
+      setWorkspace(joinedWorkspace);
+      setWorkspaceCache(session?.user.id ?? "", joinedWorkspace);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر الانضمام. تأكد من Workspace ID");
     } finally {
