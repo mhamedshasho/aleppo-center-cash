@@ -446,15 +446,18 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   const deleteAccountData = async () => {
-    if (!window.confirm("متأكد؟ رح نمسح بياناتك المحلية ونسجّل خروجك. بيانات Supabase ومساحة العمل ما بتنحذف من هون.")) return;
+    if (!window.confirm("متأكد؟ رح ينحذف حسابك نهائياً. إذا كنت مالكاً لمساحة، رح تنحذف المساحة وكل حساباتها ودفعاتها أيضاً.")) return;
     try {
-      await clearAllLocalData();
       const { supabase } = await import("@/lib/supabase");
-      if (supabase) await supabase.auth.signOut();
+      if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+      const { error } = await supabase.rpc("delete_my_account");
+      if (error) throw error;
+      await clearAllLocalData();
+      await supabase.auth.signOut();
       window.location.href = "/";
     } catch (error) {
-      console.error("[AleppoCenterCash] local account cleanup failed", error);
-      toast.error("ما قدرنا نمسح بيانات الجهاز");
+      console.error("[AleppoCenterCash] account deletion failed", error);
+      toast.error(error instanceof Error ? error.message : "ما قدرنا نحذف الحساب");
     }
   };
 
