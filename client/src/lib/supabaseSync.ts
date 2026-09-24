@@ -88,7 +88,7 @@ async function pushAccount(
     created_by: userId,
   };
 
-  if (!account.remoteId || account.version === 0) {
+  if (!account.remoteId) {
     const { data, error } = await supabase
       .from("accounts")
       .insert({ id: remoteId, ...payload })
@@ -99,6 +99,26 @@ async function pushAccount(
       throw error;
     }
     return { remoteId: data.id as string, version: data.version as number };
+  }
+
+  // A locally-created row has version 0 until the first successful sync.
+  // If that first insert succeeded but a later part of the sync failed, a
+  // queued retry can still carry version 0 and the same remoteId. Reusing the
+  // existing server row avoids inserting the same primary key twice.
+  if (account.version === 0) {
+    if (!existing) {
+      const { data, error } = await supabase
+        .from("accounts")
+        .insert({ id: remoteId, ...payload })
+        .select("id, version")
+        .single();
+      if (error) {
+        console.error("[AleppoCenterCash] account insert failed", error);
+        throw error;
+      }
+      return { remoteId: data.id as string, version: data.version as number };
+    }
+    return { remoteId: existing.id, version: existing.version };
   }
 
   if (!existing) throw new SyncConflictError("الحساب لم يعد موجوداً على السحابة");
@@ -148,7 +168,7 @@ async function pushPayment(
     created_by: userId,
   };
 
-  if (!payment.remoteId || payment.version === 0) {
+  if (!payment.remoteId) {
     const { data, error } = await supabase
       .from("payments")
       .insert({ id: remoteId, ...payload })
@@ -159,6 +179,24 @@ async function pushPayment(
       throw error;
     }
     return { remoteId: data.id as string, version: data.version as number };
+  }
+
+  // Same retry protection as accounts: version 0 means the local snapshot has
+  // not yet received server metadata, not that the remote row does not exist.
+  if (payment.version === 0) {
+    if (!existing) {
+      const { data, error } = await supabase
+        .from("payments")
+        .insert({ id: remoteId, ...payload })
+        .select("id, version")
+        .single();
+      if (error) {
+        console.error("[AleppoCenterCash] payment insert failed", error);
+        throw error;
+      }
+      return { remoteId: data.id as string, version: data.version as number };
+    }
+    return { remoteId: existing.id, version: existing.version };
   }
 
   if (!existing) throw new SyncConflictError("الدفعة لم تعد موجودة على السحابة");
