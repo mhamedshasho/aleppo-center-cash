@@ -126,7 +126,7 @@ const isTransientSyncError = (error: unknown) => {
   if (typeof error !== "object" || error === null) return false;
   const status = "status" in error ? Number((error as { status?: unknown }).status) : 0;
   const message = error instanceof Error ? error.message : String(error);
-  return status >= 500 || /failed to fetch|network|timeout|timed out|connection|abort/i.test(message);
+  return [408, 425, 429, 500, 502, 503, 504].includes(status) || /failed to fetch|network|timeout|timed out|connection|abort/i.test(message);
 };
 
 
