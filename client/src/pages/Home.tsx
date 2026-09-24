@@ -36,7 +36,7 @@ import { addAuditEntry, clearAllLocalData, downloadJson, enqueueSyncSnapshot, re
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
-import { deleteAccountFromCloud, deletePaymentFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
+import { deleteAccountFromCloud, deletePaymentFromCloud, deleteWorkspaceFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -511,21 +511,22 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const resetEverything = async () => {
     if (!cloudWorkspace || cloudWorkspace.role !== "owner") {
-      toast.error("إعادة ضبط البيانات متاحة للمالك فقط");
+      toast.error("حذف مساحة العمل متاح للمالك فقط");
       return;
     }
-    if (!window.confirm("متأكد؟ رح نمسح كل الحسابات والدفعات من مساحة العمل نهائياً.")) return;
+    if (!window.confirm("متأكد؟ رح تنحذف مساحة العمل نهائياً مع كل الحسابات والدفعات، وما في تراجع.")) return;
     try {
-      const result = await resetWorkspaceData(cloudWorkspace.id);
-      await clearAllLocalData();
-      toast.success(`انمسح كل شي: ${result.deletedAccounts} حساب و${result.deletedPayments} دفعة`);
-      window.location.reload();
+      await deleteWorkspaceFromCloud(cloudWorkspace.id);
+      await clearAllLocalData().catch(() => undefined);
+      const { supabase } = await import("@/lib/supabase");
+      await supabase?.auth.refreshSession();
+      toast.success("انحذفت مساحة العمل نهائياً");
+      window.location.replace("/");
     } catch (error) {
-      console.error("[AleppoCenterCash] reset failed", error);
-      toast.error("ما قدرنا نمسح بيانات مساحة العمل. ما تغيّر شي محلياً.");
+      console.error("[AleppoCenterCash] workspace deletion failed", error);
+      toast.error(error instanceof Error ? error.message : "ما قدرنا نحذف مساحة العمل");
     }
   };
-
   const deleteAccountData = async () => {
     if (!window.confirm("متأكد؟ رح ينحذف حسابك نهائياً. إذا كنت مالكاً لمساحة، رح تنحذف المساحة وكل حساباتها ودفعاتها أيضاً.")) return;
     try {
@@ -953,7 +954,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 <>
                   <div className="profile-menu-divider" />
                   <button className="profile-menu-item danger" onClick={() => void resetEverything()} role="menuitem">
-                    <span>🗑️ مسح مساحة العمل بالكامل</span>
+                    <span>🗑️ حذف مساحة العمل نهائياً</span>
                     <Trash2 size={14} />
                   </button>
                 </>
