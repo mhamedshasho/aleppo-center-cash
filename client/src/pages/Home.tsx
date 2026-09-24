@@ -719,6 +719,14 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           toast.info("انحذفت محلياً، ورح يتزامن الحذف تلقائياً عند رجوع الاتصال");
           return;
         }
+
+        await writeAccounts(nextAccounts);
+        await enqueueSyncSnapshot({
+          workspaceId: cloudWorkspace.id,
+          userId: cloudUser.id,
+          accounts: nextAccounts,
+          deletedPaymentIds: [{ id: payment.remoteId, version: payment.version }],
+        });
       }
 
       await writeAccounts(nextAccounts);
@@ -764,6 +772,14 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           toast.info("انحذف محلياً، ورح يتزامن الحذف تلقائياً عند رجوع الاتصال");
           return;
         }
+
+        await writeAccounts(nextAccounts);
+        await enqueueSyncSnapshot({
+          workspaceId: cloudWorkspace.id,
+          userId: cloudUser.id,
+          accounts: nextAccounts,
+          deletedAccountIds: [{ id: account.remoteId, version: account.version }],
+        });
       }
 
       await writeAccounts(nextAccounts);
