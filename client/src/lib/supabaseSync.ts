@@ -76,7 +76,7 @@ async function pushAccount(workspaceId: string, userId: string, account: LocalAc
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
   const remoteId = account.remoteId ?? makeRemoteId();
   const payload = { workspace_id: workspaceId, name: account.name.trim(), owner_name: account.owner.trim(), accent: account.accent, created_by: userId };
-  if (!account.remoteId) {
+  if (!account.remoteId || account.version === 0) {
     const { data, error } = await supabase.from("accounts").insert({ id: remoteId, ...payload }).select("id, version").single();
     if (error) {
       console.error("[AleppoCenterCash] account insert failed", error);
@@ -107,7 +107,7 @@ async function pushPayment(workspaceId: string, userId: string, accountRemoteId:
     occurred_on: payment.date,
     created_by: userId,
   };
-  if (!payment.remoteId) {
+  if (!payment.remoteId || payment.version === 0) {
     const { data, error } = await supabase.from("payments").insert({ id: remoteId, ...payload }).select("id, version").single();
     if (error) {
       console.error("[AleppoCenterCash] payment insert failed", error);
