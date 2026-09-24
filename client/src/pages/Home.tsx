@@ -201,15 +201,15 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     });
   };
 
-  const flushSyncQueue = async () => {
-    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current || syncInFlight.current) return;
+  const flushSyncQueue = async (): Promise<boolean> => {
+    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current || syncInFlight.current) return true;
 
     const queue = await readSyncQueue();
     const matching = queue
       .filter((item) => item.workspaceId === cloudWorkspace.id && item.userId === cloudUser.id)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     const latest = matching.at(-1);
-    if (!latest) return;
+    if (!latest) return true;
 
     syncInFlight.current = true;
     try {
@@ -235,9 +235,11 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       for (const deletion of latest.deletedPaymentIds ?? []) deletedPaymentIds.current.delete(deletion.id);
       setSyncState("synced");
       console.info("[AleppoCenterCash] queued sync flushed", { accounts: syncedAccounts.length });
+      return true;
     } catch (error) {
       console.error("[AleppoCenterCash] queued sync failed", error);
       setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
+      return false;
     } finally {
       syncInFlight.current = false;
     }
@@ -389,12 +391,15 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
 
-    const refresh = () => {
+    const refresh = async () => {
       if (!syncReadyRef.current) return;
       if (syncInFlight.current || pendingSync.current) {
         refreshQueuedRef.current = true;
         return;
       }
+
+      const queueFlushed = await flushSyncQueue();
+      if (!queueFlushed || syncInFlight.current || pendingSync.current) return;
 
       const generation = ++syncGeneration.current;
       void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
