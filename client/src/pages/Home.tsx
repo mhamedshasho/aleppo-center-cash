@@ -138,7 +138,7 @@ function calculateTotals(accounts: Account[]) {
 export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: string; email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null } = {}) {
   const [isUnlocked, setIsUnlocked] = useState(() => Boolean(cloudUser) || hasAuthSession());
   const [keyValue, setKeyValue] = useState("");
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
+  const [accounts, setAccounts] = useState<Account[]>(() => cloudWorkspace ? [] : initialAccounts);
   const [storageReady, setStorageReady] = useState(false);
   const [view, setView] = useState<View>("dashboard");
   const [selectedAccountId, setSelectedAccountId] = useState(1);
