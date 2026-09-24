@@ -129,12 +129,27 @@ set search_path = public
 as $$
 declare
   new_workspace_id uuid;
+  existing_workspace_id uuid;
 begin
   if auth.uid() is null then
     raise exception 'not_authenticated';
   end if;
   if char_length(trim(workspace_name)) not between 1 and 120 then
     raise exception 'invalid_workspace_name';
+  end if;
+
+  -- A user may own/use only one active workspace. This check lives in the
+  -- database function so two browser tabs cannot create duplicates by racing.
+  select wm.workspace_id
+    into existing_workspace_id
+    from public.workspace_members wm
+   where wm.user_id = auth.uid()
+     and wm.active = true
+   order by wm.joined_at asc
+   limit 1;
+
+  if existing_workspace_id is not null then
+    return existing_workspace_id;
   end if;
 
   insert into public.workspaces (name)
@@ -164,21 +179,47 @@ as $$
 declare
   workspace_name text;
   member_count integer;
+  existing_workspace_id uuid;
 begin
   if auth.uid() is null then
     raise exception 'not_authenticated';
   end if;
-  select w.name into workspace_name from public.workspaces w where w.id = target_workspace;
+
+  select wm.workspace_id
+    into existing_workspace_id
+    from public.workspace_members wm
+   where wm.user_id = auth.uid()
+     and wm.active = true
+   order by wm.joined_at asc
+   limit 1;
+
+  if existing_workspace_id is not null and existing_workspace_id <> target_workspace then
+    raise exception 'already_has_workspace';
+  end if;
+
+  select w.name into workspace_name
+    from public.workspaces w
+   where w.id = target_workspace;
+
   if workspace_name is null then
     raise exception 'workspace_not_found';
   end if;
-  select count(*)::integer into member_count from public.workspace_members where workspace_id = target_workspace and active = true;
-  if member_count >= 2 then
+
+  select count(*)::integer
+    into member_count
+    from public.workspace_members
+   where workspace_id = target_workspace
+     and active = true;
+
+  if member_count >= 2 and existing_workspace_id is null then
     raise exception 'workspace_full';
   end if;
+
   insert into public.workspace_members (workspace_id, user_id, role)
     values (target_workspace, auth.uid(), 'member')
-    on conflict (workspace_id, user_id) do update set active = true, removed_at = null;
+    on conflict (workspace_id, user_id) do update
+      set active = true, removed_at = null;
+
   return jsonb_build_object('id', target_workspace, 'name', workspace_name, 'role', 'member');
 end;
 $$;
