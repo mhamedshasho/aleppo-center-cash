@@ -219,6 +219,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"],
+          supabase: ["@supabase/supabase-js"],
+          jspdf: ["jspdf"],
+          html2canvas: ["html2canvas"],
+        },
+      },
+    },
   },
   server: {
     port: 3000,
