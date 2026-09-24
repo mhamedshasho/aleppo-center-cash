@@ -67,6 +67,7 @@ function setWorkspaceCache(userId: string, workspace: WorkspaceState) {
 export default function CloudAuthGate() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSupabaseSession>>>(null);
   const [workspace, setWorkspace] = useState<WorkspaceState>(null);
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -102,11 +103,14 @@ export default function CloudAuthGate() {
   useEffect(() => {
     if (!session || !supabase) {
       setWorkspace(null);
+      setWorkspaceLoading(false);
       return;
     }
+
     let active = true;
     const cachedWorkspace = getWorkspaceCache(session.user.id);
-    if (cachedWorkspace) setWorkspace(cachedWorkspace);
+    setWorkspace(cachedWorkspace);
+    setWorkspaceLoading(!cachedWorkspace);
 
     const loadWorkspace = async () => {
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -118,21 +122,33 @@ export default function CloudAuthGate() {
           .order("joined_at", { ascending: true })
           .limit(1)
           .maybeSingle();
+
         if (!active) return;
+
         if (!error) {
           const workspaceRow = Array.isArray(data?.workspaces) ? data?.workspaces[0] : data?.workspaces;
-          const nextWorkspace = data ? { id: data.workspace_id, role: data.role, name: workspaceRow?.name ?? "مركز حلب" } : null;
+          const nextWorkspace = data
+            ? { id: data.workspace_id, role: data.role, name: workspaceRow?.name ?? "مركز حلب" }
+            : null;
           setWorkspace(nextWorkspace);
           setWorkspaceCache(session.user.id, nextWorkspace);
+          setWorkspaceLoading(false);
           return;
         }
+
         if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, 400));
       }
-      if (!cachedWorkspace) toast.error("تعذر قراءة مساحة العمل");
+
+      if (active) {
+        setWorkspaceLoading(false);
+        if (!cachedWorkspace) toast.error("تعذر قراءة مساحة العمل");
+      }
     };
 
     void loadWorkspace();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [session]);
 
   const submitAuth = async () => {
@@ -228,6 +244,7 @@ export default function CloudAuthGate() {
   if (loading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نجهّز الدخول…</div>;
   if (!isSupabaseConfigured || !supabase) return <Home />;
   if (session && workspace) return <Home cloudUser={session.user} cloudWorkspace={workspace} />;
+  if (session && workspaceLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نتحقق من مساحة المحل…</div>;
 
   if (session && !workspace) {
     return (
