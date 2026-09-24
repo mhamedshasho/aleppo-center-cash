@@ -320,14 +320,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           if (generation !== syncGeneration.current) continue;
 
           console.error("[AleppoCenterCash] syncAccounts error", error);
-          await enqueueSyncSnapshot({
-            workspaceId: cloudWorkspace.id,
-            userId: cloudUser.id,
-            accounts: work.accounts,
-            deletedAccountIds: work.deletedAccountIds,
-            deletedPaymentIds: work.deletedPaymentIds,
-          });
-
           setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
           toast.error(
             error instanceof SyncConflictError
@@ -491,13 +483,20 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       deletedPaymentIds?: { id: string; version?: number }[];
     },
   ) => {
+    const previousAccounts = accounts;
     await writeAccounts(nextAccounts);
     setAccounts(nextAccounts);
 
-    if (cloudWorkspace && cloudUser && syncReadyRef.current) {
-      await syncAccounts(nextAccounts, deletions);
-    } else {
-      latestSyncedFingerprint.current = JSON.stringify(nextAccounts);
+    try {
+      if (cloudWorkspace && cloudUser && syncReadyRef.current) {
+        await syncAccounts(nextAccounts, deletions);
+      } else {
+        latestSyncedFingerprint.current = JSON.stringify(nextAccounts);
+      }
+    } catch (error) {
+      await writeAccounts(previousAccounts);
+      setAccounts(previousAccounts);
+      throw error;
     }
   };
 
@@ -521,7 +520,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       }
       return;
     }
-    const next: Account = { id: Date.now(), remoteId: crypto.randomUUID(), version: 1, name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
+    const next: Account = { id: Date.now(), remoteId: crypto.randomUUID(), version: 0, name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
     try {
       await commitAccounts([...accounts, next]);
       void recordAudit("create", "account", next.name);
@@ -544,7 +543,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const payment: Payment = {
       id: editingPaymentId ?? Date.now(),
       remoteId: existingPayment?.remoteId ?? (editingPaymentId ? undefined : crypto.randomUUID()),
-      version: existingPayment?.version ?? (editingPaymentId ? undefined : 1),
+      version: existingPayment?.version ?? (editingPaymentId ? undefined : 0),
       name: paymentDraft.name.trim(),
       amount: Number(paymentDraft.amount),
       currency: paymentDraft.currency,
