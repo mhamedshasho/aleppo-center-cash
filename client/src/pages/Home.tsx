@@ -121,6 +121,16 @@ const formatDate = (date: string) =>
 
 const escapeHtml = (value: string) => value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
 
+const isTransientSyncError = (error: unknown) => {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
+  if (typeof error !== "object" || error === null) return false;
+  const status = "status" in error ? Number((error as { status?: unknown }).status) : 0;
+  const message = error instanceof Error ? error.message : String(error);
+  return status >= 500 || /failed to fetch|network|timeout|timed out|connection|abort/i.test(message);
+};
+
+
+
 function calculateTotals(accounts: Account[]) {
   return (Object.keys({ SYP: true, USD: true }) as Currency[]).reduce(
     (result, currency) => {
@@ -640,20 +650,39 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const payment = selectedAccount?.payments.find((item) => item.id === paymentId);
     if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\\nالحذف نهائي وما في تراجع.`)) return;
 
+    const nextAccounts = accounts.map((account) =>
+      account.id === selectedAccountId
+        ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) }
+        : account,
+    );
+
     try {
       if (cloudWorkspace && cloudUser) {
         if (!payment.remoteId) {
           console.error("[AleppoCenterCash] delete payment blocked: missing remoteId", payment);
           throw new Error("الدفعة ما انزامنت بعد");
         }
-        await deletePaymentFromCloud(cloudWorkspace.id, payment.remoteId, payment.version);
+
+        try {
+          await deletePaymentFromCloud(cloudWorkspace.id, payment.remoteId, payment.version);
+        } catch (error) {
+          if (error instanceof SyncConflictError || !isTransientSyncError(error)) throw error;
+
+          await writeAccounts(nextAccounts);
+          await enqueueSyncSnapshot({
+            workspaceId: cloudWorkspace.id,
+            userId: cloudUser.id,
+            accounts: nextAccounts,
+            deletedPaymentIds: [{ id: payment.remoteId, version: payment.version }],
+          });
+          setAccounts(nextAccounts);
+          setSyncState("offline");
+          void recordAudit("delete", "payment", payment.name);
+          toast.info("انحذفت محلياً، ورح يتزامن الحذف تلقائياً عند رجوع الاتصال");
+          return;
+        }
       }
 
-      const nextAccounts = accounts.map((account) =>
-        account.id === selectedAccountId
-          ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) }
-          : account,
-      );
       await writeAccounts(nextAccounts);
       setAccounts(nextAccounts);
       void recordAudit("delete", "payment", payment.name);
@@ -668,6 +697,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const account = accounts.find((item) => item.id === accountId);
     if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\\nالحذف نهائي وما في تراجع.`)) return;
 
+    const nextAccounts = accounts.filter((item) => item.id !== accountId);
+
     try {
       if (cloudWorkspace && cloudUser) {
         if (!account.remoteId) {
@@ -675,13 +706,28 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           throw new Error("الحساب ما انزامن بعد");
         }
 
-        // Cloud-first: only remove the local row after Supabase confirms the
-        // owner-authorized DELETE actually removed the account. The FK cascade
-        // removes its payments on the server.
-        await deleteAccountFromCloud(cloudWorkspace.id, account.remoteId, account.version);
+        try {
+          await deleteAccountFromCloud(cloudWorkspace.id, account.remoteId, account.version);
+        } catch (error) {
+          if (error instanceof SyncConflictError || !isTransientSyncError(error)) throw error;
+
+          await writeAccounts(nextAccounts);
+          await enqueueSyncSnapshot({
+            workspaceId: cloudWorkspace.id,
+            userId: cloudUser.id,
+            accounts: nextAccounts,
+            deletedAccountIds: [{ id: account.remoteId, version: account.version }],
+          });
+          setAccounts(nextAccounts);
+          setSelectedAccountId(nextAccounts[0]?.id ?? 0);
+          setView("accounts");
+          setSyncState("offline");
+          void recordAudit("delete", "account", account.name);
+          toast.info("انحذف محلياً، ورح يتزامن الحذف تلقائياً عند رجوع الاتصال");
+          return;
+        }
       }
 
-      const nextAccounts = accounts.filter((item) => item.id !== accountId);
       await writeAccounts(nextAccounts);
       setAccounts(nextAccounts);
       setSelectedAccountId(nextAccounts[0]?.id ?? 0);
