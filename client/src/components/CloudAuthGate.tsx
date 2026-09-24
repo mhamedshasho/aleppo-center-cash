@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Building2, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import Home from "@/pages/Home";
+import { isValidEmail, normalizeEmail } from "@/lib/validation";
 import {
   getSupabaseSession,
   isSupabaseConfigured,
@@ -74,15 +75,21 @@ export default function CloudAuthGate() {
   }, [session]);
 
   const submitAuth = async () => {
-    if (!email.trim() || password.length < 8) {
-      toast.error("اكتب بريد صحيح وكلمة مرور من ٨ محارف أو أكتر");
+    const cleanEmail = normalizeEmail(email);
+    if (!isValidEmail(cleanEmail)) {
+      toast.error("اكتب بريد إلكتروني صحيح");
       return;
     }
+    if (password.length < 8) {
+      toast.error("كلمة المرور لازم تكون ٨ محارف أو أكتر");
+      return;
+    }
+    setEmail(cleanEmail);
     setBusy(true);
     try {
       const result = mode === "login"
-        ? await signInWithPassword(email.trim(), password)
-        : await signUpWithPassword(email.trim(), password);
+        ? await signInWithPassword(cleanEmail, password)
+        : await signUpWithPassword(cleanEmail, password);
       if (result.error) throw result.error;
       if (mode === "signup" && !result.data.session) {
         toast.success("تم إنشاء الحساب. إذا طلب Supabase تأكيد البريد، أكّده وبعدين فوت");
