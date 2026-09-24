@@ -448,6 +448,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     if (!window.confirm("متأكد؟ رح نمسح بياناتك المحلية ونسجّل خروجك. بيانات Supabase ومساحة العمل ما بتنحذف من هون.")) return;
     try {
       await clearAllLocalData();
+      const { supabase } = await import("@/lib/supabase");
       if (supabase) await supabase.auth.signOut();
       window.location.href = "/";
     } catch (error) {
