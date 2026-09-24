@@ -36,7 +36,7 @@ import { addAuditEntry, clearAllLocalData, downloadJson, readAccounts, readSyncQ
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
-import { pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
+import { deleteAccountFromCloud, deletePaymentFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -586,36 +586,59 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const deletePayment = async (paymentId: number) => {
     const payment = selectedAccount?.payments.find((item) => item.id === paymentId);
-    if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\nالحذف نهائي وما في تراجع.`)) return;
-    const nextAccounts = accounts.map((account) => account.id === selectedAccountId ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) } : account);
-    const deletedPayment = payment.remoteId ? [{ id: payment.remoteId, version: payment.version }] : [];
+    if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\\nالحذف نهائي وما في تراجع.`)) return;
+
     try {
-      await commitAccounts(nextAccounts, { deletedPaymentIds: deletedPayment });
+      if (cloudWorkspace && cloudUser) {
+        if (!payment.remoteId) {
+          console.error("[AleppoCenterCash] delete payment blocked: missing remoteId", payment);
+          throw new Error("الدفعة ما انزامنت بعد");
+        }
+        await deletePaymentFromCloud(cloudWorkspace.id, payment.remoteId, payment.version);
+      }
+
+      const nextAccounts = accounts.map((account) =>
+        account.id === selectedAccountId
+          ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) }
+          : account,
+      );
+      await writeAccounts(nextAccounts);
+      setAccounts(nextAccounts);
       void recordAudit("delete", "payment", payment.name);
       toast.success("انحذفت الدفعة");
-    } catch {
-      await writeAccounts(accounts);
-      setAccounts(accounts);
-      toast.error("ما قدرنا نحذف الدفعة من السحابة، رجّعنا الحالة");
+    } catch (error) {
+      console.error("[AleppoCenterCash] delete payment failed", error);
+      toast.error(error instanceof Error ? error.message : "ما قدرنا نحذف الدفعة");
     }
   };
 
   const deleteAccount = async (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\nالحذف نهائي وما في تراجع.`)) return;
-    const nextAccounts = accounts.filter((item) => item.id !== accountId);
-    const deletedAccount = account.remoteId ? [{ id: account.remoteId, version: account.version }] : [];
-    const deletedPayments = account.payments.filter((payment) => payment.remoteId).map((payment) => ({ id: payment.remoteId!, version: payment.version }));
+    if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\\nالحذف نهائي وما في تراجع.`)) return;
+
     try {
-      await commitAccounts(nextAccounts, { deletedAccountIds: deletedAccount, deletedPaymentIds: deletedPayments });
+      if (cloudWorkspace && cloudUser) {
+        if (!account.remoteId) {
+          console.error("[AleppoCenterCash] delete account blocked: missing remoteId", account);
+          throw new Error("الحساب ما انزامن بعد");
+        }
+
+        // Cloud-first: only remove the local row after Supabase confirms the
+        // owner-authorized DELETE actually removed the account. The FK cascade
+        // removes its payments on the server.
+        await deleteAccountFromCloud(cloudWorkspace.id, account.remoteId, account.version);
+      }
+
+      const nextAccounts = accounts.filter((item) => item.id !== accountId);
+      await writeAccounts(nextAccounts);
+      setAccounts(nextAccounts);
       setSelectedAccountId(nextAccounts[0]?.id ?? 0);
       setView("accounts");
       void recordAudit("delete", "account", account.name);
       toast.success("انحذف الحساب وكل حركاته");
-    } catch {
-      await writeAccounts(accounts);
-      setAccounts(accounts);
-      toast.error("ما قدرنا نحذف الحساب من السحابة، رجّعنا الحالة");
+    } catch (error) {
+      console.error("[AleppoCenterCash] delete account failed", error);
+      toast.error(error instanceof Error ? error.message : "ما قدرنا نحذف الحساب من السحابة");
     }
   };
 
