@@ -159,6 +159,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const syncInFlight = useRef(false);
   const pendingSync = useRef<{ accounts: Account[]; deletedAccountIds: { id: string; version?: number }[]; deletedPaymentIds: { id: string; version?: number }[] } | null>(null);
   const syncReadyRef = useRef(!cloudWorkspace || !cloudUser);
+  const initialCloudSyncRef = useRef<Promise<void>>(Promise.resolve());
   const latestSyncedFingerprint = useRef<string | null>(null);
   const syncGeneration = useRef(0);
   const refreshQueuedRef = useRef(false);
@@ -249,7 +250,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       deletedPaymentIds?: { id: string; version?: number }[];
     },
   ) => {
-    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current) return;
+    if (!cloudWorkspace || !cloudUser) return;
 
     const deletedAccounts = deletionOverrides?.deletedAccountIds ?? Array.from(deletedAccountIds.current, ([id, version]) => ({ id, version }));
     const deletedPayments = deletionOverrides?.deletedPaymentIds ?? Array.from(deletedPaymentIds.current, ([id, version]) => ({ id, version }));
@@ -337,6 +338,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   useEffect(() => {
     if (!storageReady || !cloudWorkspace || !cloudUser) {
       syncReadyRef.current = !cloudWorkspace || !cloudUser;
+      initialCloudSyncRef.current = Promise.resolve();
       return;
     }
 
@@ -344,23 +346,30 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const generation = ++syncGeneration.current;
     let active = true;
 
-    void pullCloudAccounts(cloudWorkspace.id).then(async (remoteAccounts) => {
-      if (!active || generation !== syncGeneration.current) return;
+    const initialSync = (async () => {
+      try {
+        const remoteAccounts = await pullCloudAccounts(cloudWorkspace.id);
+        if (!active || generation !== syncGeneration.current) return;
 
-      latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
-      setAccounts(remoteAccounts);
-      setSyncState("synced");
-      syncReadyRef.current = true;
-      setSyncReadyVersion((value) => value + 1);
+        latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
+        setAccounts(remoteAccounts);
+        setSyncState("synced");
+        await flushSyncQueue();
+      } catch (error) {
+        if (!active || generation !== syncGeneration.current) return;
+        console.error("[AleppoCenterCash] initial cloud pull failed", error);
+        setSyncState("offline");
+      } finally {
+        if (active && generation === syncGeneration.current) {
+          // The initial read must never permanently block a user mutation.
+          // A failed pull is allowed to fall through to the normal write path.
+          syncReadyRef.current = true;
+          setSyncReadyVersion((value) => value + 1);
+        }
+      }
+    })();
 
-      await flushSyncQueue();
-    }).catch((error) => {
-      if (!active || generation !== syncGeneration.current) return;
-      console.error("[AleppoCenterCash] initial cloud pull failed", error);
-      syncReadyRef.current = true;
-      setSyncReadyVersion((value) => value + 1);
-      setSyncState("offline");
-    });
+    initialCloudSyncRef.current = initialSync;
 
     return () => {
       active = false;
@@ -484,11 +493,18 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     },
   ) => {
     const previousAccounts = accounts;
+
+    if (cloudWorkspace && cloudUser) {
+      // Wait for the initial cloud read to settle so an in-flight pull cannot
+      // overwrite a just-created local mutation.
+      await initialCloudSyncRef.current;
+    }
+
     await writeAccounts(nextAccounts);
     setAccounts(nextAccounts);
 
     try {
-      if (cloudWorkspace && cloudUser && syncReadyRef.current) {
+      if (cloudWorkspace && cloudUser) {
         await syncAccounts(nextAccounts, deletions);
       } else {
         latestSyncedFingerprint.current = JSON.stringify(nextAccounts);
