@@ -354,6 +354,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
         setAccounts(remoteAccounts);
         setSyncState("synced");
+        syncReadyRef.current = true;
+        setSyncReadyVersion((value) => value + 1);
         await flushSyncQueue();
       } catch (error) {
         if (!active || generation !== syncGeneration.current) return;
