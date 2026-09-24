@@ -782,11 +782,18 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       </section>
 
       {showPaymentModal && <Modal title={editingPaymentId ? "تعديل الدفعة" : "دفعة جديدة"} onClose={() => { setShowPaymentModal(false); setEditingPaymentId(null); setPaymentAccountId(null); }}><div className="modal-form">
-        {!editingPaymentId && view === "dashboard" && (
-          <label>الحساب
-            <select value={paymentAccountId ?? ""} onChange={(event) => setPaymentAccountId(Number(event.target.value))} required>
-              <option value="" disabled>اختار الحساب</option>
-              {accounts.map((account) => <option key={account.id} value={account.id}>{account.name} — {account.owner}</option>)}
+        {view === "dashboard" && !editingPaymentId && paymentAccountId !== null && (
+          <label>
+            الحساب
+            <select
+              value={paymentAccountId}
+              onChange={(event) => setPaymentAccountId(Number(event.target.value))}
+            >
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name} — {account.owner}
+                </option>
+              ))}
             </select>
           </label>
         )}
