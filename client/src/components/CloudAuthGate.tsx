@@ -51,6 +51,8 @@ function getAuthErrorMessage(error: unknown, mode: Mode) {
 export default function CloudAuthGate() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSupabaseSession>>>(null);
   const [workspace, setWorkspace] = useState<WorkspaceState>(null);
+  const [pendingWorkspace, setPendingWorkspace] = useState<WorkspaceState>(null);
+  const [workspacePassword, setWorkspacePassword] = useState("");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>("login");
@@ -61,7 +63,7 @@ export default function CloudAuthGate() {
   const [workspaceId, setWorkspaceId] = useState("");
   const [busy, setBusy] = useState(false);
   const [signupCooldownUntil, setSignupCooldownUntil] = useState(0);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const routeSlug = location === "/" ? "" : decodeURIComponent(location.replace(/^\/+/, "").split("/")[0]).trim().toUpperCase();
 
   useEffect(() => {
@@ -118,6 +120,8 @@ export default function CloudAuthGate() {
     const client = supabase;
     let active = true;
     setWorkspace(null);
+    setPendingWorkspace(null);
+    setWorkspacePassword("");
     setWorkspaceLoading(true);
 
     const loadWorkspace = async () => {
@@ -177,7 +181,7 @@ export default function CloudAuthGate() {
             return;
           }
 
-          setWorkspace({
+          setPendingWorkspace({
             id: workspaceRow.id,
             name: workspaceRow.name,
             slug: workspaceRow.slug,
@@ -213,9 +217,7 @@ export default function CloudAuthGate() {
             slug: workspaceRow.slug,
           } as WorkspaceState;
 
-          window.history.replaceState(null, "", "/" + encodeURIComponent(workspaceRow.slug));
-          setWorkspace(nextWorkspace);
-          setWorkspaceLoading(false);
+          setLocation("/" + encodeURIComponent(workspaceRow.slug));
           return;
         }
 
@@ -312,11 +314,32 @@ export default function CloudAuthGate() {
       } as WorkspaceState;
 
       setWorkspaceLoading(false);
-      setWorkspace(createdWorkspace);
-      window.history.replaceState(null, "", "/" + encodeURIComponent(createdWorkspace.slug));
-      toast.success("انعملت مساحة المحل");
+      setPendingWorkspace(createdWorkspace);
+      setWorkspacePassword("");
+      setLocation("/" + encodeURIComponent(createdWorkspace.slug));
+      toast.success("انعملت مساحة المحل — الرابط الخاص فيها صار جاهز");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إنشاء مساحة العمل");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const enterWorkspace = async () => {
+    if (!supabase || !session || !pendingWorkspace || !workspacePassword) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: session.user.email ?? "",
+        password: workspacePassword,
+      });
+      if (error) throw error;
+      setWorkspacePassword("");
+      setWorkspace(pendingWorkspace);
+      setPendingWorkspace(null);
+      toast.success("تم فتح مساحة العمل");
+    } catch (error) {
+      toast.error("كلمة مرور الحساب غير صحيحة.");
     } finally {
       setBusy(false);
     }
@@ -349,8 +372,9 @@ export default function CloudAuthGate() {
       } as WorkspaceState;
 
       setWorkspaceLoading(false);
-      setWorkspace(joinedWorkspace);
-      window.history.replaceState(null, "", "/" + encodeURIComponent(joinedWorkspace.slug));
+      setPendingWorkspace(joinedWorkspace);
+      setWorkspacePassword("");
+      setLocation("/" + encodeURIComponent(joinedWorkspace.slug));
       toast.success("انضمّيت لمساحة المحل");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر الانضمام. تأكد من Workspace ID");
@@ -363,6 +387,28 @@ export default function CloudAuthGate() {
   if (!isSupabaseConfigured || !supabase) return <main className="cloud-loading"><strong>Cloud Only</strong><span>الاتصال بـ Supabase غير مهيأ. الوضع المحلي غير متاح.</span></main>;
   if (session && workspace) return <Home cloudUser={session.user} cloudWorkspace={workspace} />;
   if (session && workspaceLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نتحقق من مساحة المحل…</div>;
+
+  if (session && pendingWorkspace) {
+    return (
+      <main className="login-shell" dir="rtl">
+        <div className="login-ambient ambient-one" /><div className="login-ambient ambient-two" />
+        <section className="login-card">
+          <div className="brand-mark large"><KeyRound size={30} strokeWidth={1.8} /></div>
+          <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> WORKSPACE</div>
+          <h1>مساحة<br /><em>{pendingWorkspace.name}</em></h1>
+          <p className="login-copy">هذا رابط مساحة عمل مستقلة. لفتحها، اكتب كلمة مرور حسابك.</p>
+          <div className="key-input-wrap"><input id="workspace-password" type="password" value={workspacePassword} onChange={(event) => setWorkspacePassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }} placeholder="كلمة مرور حسابك" dir="ltr" autoComplete="current-password" autoFocus /></div>
+          <button className="primary-btn full" disabled={busy || !workspacePassword} onClick={() => void enterWorkspace()}>
+            {busy ? <Loader2 className="spin" size={17} /> : <KeyRound size={17} />}
+            دخول إلى مساحة العمل
+            <ArrowLeft size={17} />
+          </button>
+          <div className="privacy-note"><KeyRound size={16} /> الرابط يحدد مساحة العمل، وكلمة مرور الحساب تسمح بالدخول</div>
+          <button className="text-btn auth-signout" onClick={() => { if (supabase) void supabase.auth.signOut(); }}>مو أنت؟ سجّل خروج</button>
+        </section>
+      </main>
+    );
+  }
 
   if (session && !workspace) {
     return (
