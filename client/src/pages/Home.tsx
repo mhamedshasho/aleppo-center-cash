@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { addAuditEntry, clearAllLocalData, downloadJson, readAccounts, readSyncQueue, removeSyncQueueItem, writeAccounts } from "@/lib/localStore";
+import { addAuditEntry, clearAllLocalData, downloadJson, enqueueSyncSnapshot, readAccounts, readSyncQueue, removeSyncQueueItem, writeAccounts } from "@/lib/localStore";
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
@@ -512,6 +512,23 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         latestSyncedFingerprint.current = JSON.stringify(nextAccounts);
       }
     } catch (error) {
+      if (cloudWorkspace && cloudUser && !(error instanceof SyncConflictError)) {
+        // Keep a successful local edit when the network is temporarily down.
+        // The latest snapshot is retried automatically when the cloud becomes
+        // reachable again.
+        await enqueueSyncSnapshot({
+          workspaceId: cloudWorkspace.id,
+          userId: cloudUser.id,
+          accounts: nextAccounts,
+          deletedAccountIds: deletions?.deletedAccountIds ?? [],
+          deletedPaymentIds: deletions?.deletedPaymentIds ?? [],
+        });
+        setAccounts(nextAccounts);
+        setSyncState("offline");
+        toast.info("انحفظ التعديل محلياً، ورح يتزامن تلقائياً عند رجوع الاتصال");
+        return;
+      }
+
       await writeAccounts(previousAccounts);
       setAccounts(previousAccounts);
       throw error;
