@@ -518,7 +518,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       }
       return;
     }
-    const next: Account = { id: Date.now(), name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
+    const next: Account = { id: Date.now(), remoteId: crypto.randomUUID(), version: 1, name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
     try {
       await commitAccounts([...accounts, next]);
       void recordAudit("create", "account", next.name);
@@ -540,8 +540,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const existingPayment = editingPaymentId ? targetAccount.payments.find((item) => item.id === editingPaymentId) : undefined;
     const payment: Payment = {
       id: editingPaymentId ?? Date.now(),
-      remoteId: existingPayment?.remoteId,
-      version: existingPayment?.version,
+      remoteId: existingPayment?.remoteId ?? (editingPaymentId ? undefined : crypto.randomUUID()),
+      version: existingPayment?.version ?? (editingPaymentId ? undefined : 1),
       name: paymentDraft.name.trim(),
       amount: Number(paymentDraft.amount),
       currency: paymentDraft.currency,
