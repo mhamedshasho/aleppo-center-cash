@@ -513,22 +513,107 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     toast.success("جهزنا ملف النسخة الاحتياطية");
   };
 
-  const exportPng = () => {
+  const exportPng = (accountId?: number) => {
+    const targetAccounts = accountId ? accounts.filter((account) => account.id === accountId) : accounts;
+    if (!targetAccounts.length) {
+      toast.error("الحساب غير موجود");
+      return;
+    }
+
+    const isSingleAccount = Boolean(accountId);
+    const target = targetAccounts[0];
+    const reportDate = new Date().toISOString().slice(0, 10);
+
+    if (isSingleAccount) {
+      const summary = (["SYP", "USD"] as Currency[]).flatMap((currency) => {
+        const payments = target.payments.filter((payment) => payment.currency === currency);
+        const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0);
+        const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
+        return [
+          `${currency === "SYP" ? "ل.س" : "دولار"} — له: ${formatAmount(credit, currency)}`,
+          `${currency === "SYP" ? "ل.س" : "دولار"} — عليه: ${formatAmount(debit, currency)}`,
+          `${currency === "SYP" ? "ل.س" : "دولار"} — الرصيد: ${formatAmount(debit - credit, currency)}`,
+        ];
+      });
+      const paymentLines = target.payments.map((payment, index) =>
+        `${index + 1}. ${payment.name} — ${payment.type === "credit" ? "له" : "عليه"} — ${formatAmount(payment.amount, payment.currency)} — ${formatDate(payment.date)}`,
+      );
+      downloadPng(
+        `aleppo-center-cash-${target.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-")}-${reportDate}.png`,
+        "Aleppo Center Cash — تقرير حساب",
+        [
+          `اسم الحساب: ${target.name}`,
+          `صاحب الحساب: ${target.owner}`,
+          `تاريخ التقرير: ${formatDate(reportDate)}`,
+          "",
+          "الدفعات:",
+          ...(paymentLines.length ? paymentLines : ["لا توجد دفعات"]),
+          "",
+          "الإجماليات:",
+          ...summary,
+        ],
+      );
+      void recordAudit("export", "backup", `تقرير PNG — ${target.name}`);
+      toast.success("نزلنا تقرير الحساب كصورة PNG");
+      return;
+    }
+
     const total = totals.SYP.debit - totals.SYP.credit;
-    downloadPng(`aleppo-center-cash-report-${new Date().toISOString().slice(0, 10)}.png`, "Aleppo Center Cash — تقرير الحسابات", [`الرصيد الصافي: ${formatAmount(total, "SYP")}`, `عدد الحسابات: ${accounts.length}`, `آخر تحديث: ${formatDate(new Date().toISOString().slice(0, 10))}`]);
+    downloadPng(`aleppo-center-cash-report-${reportDate}.png`, "Aleppo Center Cash — تقرير الحسابات", [`الرصيد الصافي: ${formatAmount(total, "SYP")}`, `عدد الحسابات: ${accounts.length}`, `آخر تحديث: ${formatDate(reportDate)}`]);
     void recordAudit("export", "backup", "تقرير PNG");
     toast.success("نزلنا التقرير كصورة PNG");
   };
 
-  const exportPdf = async () => {
-    void recordAudit("export", "backup", "تقرير PDF");
+  const exportPdf = async (accountId?: number) => {
+    const targetAccounts = accountId ? accounts.filter((account) => account.id === accountId) : accounts;
+    if (!targetAccounts.length) {
+      toast.error("الحساب غير موجود");
+      return;
+    }
+
+    const isSingleAccount = Boolean(accountId);
     const dateStamp = new Date().toISOString().slice(0, 10);
+    const dateLabel = new Date().toLocaleDateString("ar-SY");
+
+    if (isSingleAccount) {
+      const account = targetAccounts[0];
+      const totalsByCurrency = (["SYP", "USD"] as Currency[]).map((currency) => {
+        const payments = account.payments.filter((payment) => payment.currency === currency);
+        const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0);
+        const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
+        return { currency, credit, debit, balance: debit - credit };
+      });
+      const rows = account.payments.map((payment) => `<tr><td>${escapeHtml(payment.name)}</td><td>${payment.type === "credit" ? "إلك" : "عليك"}</td><td>${escapeHtml(formatAmount(payment.amount, payment.currency))}</td><td>${escapeHtml(formatDate(payment.date))}</td></tr>`).join("");
+      const summary = totalsByCurrency.map((item) => `<div style="border:1px solid #dce9e5;border-radius:10px;padding:14px;min-width:150px"><strong>${item.currency === "SYP" ? "الليرة السورية" : "الدولار الأميركي"}</strong><span style="display:block;margin-top:7px">له: ${escapeHtml(formatAmount(item.credit, item.currency))}</span><span style="display:block">عليه: ${escapeHtml(formatAmount(item.debit, item.currency))}</span><span style="display:block;font-weight:700;margin-top:4px">الرصيد: ${escapeHtml(formatAmount(item.balance, item.currency))}</span></div>`).join("");
+
+      const report = document.createElement("div");
+      report.dir = "rtl";
+      report.lang = "ar";
+      report.style.cssText = "position:fixed;left:-10000px;top:0;width:800px;padding:44px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;direction:rtl";
+      report.innerHTML = `<header style="border-bottom:3px solid #65b18d;padding-bottom:20px;margin-bottom:24px"><h1 style="color:#173f47;margin:0 0 6px;font-size:28px">Aleppo Center Cash</h1><p style="color:#718883">تقرير حساب — ${escapeHtml(dateLabel)}</p></header><div style="margin-bottom:24px"><h2 style="margin:0 0 8px;color:#173f47">${escapeHtml(account.name)}</h2><p style="margin:0;color:#718883">صاحب الحساب: ${escapeHtml(account.owner)}</p><p style="margin:6px 0 0;color:#718883">تاريخ التقرير: ${escapeHtml(dateLabel)}</p></div><div style="display:flex;gap:12px;margin-bottom:28px">${summary}</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#173f47;color:white"><th style="padding:11px;text-align:right">الدفعة</th><th style="padding:11px;text-align:right">النوع</th><th style="padding:11px;text-align:right">المبلغ</th><th style="padding:11px;text-align:right">التاريخ</th></tr></thead><tbody>${rows || '<tr><td colspan="4" style="padding:18px;text-align:center;color:#718883">لا توجد دفعات</td></tr>'}</tbody></table><p style="color:#8aa09a;font-size:11px;margin-top:24px">الملف غير مشفّر. خزّنه بمكان موثوق.</p>`;
+      document.body.appendChild(report);
+
+      try {
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+        await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 800, autoPaging: "text" });
+        pdf.save(`aleppo-center-cash-${account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-")}-${dateStamp}.pdf`);
+        void recordAudit("export", "backup", `تقرير PDF — ${account.name}`);
+        toast.success("نزلنا تقرير الحساب كملف PDF");
+      } catch {
+        toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية");
+      } finally {
+        report.remove();
+      }
+      return;
+    }
+
+    void recordAudit("export", "backup", "تقرير PDF");
     const rows = accounts.flatMap((account) => account.payments.map((payment) => `<tr><td>${escapeHtml(account.name)}</td><td>${escapeHtml(payment.name)}</td><td>${payment.type === "credit" ? "إلك" : "عليك"}</td><td>${escapeHtml(formatAmount(payment.amount, payment.currency))}</td><td>${escapeHtml(formatDate(payment.date))}</td></tr>`)).join("");
     const report = document.createElement("div");
     report.dir = "rtl";
     report.lang = "ar";
     report.style.cssText = "position:fixed;left:-10000px;top:0;width:800px;padding:44px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;direction:rtl";
-    report.innerHTML = `<header style="border-bottom:3px solid #65b18d;padding-bottom:20px;margin-bottom:28px"><h1 style="color:#173f47;margin:0 0 6px;font-size:28px">Aleppo Center Cash</h1><p style="color:#718883">تقرير الحسابات والدفعات — ${escapeHtml(new Date().toLocaleDateString("ar-SY"))}</p></header><div style="display:flex;gap:35px;margin-bottom:28px"><div>عدد الحسابات<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${accounts.length}</strong></div><div>الرصيد الصافي<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.SYP.debit - totals.SYP.credit, "SYP"))}</strong></div><div>الرصيد بالدولار<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.USD.debit - totals.USD.credit, "USD"))}</strong></div></div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#173f47;color:white"><th style="padding:11px;text-align:right">الحساب</th><th style="padding:11px;text-align:right">الدفعة</th><th style="padding:11px;text-align:right">النوع</th><th style="padding:11px;text-align:right">المبلغ</th><th style="padding:11px;text-align:right">التاريخ</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#8aa09a;font-size:11px">الملف غير مشفّر. خزّنه بمكان موثوق.</p>`;
+    report.innerHTML = `<header style="border-bottom:3px solid #65b18d;padding-bottom:20px;margin-bottom:28px"><h1 style="color:#173f47;margin:0 0 6px;font-size:28px">Aleppo Center Cash</h1><p style="color:#718883">تقرير الحسابات والدفعات — ${escapeHtml(dateLabel)}</p></header><div style="display:flex;gap:35px;margin-bottom:28px"><div>عدد الحسابات<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${accounts.length}</strong></div><div>الرصيد الصافي<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.SYP.debit - totals.SYP.credit, "SYP"))}</strong></div><div>الرصيد بالدولار<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.USD.debit - totals.USD.credit, "USD"))}</strong></div></div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#173f47;color:white"><th style="padding:11px;text-align:right">الحساب</th><th style="padding:11px;text-align:right">الدفعة</th><th style="padding:11px;text-align:right">النوع</th><th style="padding:11px;text-align:right">المبلغ</th><th style="padding:11px;text-align:right">التاريخ</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#8aa09a;font-size:11px">الملف غير مشفّر. خزّنه بمكان موثوق.</p>`;
     document.body.appendChild(report);
     try {
       const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
@@ -626,7 +711,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         <div className="content-wrap">
           {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={() => { setSelectedAccountId(1); setShowPaymentModal(true); }} onGoAccounts={() => setView("accounts")} />}
           {view === "accounts" && <AccountsView accounts={filteredAccounts} searchTerm={searchTerm} setSearchTerm={setSearchTerm} onOpenAccount={openAccount} onAddAccount={() => setShowAccountModal(true)} />}
-          {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} />}
+          {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
           {view === "backup" && <BackupView auditEntries={auditEntries} onExport={exportBackup} onExportPdf={exportPdf} onExportPng={exportPng} onImport={handleImport} />}
         </div>
       </section>
@@ -647,7 +732,7 @@ function AccountsView({ accounts, searchTerm, setSearchTerm, onOpenAccount, onAd
   return <div className="page-enter"><div className="page-heading"><div><div className="eyebrow">دفتر الحسابات</div><h1>الحسابات <span className="heading-count">{accounts.length}</span></h1><p>كل زبون إلو حسابه، وكل حركة إلها مكانها.</p></div><button className="primary-btn" onClick={onAddAccount}><Plus size={18} /> حساب جديد</button></div><div className="toolbar"><div className="search-box"><Search size={18} /><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="دوّر على حساب أو اسم..." /></div><button className="filter-btn"><BarChart3 size={16} /> ترتيب: الأحدث <ChevronDown size={15} /></button></div>{accounts.length ? <div className="account-grid">{accounts.map((account) => <button key={account.id} className="account-card" onClick={() => onOpenAccount(account.id)}><div className="account-card-top"><div className={`account-avatar large-avatar ${account.accent}`}>{account.name.slice(0, 1)}</div><MoreHorizontal size={18} className="muted-icon" /></div><div className="account-card-copy"><h3>{account.name}</h3><p><UserRound size={14} /> {account.owner}</p></div><div className="account-card-footer"><div><span>عدد الحركات</span><strong>{account.payments.length}</strong></div><div className="card-arrow"><ArrowLeft size={17} /></div></div></button>)}</div> : <div className="surface-card empty-search"><Search size={25} /><h3>ما لقينا شي</h3><p>جرّب اسم تاني أو أضف حساب جديد.</p></div>}</div>;
 }
 
-function AccountDetail({ account, onBack, onEditAccount, onDeleteAccount, onAddPayment, onEditPayment, onDeletePayment }: { account: Account; onBack: () => void; onEditAccount: () => void; onDeleteAccount: () => void; onAddPayment: () => void; onEditPayment: (payment: Payment) => void; onDeletePayment: (id: number) => void }) {
+function AccountDetail({ account, onBack, onEditAccount, onDeleteAccount, onAddPayment, onEditPayment, onDeletePayment, onExportPdf, onExportPng }: { account: Account; onBack: () => void; onEditAccount: () => void; onDeleteAccount: () => void; onAddPayment: () => void; onEditPayment: (payment: Payment) => void; onDeletePayment: (id: number) => void; onExportPdf: () => void; onExportPng: () => void }) {
   const currencies: Currency[] = ["SYP", "USD"];
   const [paymentQuery, setPaymentQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<"all" | PaymentType>("all");
@@ -655,7 +740,7 @@ function AccountDetail({ account, onBack, onEditAccount, onDeleteAccount, onAddP
     const matchesQuery = `${payment.name} ${payment.amount} ${payment.currency}`.toLowerCase().includes(paymentQuery.toLowerCase());
     return matchesQuery && (paymentFilter === "all" || payment.type === paymentFilter);
   });
-  return <div className="page-enter"><button className="back-btn" onClick={onBack}><ArrowRightIcon /> رجعة للحسابات</button><div className="detail-heading"><div className="detail-title"><div className={`account-avatar large-avatar ${account.accent}`}>{account.name.slice(0, 1)}</div><div><div className="eyebrow">حساب زبون</div><h1>{account.name}</h1><p><UserRound size={14} /> {account.owner}</p></div></div><div className="detail-actions"><button className="secondary-btn" onClick={onEditAccount}><Pencil size={15} /> تعديل الحساب</button><button className="danger-btn" onClick={onDeleteAccount}><Trash2 size={15} /> حذف الحساب</button><button className="primary-btn" onClick={onAddPayment}><Plus size={18} /> إضافة دفعة</button></div></div><div className="currency-summary-grid">{currencies.map((currency) => { const payments = account.payments.filter((payment) => payment.currency === currency); const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0); const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0); return <div className={`currency-card ${currency === "USD" ? "usd-card" : ""}`} key={currency}><div className="currency-card-head"><span className="currency-badge">{currency === "SYP" ? "ل.س" : "$"}</span><span>{currency === "SYP" ? "الليرة السورية" : "الدولار الأميركي"}</span></div><div className="currency-balance">{formatAmount(debit - credit, currency)}</div><div className="currency-lines"><span><i className="dot credit-dot" /> إلك <strong>{formatAmount(credit, currency)}</strong></span><span><i className="dot debit-dot" /> عليك <strong>{formatAmount(debit, currency)}</strong></span></div></div>; })}</div><section className="surface-card detail-payments"><div className="section-head"><div><h2>سجل الدفعات</h2><p>{filteredPayments.length} من {account.payments.length} حركات</p></div><span className="payment-count">{paymentFilter === "all" ? "كل الحركات" : paymentFilter === "credit" ? "إلك" : "عليك"}</span></div><div className="payment-toolbar"><div className="payment-search"><Search size={15} /><input value={paymentQuery} onChange={(event) => setPaymentQuery(event.target.value)} placeholder="دوّر باسم الدفعة..." /></div><div className="payment-filters"><button className={paymentFilter === "all" ? "active" : ""} onClick={() => setPaymentFilter("all")}>الكل</button><button className={paymentFilter === "credit" ? "active credit" : ""} onClick={() => setPaymentFilter("credit")}>إلك</button><button className={paymentFilter === "debit" ? "active debit" : ""} onClick={() => setPaymentFilter("debit")}>عليك</button></div></div>{filteredPayments.length ? <div className="payment-list full-list">{filteredPayments.map((payment) => <PaymentRow key={payment.id} payment={payment} onEdit={() => onEditPayment(payment)} onDelete={() => onDeletePayment(payment.id)} />)}</div> : <EmptyState text={account.payments.length ? "ما في حركات مطابقة" : "ما في دفعات بهالحساب لسا"} />}</section></div>;
+  return <div className="page-enter"><button className="back-btn" onClick={onBack}><ArrowRightIcon /> رجعة للحسابات</button><div className="detail-heading"><div className="detail-title"><div className={`account-avatar large-avatar ${account.accent}`}>{account.name.slice(0, 1)}</div><div><div className="eyebrow">حساب زبون</div><h1>{account.name}</h1><p><UserRound size={14} /> {account.owner}</p></div></div><div className="detail-actions"><button className="secondary-btn" onClick={onEditAccount}><Pencil size={15} /> تعديل الحساب</button><button className="secondary-btn" onClick={onExportPdf}><FileText size={15} /> تصدير PDF</button><button className="secondary-btn" onClick={onExportPng}><Download size={15} /> تصدير PNG</button><button className="danger-btn" onClick={onDeleteAccount}><Trash2 size={15} /> حذف الحساب</button><button className="primary-btn" onClick={onAddPayment}><Plus size={18} /> إضافة دفعة</button></div></div><div className="currency-summary-grid">{currencies.map((currency) => { const payments = account.payments.filter((payment) => payment.currency === currency); const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0); const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0); return <div className={`currency-card ${currency === "USD" ? "usd-card" : ""}`} key={currency}><div className="currency-card-head"><span className="currency-badge">{currency === "SYP" ? "ل.س" : "$"}</span><span>{currency === "SYP" ? "الليرة السورية" : "الدولار الأميركي"}</span></div><div className="currency-balance">{formatAmount(debit - credit, currency)}</div><div className="currency-lines"><span><i className="dot credit-dot" /> إلك <strong>{formatAmount(credit, currency)}</strong></span><span><i className="dot debit-dot" /> عليك <strong>{formatAmount(debit, currency)}</strong></span></div></div>; })}</div><section className="surface-card detail-payments"><div className="section-head"><div><h2>سجل الدفعات</h2><p>{filteredPayments.length} من {account.payments.length} حركات</p></div><span className="payment-count">{paymentFilter === "all" ? "كل الحركات" : paymentFilter === "credit" ? "إلك" : "عليك"}</span></div><div className="payment-toolbar"><div className="payment-search"><Search size={15} /><input value={paymentQuery} onChange={(event) => setPaymentQuery(event.target.value)} placeholder="دوّر باسم الدفعة..." /></div><div className="payment-filters"><button className={paymentFilter === "all" ? "active" : ""} onClick={() => setPaymentFilter("all")}>الكل</button><button className={paymentFilter === "credit" ? "active credit" : ""} onClick={() => setPaymentFilter("credit")}>إلك</button><button className={paymentFilter === "debit" ? "active debit" : ""} onClick={() => setPaymentFilter("debit")}>عليك</button></div></div>{filteredPayments.length ? <div className="payment-list full-list">{filteredPayments.map((payment) => <PaymentRow key={payment.id} payment={payment} onEdit={() => onEditPayment(payment)} onDelete={() => onDeletePayment(payment.id)} />)}</div> : <EmptyState text={account.payments.length ? "ما في حركات مطابقة" : "ما في دفعات بهالحساب لسا"} />}</section></div>;
 }
 
 function BackupView({ auditEntries, onExport, onExportPdf, onExportPng, onImport }: { auditEntries: { id: number; action: string; entity: string; label: string; createdAt: string }[]; onExport: () => void; onExportPdf: () => void; onExportPng: () => void; onImport: () => void }) {
