@@ -522,7 +522,24 @@ export async function deleteAccountFromCloud(workspaceId: string, accountId: str
   }
 
   if (!data?.length) {
-    throw new SyncConflictError("تعذر حذف الحساب من السحابة: لم يتم العثور عليه أو لا تملك صلاحية حذفه");
+    const { data: remaining, error: verifyError } = await supabase
+      .from("accounts")
+      .select("id, version")
+      .eq("id", accountId)
+      .eq("workspace_id", workspaceId)
+      .maybeSingle();
+
+    if (verifyError) {
+      console.error("[AleppoCenterCash] account delete verification failed", verifyError);
+      throw verifyError;
+    }
+
+    if (!remaining) {
+      console.info("[AleppoCenterCash] account already absent after delete attempt", { accountId });
+      return accountId;
+    }
+
+    throw new SyncConflictError("تعذر حذف الحساب من السحابة: تغير قبل الحذف");
   }
 
   return data[0].id as string;
