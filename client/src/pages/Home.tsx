@@ -322,10 +322,18 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
           console.error("[AleppoCenterCash] syncAccounts error", error);
           setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
-          toast.error(
+          const errorCode = typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+      const errorMessage = error instanceof Error ? error.message : "";
+      toast.error(
             error instanceof SyncConflictError
               ? "في تعديل جديد من الجهاز التاني — حدّث الصفحة للمراجعة"
-              : "ما في اتصال. حفظنا التعديل بطابور مزامنة محلي",
+              : errorCode === "23505"
+                ? "السجل موجود مسبقاً — أعد المحاولة مرة ثانية"
+                : errorMessage === "sync_busy"
+                  ? "المزامنة ما زالت جارية — انتظر لحظة وجرب مرة ثانية"
+                  : "تعذر مزامنة التعديل حالياً، وانحفظ محلياً لإعادة المحاولة",
           );
           throw error;
         }
