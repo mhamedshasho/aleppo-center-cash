@@ -578,7 +578,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     right("تاريخ", 1085, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("وصف", 820, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("مبلغ", 455, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("نوع", 180, 673, "700 15px Cairo, Arial, sans-serif", "#718883");
     recentPayments.forEach((payment, index) => { const y = 725 + index * 62; if (index % 2 === 0) { context.fillStyle = "#fbfcfb"; context.fillRect(70, y - 30, 1060, 62); } right(formatDate(payment.date), 1085, y, "400 15px Cairo, Arial, sans-serif"); right(payment.name, 820, y, "400 15px Cairo, Arial, sans-serif"); right(formatAmount(payment.amount, payment.currency), 455, y, "600 15px Cairo, Arial, sans-serif"); right(payment.type === "credit" ? "له" : "عليه", 180, y, "700 15px Cairo, Arial, sans-serif", payment.type === "credit" ? "#4d9b7b" : "#c27b4e"); });
     line(1050); right("تم إنشاؤه محلياً — Aleppo Center Cash", 600, 1090, "400 13px Cairo, Arial, sans-serif", "#8aa09a");
-    const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png"); anchor.download = "aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\\u0600-\\u06FF]+/g, "-") + "-" + reportDate + ".png"; anchor.click();
+    const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png"); anchor.download = "aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + reportDate + ".png"; anchor.click();
     void recordAudit("export", "backup", "تقرير PNG — " + account.name); toast.success("نزلنا تقرير الحساب كصورة PNG");
   };
 
@@ -602,7 +602,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       + "<h3 style=\"margin:0 0 6px;font-size:13px;color:#173f47;\">آخر الدفعات (" + recentPayments.length + ")</h3><table style=\"width:100%;border-collapse:collapse;font-size:9px;\"><thead><tr style=\"background:#f5f6f3;\"><th style=\"padding:4px;text-align:right;color:#718883;\">تاريخ</th><th style=\"padding:4px;text-align:right;color:#718883;\">وصف</th><th style=\"padding:4px;text-align:right;color:#718883;\">مبلغ</th><th style=\"padding:4px;text-align:right;color:#718883;\">نوع</th></tr></thead><tbody>" + (rows || "<tr><td colspan=\"4\" style=\"padding:8px;text-align:center;color:#718883;\">لا توجد دفعات</td></tr>") + "</tbody></table>"
       + "<p style=\"margin:12px 0 0;padding-top:6px;border-top:1px solid #eef2ef;font-size:9px;color:#8aa09a;text-align:center;\">تم إنشاؤه محلياً</p>";
     document.body.appendChild(report);
-    try { const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" }); await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 600, autoPaging: "text" }); pdf.save("aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\\u0600-\\u06FF]+/g, "-") + "-" + dateStamp + ".pdf"); void recordAudit("export", "backup", "تقرير PDF — " + account.name); toast.success("نزلنا تقرير الحساب كملف PDF"); } catch { toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية"); } finally { report.remove(); }
+    try { const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" }); await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 600, autoPaging: "text" }); pdf.save("aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + dateStamp + ".pdf"); void recordAudit("export", "backup", "تقرير PDF — " + account.name); toast.success("نزلنا تقرير الحساب كملف PDF"); } catch { toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية"); } finally { report.remove(); }
   };
   if (!isUnlocked) {
     return (
@@ -684,7 +684,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       <section className="main-area">
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
-          <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : view === "backup" ? "النسخ والتصدير" : selectedAccount?.name}</strong></div>
+          <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : selectedAccount?.name}</strong></div>
           <div className="topbar-actions"><div className={`saved-state sync-${syncState}`}><span className="saved-dot" /> {syncState === "syncing" ? "عم نزامن…" : syncState === "synced" ? "متزامن" : syncState === "offline" ? "محفوظ بالطابور" : syncState === "conflict" ? "في تعارض" : "محفوظ محلياً"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
         </header>
 
