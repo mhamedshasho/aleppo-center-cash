@@ -156,7 +156,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [syncState, setSyncState] = useState<"local" | "syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "local");
   const [, setLocation] = useLocation();
   const [syncReadyVersion, setSyncReadyVersion] = useState(0);
-  const syncTimer = useRef<number | null>(null);
   const syncInFlight = useRef(false);
   const pendingSync = useRef<{ accounts: Account[]; deletedAccountIds: { id: string; version?: number }[]; deletedPaymentIds: { id: string; version?: number }[] } | null>(null);
   const syncReadyRef = useRef(!cloudWorkspace || !cloudUser);
@@ -426,6 +425,35 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     setNewAccountName(account.name);
     setNewAccountOwner(account.owner);
     setShowAccountModal(true);
+  };
+
+  const resetEverything = async () => {
+    if (!cloudWorkspace || cloudWorkspace.role !== "owner") {
+      toast.error("إعادة ضبط البيانات متاحة للمالك فقط");
+      return;
+    }
+    if (!window.confirm("متأكد؟ رح نمسح كل الحسابات والدفعات من مساحة العمل نهائياً.")) return;
+    try {
+      const result = await resetWorkspaceData(cloudWorkspace.id);
+      await clearAllLocalData();
+      toast.success(`انمسح كل شي: ${result.deletedAccounts} حساب و${result.deletedPayments} دفعة`);
+      window.location.reload();
+    } catch (error) {
+      console.error("[AleppoCenterCash] reset failed", error);
+      toast.error("ما قدرنا نمسح بيانات مساحة العمل. ما تغيّر شي محلياً.");
+    }
+  };
+
+  const deleteAccountData = async () => {
+    if (!window.confirm("متأكد؟ رح نمسح بياناتك المحلية ونسجّل خروجك. بيانات Supabase ومساحة العمل ما بتنحذف من هون.")) return;
+    try {
+      await clearAllLocalData();
+      if (supabase) await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("[AleppoCenterCash] local account cleanup failed", error);
+      toast.error("ما قدرنا نمسح بيانات الجهاز");
+    }
   };
 
   const handleLogout = async () => {
@@ -724,8 +752,21 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 <span>👥 فريق التطوير</span>
                 <Heart size={14} />
               </button>
+              {cloudWorkspace?.role === "owner" && (
+                <>
+                  <div className="profile-menu-divider" />
+                  <button className="profile-menu-item danger" onClick={() => void resetEverything()} role="menuitem">
+                    <span>🗑️ مسح مساحة العمل بالكامل</span>
+                    <Trash2 size={14} />
+                  </button>
+                </>
+              )}
               <div className="profile-menu-divider" />
-              <button className="profile-menu-item danger" onClick={() => void handleLogout()} role="menuitem">
+              <button className="profile-menu-item danger" onClick={() => void deleteAccountData()} role="menuitem">
+                <span>🧹 مسح بيانات الجهاز وتسجيل الخروج</span>
+                <LogOut size={14} />
+              </button>
+              <button className="profile-menu-item" onClick={() => void handleLogout()} role="menuitem">
                 <span>🚪 تسجيل الخروج</span>
                 <LogOut size={14} />
               </button>
