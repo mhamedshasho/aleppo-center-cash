@@ -260,7 +260,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       deletedPaymentIds: deletedPayments,
     };
 
-    if (syncInFlight.current) return;
+    if (syncInFlight.current) throw new Error("sync_busy");
 
     syncInFlight.current = true;
 
@@ -334,6 +334,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
               ? "في تعديل جديد من الجهاز التاني — حدّث الصفحة للمراجعة"
               : "ما في اتصال. حفظنا التعديل بطابور مزامنة محلي",
           );
+          throw error;
         }
       }
     } finally {
