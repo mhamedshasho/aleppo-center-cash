@@ -60,6 +60,7 @@ export default function CloudAuthGate() {
       .select("workspace_id, role, workspaces(name)")
       .eq("user_id", session.user.id)
       .eq("active", true)
+      .order("joined_at", { ascending: true })
       .limit(1)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -105,9 +106,30 @@ export default function CloudAuthGate() {
   };
 
   const createWorkspace = async () => {
-    if (!supabase || !workspaceName.trim()) return;
+    if (!supabase || !workspaceName.trim() || !session) return;
     setBusy(true);
     try {
+      const { data: existing, error: existingError } = await supabase
+        .from("workspace_members")
+        .select("workspace_id, role, workspaces(name)")
+        .eq("user_id", session.user.id)
+        .eq("active", true)
+        .order("joined_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+      if (existing) {
+        const existingWorkspace = Array.isArray(existing.workspaces) ? existing.workspaces[0] : existing.workspaces;
+        setWorkspace({
+          id: existing.workspace_id,
+          name: existingWorkspace?.name ?? "مركز حلب",
+          role: existing.role,
+        });
+        toast.info("عندك مساحة عمل موجودة، فتحناها بدل إنشاء مساحة جديدة");
+        return;
+      }
+
       const { data, error } = await supabase.rpc("create_workspace", {
         workspace_name: workspaceName.trim(),
         display_name: displayName.trim(),
