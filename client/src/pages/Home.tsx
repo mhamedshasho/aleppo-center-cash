@@ -453,11 +453,15 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     try {
       const { supabase } = await import("@/lib/supabase");
       if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+
+      // Server is authoritative: delete the authenticated account/workspace
+      // first. Only clear the browser after the RPC succeeds.
       const { error } = await supabase.rpc("delete_my_account");
       if (error) throw error;
+
       await clearAllLocalData();
       await supabase.auth.signOut().catch(() => undefined);
-      window.location.href = "/";
+      window.location.replace("/");
     } catch (error) {
       console.error("[AleppoCenterCash] account deletion failed", error);
       toast.error(error instanceof Error ? error.message : "ما قدرنا نحذف الحساب");
