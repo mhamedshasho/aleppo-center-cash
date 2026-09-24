@@ -211,24 +211,51 @@ export async function pushLocalAccounts(
 
   const payments = (paymentRows.data ?? []) as CloudPayment[];
 
-  return cloudAccounts.map((account) => ({
-    id: localIdFromUuid(account.id),
-    remoteId: account.id,
-    version: account.version,
-    name: account.name,
-    owner: account.owner_name,
-    accent: account.accent,
-    payments: payments.filter((payment) => payment.account_id === account.id).map((payment) => ({
-      id: localIdFromUuid(payment.id),
-      remoteId: payment.id,
-      version: payment.version,
-      name: payment.name,
-      amount: payment.amount_minor,
-      currency: payment.currency,
-      type: payment.payment_type,
-      date: payment.occurred_on,
-    })),
-  }));
+  const cloudByRemoteId = new Map(cloudAccounts.map((account) => [account.id, account]));
+  const paymentsByAccountId = new Map<string, CloudPayment[]>();
+  for (const payment of payments) {
+    const list = paymentsByAccountId.get(payment.account_id) ?? [];
+    list.push(payment);
+    paymentsByAccountId.set(payment.account_id, list);
+  }
+
+  // Preserve each candidate's local numeric ID. Newly-created local rows cannot
+  // be matched by localIdFromUuid until the server ID exists, so matching by
+  // remoteId here is what makes the next edit/delete target the same cloud row.
+  return nextAccounts.flatMap((account) => {
+    if (!account.remoteId) return [];
+    const serverAccount = cloudByRemoteId.get(account.remoteId);
+    if (!serverAccount) return [];
+
+    const serverPayments = paymentsByAccountId.get(serverAccount.id) ?? [];
+    const serverPaymentsByRemoteId = new Map(serverPayments.map((payment) => [payment.id, payment]));
+
+    return [{
+      ...account,
+      remoteId: serverAccount.id,
+      version: serverAccount.version,
+      name: serverAccount.name,
+      owner: serverAccount.owner_name,
+      accent: serverAccount.accent,
+      payments: account.payments.flatMap((payment) => {
+        if (!payment.remoteId) {
+          const saved = serverPayments.find((item) =>
+            item.name === payment.name &&
+            item.amount_minor === Math.round(payment.amount) &&
+            item.currency === payment.currency &&
+            item.payment_type === payment.type &&
+            item.occurred_on === payment.date,
+          );
+          if (!saved) return [];
+          return [{ ...payment, remoteId: saved.id, version: saved.version }];
+        }
+        const saved = serverPaymentsByRemoteId.get(payment.remoteId);
+        return saved
+          ? [{ ...payment, remoteId: saved.id, version: saved.version, name: saved.name, amount: saved.amount_minor, currency: saved.currency, type: saved.payment_type, date: saved.occurred_on }]
+          : [];
+      }),
+    }];
+  });
 }
 
 export async function resetWorkspaceData(workspaceId: string) {
