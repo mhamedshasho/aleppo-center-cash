@@ -173,7 +173,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     let active = true;
     readAccounts().then((savedAccounts) => {
       if (!active) return;
-      if (savedAccounts !== null) setAccounts(savedAccounts);
+      if (!cloudWorkspace && savedAccounts !== null) setAccounts(savedAccounts);
       setStorageReady(true);
     }).catch(() => {
       setStorageReady(true);
