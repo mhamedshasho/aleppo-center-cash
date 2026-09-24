@@ -7,14 +7,12 @@ import {
   ArrowUpRight,
   BarChart3,
   Bell,
-  BookOpen,
   Check,
   ChevronDown,
   Copy,
   LogOut,
   CircleDollarSign,
   Download,
-  FileJson,
   FileText,
   Home as HomeIcon,
   Landmark,
@@ -27,21 +25,20 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
-  Upload,
   UserRound,
   WalletCards,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { addAuditEntry, downloadJson, downloadPng, enqueueSyncSnapshot, readAccounts, readAuditEntries, readSyncQueue, removeSyncQueueItem, restoreSnapshot, snapshotAccounts, writeAccounts } from "@/lib/localStore";
+import { addAuditEntry, downloadJson, enqueueSyncSnapshot, readAccounts, readSyncQueue, removeSyncQueueItem, writeAccounts } from "@/lib/localStore";
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
-import { validateAccounts, validatePaymentDraft } from "@/lib/validation";
+import { validatePaymentDraft } from "@/lib/validation";
 import { pullCloudAccounts, pushLocalAccounts, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
-type View = "dashboard" | "accounts" | "account" | "backup";
+type View = "dashboard" | "accounts" | "account";
 
 type Payment = {
   id: number;
@@ -108,7 +105,6 @@ const initialAccounts: Account[] = [
 const navItems: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "نظرة عامة", icon: HomeIcon },
   { id: "accounts", label: "الحسابات", icon: WalletCards },
-  { id: "backup", label: "النسخ والتصدير", icon: FileText },
 ];
 
 const formatAmount = (amount: number, currency: Currency) => {
@@ -142,7 +138,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [keyValue, setKeyValue] = useState("");
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [storageReady, setStorageReady] = useState(false);
-  const [auditEntries, setAuditEntries] = useState<{ id: number; action: "create" | "update" | "delete" | "import" | "export"; entity: "account" | "payment" | "backup"; label: string; createdAt: string }[]>([]);
   const [view, setView] = useState<View>("dashboard");
   const [selectedAccountId, setSelectedAccountId] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -166,7 +161,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const refreshQueuedRef = useRef(false);
   const deletedAccountIds = useRef(new Map<string, number | undefined>());
   const deletedPaymentIds = useRef(new Map<string, number | undefined>());
-  const importInputRef = useRef<HTMLInputElement>(null);
 
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? accounts[0];
   const totals = useMemo(() => calculateTotals(accounts), [accounts]);
@@ -174,10 +168,9 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   useEffect(() => {
     let active = true;
-    Promise.all([readAccounts(), readAuditEntries()]).then(([savedAccounts, savedAudit]) => {
+    readAccounts().then((savedAccounts) => {
       if (!active) return;
       if (savedAccounts !== null) setAccounts(savedAccounts);
-      setAuditEntries(savedAudit);
       setStorageReady(true);
     }).catch(() => {
       setStorageReady(true);
@@ -411,7 +404,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
     const entry = { action, entity, label, id: Date.now(), createdAt: new Date().toISOString() };
-    setAuditEntries((current) => [entry, ...current].slice(0, 30));
     await addAuditEntry({ action, entity, label });
   };
 
@@ -550,149 +542,68 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     toast.success("جهزنا ملف النسخة الاحتياطية");
   };
 
-  const exportPng = (accountId?: number) => {
-    const targetAccounts = accountId ? accounts.filter((account) => account.id === accountId) : accounts;
-    if (!targetAccounts.length) {
-      toast.error("الحساب غير موجود");
-      return;
-    }
-
-    const isSingleAccount = Boolean(accountId);
-    const target = targetAccounts[0];
+  const exportPng = (accountId: number) => {
+    const account = accounts.find((item) => item.id === accountId);
+    if (!account) { toast.error("الحساب غير موجود"); return; }
     const reportDate = new Date().toISOString().slice(0, 10);
-
-    if (isSingleAccount) {
-      const summary = (["SYP", "USD"] as Currency[]).flatMap((currency) => {
-        const payments = target.payments.filter((payment) => payment.currency === currency);
-        const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0);
-        const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
-        return [
-          `${currency === "SYP" ? "ل.س" : "دولار"} — له: ${formatAmount(credit, currency)}`,
-          `${currency === "SYP" ? "ل.س" : "دولار"} — عليه: ${formatAmount(debit, currency)}`,
-          `${currency === "SYP" ? "ل.س" : "دولار"} — الرصيد: ${formatAmount(debit - credit, currency)}`,
-        ];
-      });
-      const paymentLines = target.payments.map((payment, index) =>
-        `${index + 1}. ${payment.name} — ${payment.type === "credit" ? "له" : "عليه"} — ${formatAmount(payment.amount, payment.currency)} — ${formatDate(payment.date)}`,
-      );
-      downloadPng(
-        `aleppo-center-cash-${target.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-")}-${reportDate}.png`,
-        "Aleppo Center Cash — تقرير حساب",
-        [
-          `اسم الحساب: ${target.name}`,
-          `صاحب الحساب: ${target.owner}`,
-          `تاريخ التقرير: ${formatDate(reportDate)}`,
-          "",
-          "الدفعات:",
-          ...(paymentLines.length ? paymentLines : ["لا توجد دفعات"]),
-          "",
-          "الإجماليات:",
-          ...summary,
-        ],
-      );
-      void recordAudit("export", "backup", `تقرير PNG — ${target.name}`);
-      toast.success("نزلنا تقرير الحساب كصورة PNG");
-      return;
-    }
-
-    const total = totals.SYP.debit - totals.SYP.credit;
-    downloadPng(`aleppo-center-cash-report-${reportDate}.png`, "Aleppo Center Cash — تقرير الحسابات", [`الرصيد الصافي: ${formatAmount(total, "SYP")}`, `عدد الحسابات: ${accounts.length}`, `آخر تحديث: ${formatDate(reportDate)}`]);
-    void recordAudit("export", "backup", "تقرير PNG");
-    toast.success("نزلنا التقرير كصورة PNG");
+    const recentPayments = [...account.payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+    const totalsByCurrency = (["SYP", "USD"] as Currency[]).map((currency) => {
+      const payments = account.payments.filter((payment) => payment.currency === currency);
+      const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0);
+      const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
+      return { currency, credit, debit, balance: debit - credit };
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200; canvas.height = 1180;
+    const context = canvas.getContext("2d");
+    if (!context) { toast.error("ما قدرنا نجهّز صورة التقرير"); return; }
+    const right = (text: string, x: number, y: number, font: string, color = "#18353a") => { context.font = font; context.fillStyle = color; context.textAlign = "right"; context.direction = "rtl"; context.fillText(text, x, y); };
+    const line = (y: number) => { context.strokeStyle = "#dfe9e4"; context.lineWidth = 2; context.beginPath(); context.moveTo(70, y); context.lineTo(1130, y); context.stroke(); };
+    context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#173f47"; context.fillRect(0, 0, canvas.width, 12);
+    right("Aleppo Center Cash", 1130, 65, "700 28px Cairo, Arial, sans-serif", "#173f47");
+    right("تقرير حساب", 1130, 100, "600 20px Cairo, Arial, sans-serif", "#718883");
+    line(125);
+    right("الحساب: " + account.name, 1130, 165, "700 22px Cairo, Arial, sans-serif");
+    right("صاحب الحساب: " + account.owner, 1130, 200, "400 18px Cairo, Arial, sans-serif", "#718883");
+    right("التاريخ: " + new Intl.DateTimeFormat("ar-SY").format(new Date()), 1130, 235, "400 18px Cairo, Arial, sans-serif", "#718883");
+    line(265);
+    right("الإجماليات", 1130, 305, "700 21px Cairo, Arial, sans-serif", "#173f47");
+    const totalRows = [["ل.س — له", formatAmount(totalsByCurrency[0].credit, "SYP")], ["ل.س — عليه", formatAmount(totalsByCurrency[0].debit, "SYP")], ["ل.س — الرصيد", formatAmount(totalsByCurrency[0].balance, "SYP")], ["$ — له", formatAmount(totalsByCurrency[1].credit, "USD")], ["$ — عليه", formatAmount(totalsByCurrency[1].debit, "USD")], ["$ — الرصيد", formatAmount(totalsByCurrency[1].balance, "USD")]];
+    context.fillStyle = "#f5f6f3"; context.fillRect(70, 330, 1060, 215);
+    totalRows.forEach(([label, value], index) => { const y = 365 + index * 32; const balance = index === 2 || index === 5; right(label, 1085, y, "400 17px Cairo, Arial, sans-serif", balance ? "#173f47" : "#718883"); right(value, 620, y, balance ? "700 17px Cairo, Arial, sans-serif" : "600 17px Cairo, Arial, sans-serif", balance ? "#2f896d" : "#294c51"); });
+    line(575);
+    right("آخر الدفعات (" + recentPayments.length + ")", 1130, 620, "700 21px Cairo, Arial, sans-serif", "#173f47");
+    context.fillStyle = "#f5f6f3"; context.fillRect(70, 645, 1060, 44);
+    right("تاريخ", 1085, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("وصف", 820, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("مبلغ", 455, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("نوع", 180, 673, "700 15px Cairo, Arial, sans-serif", "#718883");
+    recentPayments.forEach((payment, index) => { const y = 725 + index * 62; if (index % 2 === 0) { context.fillStyle = "#fbfcfb"; context.fillRect(70, y - 30, 1060, 62); } right(formatDate(payment.date), 1085, y, "400 15px Cairo, Arial, sans-serif"); right(payment.name, 820, y, "400 15px Cairo, Arial, sans-serif"); right(formatAmount(payment.amount, payment.currency), 455, y, "600 15px Cairo, Arial, sans-serif"); right(payment.type === "credit" ? "له" : "عليه", 180, y, "700 15px Cairo, Arial, sans-serif", payment.type === "credit" ? "#4d9b7b" : "#c27b4e"); });
+    line(1050); right("تم إنشاؤه محلياً — Aleppo Center Cash", 600, 1090, "400 13px Cairo, Arial, sans-serif", "#8aa09a");
+    const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png"); anchor.download = "aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\\u0600-\\u06FF]+/g, "-") + "-" + reportDate + ".png"; anchor.click();
+    void recordAudit("export", "backup", "تقرير PNG — " + account.name); toast.success("نزلنا تقرير الحساب كصورة PNG");
   };
 
-  const exportPdf = async (accountId?: number) => {
-    const targetAccounts = accountId ? accounts.filter((account) => account.id === accountId) : accounts;
-    if (!targetAccounts.length) {
-      toast.error("الحساب غير موجود");
-      return;
-    }
-
-    const isSingleAccount = Boolean(accountId);
+  const exportPdf = async (accountId: number) => {
+    const account = accounts.find((item) => item.id === accountId);
+    if (!account) { toast.error("الحساب غير موجود"); return; }
     const dateStamp = new Date().toISOString().slice(0, 10);
-    const dateLabel = new Date().toLocaleDateString("ar-SY");
-
-    if (isSingleAccount) {
-      const account = targetAccounts[0];
-      const totalsByCurrency = (["SYP", "USD"] as Currency[]).map((currency) => {
-        const payments = account.payments.filter((payment) => payment.currency === currency);
-        const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0);
-        const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
-        return { currency, credit, debit, balance: debit - credit };
-      });
-      const rows = account.payments.map((payment) => `<tr><td>${escapeHtml(payment.name)}</td><td>${payment.type === "credit" ? "إلك" : "عليك"}</td><td>${escapeHtml(formatAmount(payment.amount, payment.currency))}</td><td>${escapeHtml(formatDate(payment.date))}</td></tr>`).join("");
-      const summary = totalsByCurrency.map((item) => `<div style="border:1px solid #dce9e5;border-radius:10px;padding:14px;min-width:150px"><strong>${item.currency === "SYP" ? "الليرة السورية" : "الدولار الأميركي"}</strong><span style="display:block;margin-top:7px">له: ${escapeHtml(formatAmount(item.credit, item.currency))}</span><span style="display:block">عليه: ${escapeHtml(formatAmount(item.debit, item.currency))}</span><span style="display:block;font-weight:700;margin-top:4px">الرصيد: ${escapeHtml(formatAmount(item.balance, item.currency))}</span></div>`).join("");
-
-      const report = document.createElement("div");
-      report.dir = "rtl";
-      report.lang = "ar";
-      report.style.cssText = "position:fixed;left:-10000px;top:0;width:800px;padding:44px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;direction:rtl";
-      report.innerHTML = `<header style="border-bottom:3px solid #65b18d;padding-bottom:20px;margin-bottom:24px"><h1 style="color:#173f47;margin:0 0 6px;font-size:28px">Aleppo Center Cash</h1><p style="color:#718883">تقرير حساب — ${escapeHtml(dateLabel)}</p></header><div style="margin-bottom:24px"><h2 style="margin:0 0 8px;color:#173f47">${escapeHtml(account.name)}</h2><p style="margin:0;color:#718883">صاحب الحساب: ${escapeHtml(account.owner)}</p><p style="margin:6px 0 0;color:#718883">تاريخ التقرير: ${escapeHtml(dateLabel)}</p></div><div style="display:flex;gap:12px;margin-bottom:28px">${summary}</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#173f47;color:white"><th style="padding:11px;text-align:right">الدفعة</th><th style="padding:11px;text-align:right">النوع</th><th style="padding:11px;text-align:right">المبلغ</th><th style="padding:11px;text-align:right">التاريخ</th></tr></thead><tbody>${rows || '<tr><td colspan="4" style="padding:18px;text-align:center;color:#718883">لا توجد دفعات</td></tr>'}</tbody></table><p style="color:#8aa09a;font-size:11px;margin-top:24px">الملف غير مشفّر. خزّنه بمكان موثوق.</p>`;
-      document.body.appendChild(report);
-
-      try {
-        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-        await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 800, autoPaging: "text" });
-        pdf.save(`aleppo-center-cash-${account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-")}-${dateStamp}.pdf`);
-        void recordAudit("export", "backup", `تقرير PDF — ${account.name}`);
-        toast.success("نزلنا تقرير الحساب كملف PDF");
-      } catch {
-        toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية");
-      } finally {
-        report.remove();
-      }
-      return;
-    }
-
-    void recordAudit("export", "backup", "تقرير PDF");
-    const rows = accounts.flatMap((account) => account.payments.map((payment) => `<tr><td>${escapeHtml(account.name)}</td><td>${escapeHtml(payment.name)}</td><td>${payment.type === "credit" ? "إلك" : "عليك"}</td><td>${escapeHtml(formatAmount(payment.amount, payment.currency))}</td><td>${escapeHtml(formatDate(payment.date))}</td></tr>`)).join("");
-    const report = document.createElement("div");
-    report.dir = "rtl";
-    report.lang = "ar";
-    report.style.cssText = "position:fixed;left:-10000px;top:0;width:800px;padding:44px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;direction:rtl";
-    report.innerHTML = `<header style="border-bottom:3px solid #65b18d;padding-bottom:20px;margin-bottom:28px"><h1 style="color:#173f47;margin:0 0 6px;font-size:28px">Aleppo Center Cash</h1><p style="color:#718883">تقرير الحسابات والدفعات — ${escapeHtml(dateLabel)}</p></header><div style="display:flex;gap:35px;margin-bottom:28px"><div>عدد الحسابات<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${accounts.length}</strong></div><div>الرصيد الصافي<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.SYP.debit - totals.SYP.credit, "SYP"))}</strong></div><div>الرصيد بالدولار<strong style="display:block;font-size:24px;color:#2f896d;margin-top:5px">${escapeHtml(formatAmount(totals.USD.debit - totals.USD.credit, "USD"))}</strong></div></div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#173f47;color:white"><th style="padding:11px;text-align:right">الحساب</th><th style="padding:11px;text-align:right">الدفعة</th><th style="padding:11px;text-align:right">النوع</th><th style="padding:11px;text-align:right">المبلغ</th><th style="padding:11px;text-align:right">التاريخ</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#8aa09a;font-size:11px">الملف غير مشفّر. خزّنه بمكان موثوق.</p>`;
+    const recentPayments = [...account.payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+    const totalsByCurrency = (["SYP", "USD"] as Currency[]).map((currency) => {
+      const payments = account.payments.filter((payment) => payment.currency === currency);
+      const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0);
+      const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
+      return { currency, credit, debit, balance: debit - credit };
+    });
+    const rows = recentPayments.map((payment) => "<tr><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;\">" + escapeHtml(formatDate(payment.date)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;\">" + escapeHtml(payment.name) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;\">" + escapeHtml(formatAmount(payment.amount, payment.currency)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;color:" + (payment.type === "credit" ? "#4d9b7b" : "#c27b4e") + ";\">" + (payment.type === "credit" ? "له" : "عليه") + "</td></tr>").join("");
+    const report = document.createElement("div"); report.dir = "rtl"; report.lang = "ar";
+    report.style.cssText = "position:fixed;left:-10000px;top:0;width:600px;height:760px;padding:24px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;direction:rtl;box-sizing:border-box;";
+    report.innerHTML = "<div style=\"display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid #173f47;\"><h1 style=\"margin:0;font-size:18px;color:#173f47;\">Aleppo Center Cash</h1><span style=\"font-size:12px;color:#718883;\">تقرير حساب</span></div>"
+      + "<table style=\"width:100%;font-size:11px;margin-bottom:12px;border-collapse:collapse;\"><tr><td style=\"color:#718883;padding:2px 0;\">الحساب:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(account.name) + "</td></tr><tr><td style=\"color:#718883;padding:2px 0;\">صاحب الحساب:</td><td style=\"padding:2px 0;\">" + escapeHtml(account.owner) + "</td></tr><tr><td style=\"color:#718883;padding:2px 0;\">التاريخ:</td><td style=\"padding:2px 0;\">" + escapeHtml(new Intl.DateTimeFormat("ar-SY").format(new Date())) + "</td></tr></table>"
+      + "<div style=\"padding:10px 12px;margin-bottom:12px;background:#f5f6f3;border-radius:8px;\"><h3 style=\"margin:0 0 6px;font-size:13px;color:#173f47;\">الإجماليات</h3><table style=\"width:100%;font-size:10px;border-collapse:collapse;\"><tr><td style=\"color:#718883;padding:2px 0;\">ل.س — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].credit, "SYP")) + "</td></tr><tr><td style=\"color:#718883;padding:2px 0;\">ل.س — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].debit, "SYP")) + "</td></tr><tr><td style=\"color:#173f47;font-weight:600;padding:2px 0;\">ل.س — الرصيد:</td><td style=\"color:#2f896d;font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].balance, "SYP")) + "</td></tr><tr><td colspan=\"2\" style=\"height:4px;\"></td></tr><tr><td style=\"color:#718883;padding:2px 0;\">$ — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].credit, "USD")) + "</td></tr><tr><td style=\"color:#718883;padding:2px 0;\">$ — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].debit, "USD")) + "</td></tr><tr><td style=\"color:#173f47;font-weight:600;padding:2px 0;\">$ — الرصيد:</td><td style=\"color:#2f896d;font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].balance, "USD")) + "</td></tr></table></div>"
+      + "<h3 style=\"margin:0 0 6px;font-size:13px;color:#173f47;\">آخر الدفعات (" + recentPayments.length + ")</h3><table style=\"width:100%;border-collapse:collapse;font-size:9px;\"><thead><tr style=\"background:#f5f6f3;\"><th style=\"padding:4px;text-align:right;color:#718883;\">تاريخ</th><th style=\"padding:4px;text-align:right;color:#718883;\">وصف</th><th style=\"padding:4px;text-align:right;color:#718883;\">مبلغ</th><th style=\"padding:4px;text-align:right;color:#718883;\">نوع</th></tr></thead><tbody>" + (rows || "<tr><td colspan=\"4\" style=\"padding:8px;text-align:center;color:#718883;\">لا توجد دفعات</td></tr>") + "</tbody></table>"
+      + "<p style=\"margin:12px 0 0;padding-top:6px;border-top:1px solid #eef2ef;font-size:9px;color:#8aa09a;text-align:center;\">تم إنشاؤه محلياً</p>";
     document.body.appendChild(report);
-    try {
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-      await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 800, autoPaging: "text" });
-      pdf.save(`aleppo-center-cash-report-${dateStamp}.pdf`);
-      toast.success("نزلنا تقرير PDF محلي على جهازك");
-    } catch {
-      toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية");
-    } finally {
-      report.remove();
-    }
+    try { const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" }); await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 600, autoPaging: "text" }); pdf.save("aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\\u0600-\\u06FF]+/g, "-") + "-" + dateStamp + ".pdf"); void recordAudit("export", "backup", "تقرير PDF — " + account.name); toast.success("نزلنا تقرير الحساب كملف PDF"); } catch { toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية"); } finally { report.remove(); }
   };
-
-  const handleImport = () => importInputRef.current?.click();
-  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      const payload = JSON.parse(await file.text()) as { accounts?: Account[] };
-      if (!validateAccounts(payload.accounts)) throw new Error("invalid");
-      if (!window.confirm("الاستيراد رح يستبدل البيانات الحالية. متأكد؟\nاعمل نسخة JSON حالية قبل التأكيد إذا بدك rollback.")) return;
-      const previousAccounts = accounts;
-      await snapshotAccounts(previousAccounts);
-      try {
-        await writeAccounts(payload.accounts);
-        setAccounts(payload.accounts);
-      } catch {
-        const snapshot = await restoreSnapshot();
-        if (snapshot) {
-          setAccounts(snapshot);
-          await writeAccounts(snapshot);
-        }
-        throw new Error("rollback");
-      }
-      await recordAudit("import", "backup", file.name);
-      toast.success("رجّعنا النسخة الاحتياطية بنجاح");
-    } catch {
-      toast.error("الاستيراد فشل ورجّعنا آخر نسخة آمنة");
-    }
-  };
-
   if (!isUnlocked) {
     return (
       <main className="login-shell" dir="rtl">
@@ -755,6 +666,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 <strong dir="ltr" className="mono">{cloudWorkspace?.id?.slice(0, 8) ?? "—"}{cloudWorkspace?.id ? "…" : ""}</strong>
                 <Copy size={14} />
               </button>
+              <button className="profile-menu-item" onClick={exportBackup} role="menuitem">
+                <span>💾 نسخة احتياطية</span>
+                <Download size={14} />
+              </button>
               <div className="profile-menu-divider" />
               <button className="profile-menu-item danger" onClick={() => void handleLogout()} role="menuitem">
                 <span>🚪 تسجيل الخروج</span>
@@ -777,7 +692,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={openPaymentFromDashboard} onGoAccounts={() => setView("accounts")} />}
           {view === "accounts" && <AccountsView accounts={filteredAccounts} searchTerm={searchTerm} setSearchTerm={setSearchTerm} onOpenAccount={openAccount} onAddAccount={() => setShowAccountModal(true)} />}
           {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
-          {view === "backup" && <BackupView auditEntries={auditEntries} onExport={exportBackup} onExportPdf={exportPdf} onExportPng={exportPng} onImport={handleImport} />}
         </div>
       </section>
 
@@ -799,7 +713,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         )}
         <label>اسم الدفعة<input value={paymentDraft.name} onChange={(event) => setPaymentDraft({ ...paymentDraft, name: event.target.value })} placeholder="مثلاً: دفعة بضاعة" /></label><div className="form-grid"><label>المبلغ<input type="number" min="0" value={paymentDraft.amount} onChange={(event) => setPaymentDraft({ ...paymentDraft, amount: event.target.value })} placeholder="0" /></label><label>العملة<select value={paymentDraft.currency} onChange={(event) => setPaymentDraft({ ...paymentDraft, currency: event.target.value as Currency })}><option value="SYP">ليرة سورية</option><option value="USD">دولار</option></select></label></div><label>التاريخ<input type="date" value={paymentDraft.date} onChange={(event) => setPaymentDraft({ ...paymentDraft, date: event.target.value })} /></label><div className="type-picker"><span>نوع الحركة</span><div><button className={paymentDraft.type === "credit" ? "selected credit" : ""} onClick={() => setPaymentDraft({ ...paymentDraft, type: "credit" })}><ArrowDownLeft size={16} /> له <small>إلك</small></button><button className={paymentDraft.type === "debit" ? "selected debit" : ""} onClick={() => setPaymentDraft({ ...paymentDraft, type: "debit" })}><ArrowUpRight size={16} /> عليه <small>إلك عليه</small></button></div></div><button className="primary-btn full" onClick={addPayment}>{editingPaymentId ? "حفظ التعديل" : "حفظ الدفعة"} <Check size={17} /></button></div></Modal>}
       {showAccountModal && <Modal title={editingAccountId ? "تعديل الحساب" : "إضافة حساب جديد"} onClose={() => { setShowAccountModal(false); setEditingAccountId(null); setNewAccountName(""); setNewAccountOwner(""); }}><div className="modal-form"><label>اسم الحساب<input value={newAccountName} onChange={(event) => setNewAccountName(event.target.value)} placeholder="مثلاً: محل أبو علي" autoFocus /></label><label>اسم صاحب الحساب<input value={newAccountOwner} onChange={(event) => setNewAccountOwner(event.target.value)} placeholder="مثلاً: أحمد العلي" /></label><button className="primary-btn full" onClick={addAccount}>{editingAccountId ? "حفظ التعديل" : "إضافة الحساب"} <Plus size={17} /></button></div></Modal>}
-      <input ref={importInputRef} className="sr-only-input" type="file" accept="application/json,.json" onChange={handleImportFile} />
     </main>
   );
 }
@@ -822,11 +735,6 @@ function AccountDetail({ account, onBack, onEditAccount, onDeleteAccount, onAddP
     return matchesQuery && (paymentFilter === "all" || payment.type === paymentFilter);
   });
   return <div className="page-enter"><button className="back-btn" onClick={onBack}><ArrowRightIcon /> رجعة للحسابات</button><div className="detail-heading"><div className="detail-title"><div className={`account-avatar large-avatar ${account.accent}`}>{account.name.slice(0, 1)}</div><div><div className="eyebrow">حساب زبون</div><h1>{account.name}</h1><p><UserRound size={14} /> {account.owner}</p></div></div><div className="detail-actions"><button className="secondary-btn" onClick={onEditAccount}><Pencil size={15} /> تعديل الحساب</button><button className="secondary-btn" onClick={onExportPdf}><FileText size={15} /> تصدير PDF</button><button className="secondary-btn" onClick={onExportPng}><Download size={15} /> تصدير PNG</button><button className="danger-btn" onClick={onDeleteAccount}><Trash2 size={15} /> حذف الحساب</button><button className="primary-btn" onClick={onAddPayment}><Plus size={18} /> إضافة دفعة</button></div></div><div className="currency-summary-grid">{currencies.map((currency) => { const payments = account.payments.filter((payment) => payment.currency === currency); const credit = payments.filter((payment) => payment.type === "credit").reduce((sum, payment) => sum + payment.amount, 0); const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0); return <div className={`currency-card ${currency === "USD" ? "usd-card" : ""}`} key={currency}><div className="currency-card-head"><span className="currency-badge">{currency === "SYP" ? "ل.س" : "$"}</span><span>{currency === "SYP" ? "الليرة السورية" : "الدولار الأميركي"}</span></div><div className="currency-balance">{formatAmount(debit - credit, currency)}</div><div className="currency-lines"><span><i className="dot credit-dot" /> إلك <strong>{formatAmount(credit, currency)}</strong></span><span><i className="dot debit-dot" /> عليك <strong>{formatAmount(debit, currency)}</strong></span></div></div>; })}</div><section className="surface-card detail-payments"><div className="section-head"><div><h2>سجل الدفعات</h2><p>{filteredPayments.length} من {account.payments.length} حركات</p></div><span className="payment-count">{paymentFilter === "all" ? "كل الحركات" : paymentFilter === "credit" ? "إلك" : "عليك"}</span></div><div className="payment-toolbar"><div className="payment-search"><Search size={15} /><input value={paymentQuery} onChange={(event) => setPaymentQuery(event.target.value)} placeholder="دوّر باسم الدفعة..." /></div><div className="payment-filters"><button className={paymentFilter === "all" ? "active" : ""} onClick={() => setPaymentFilter("all")}>الكل</button><button className={paymentFilter === "credit" ? "active credit" : ""} onClick={() => setPaymentFilter("credit")}>إلك</button><button className={paymentFilter === "debit" ? "active debit" : ""} onClick={() => setPaymentFilter("debit")}>عليك</button></div></div>{filteredPayments.length ? <div className="payment-list full-list">{filteredPayments.map((payment) => <PaymentRow key={payment.id} payment={payment} onEdit={() => onEditPayment(payment)} onDelete={() => onDeletePayment(payment.id)} />)}</div> : <EmptyState text={account.payments.length ? "ما في حركات مطابقة" : "ما في دفعات بهالحساب لسا"} />}</section></div>;
-}
-
-function BackupView({ auditEntries, onExport, onExportPdf, onExportPng, onImport }: { auditEntries: { id: number; action: string; entity: string; label: string; createdAt: string }[]; onExport: () => void; onExportPdf: () => void; onExportPng: () => void; onImport: () => void }) {
-  const actionLabel: Record<string, string> = { create: "إضافة", update: "تعديل", delete: "حذف", import: "استيراد", export: "تصدير" };
-  return <div className="page-enter"><div className="page-heading"><div><div className="eyebrow">راحة بالك أولاً</div><h1>النسخ والتصدير</h1><p>بياناتك إلك. خزنها، صدّرها، وخليها دايماً قريبة.</p></div></div><div className="backup-hero"><div className="backup-hero-icon"><ShieldCheck size={30} /></div><div><span className="summary-kicker">حالة الحماية</span><h2>كل شي محفوظ محلياً</h2><p>ما منبعت أي بيانات على سيرفرات خارجية. آخر نسخة تلقائية كانت اليوم الساعة ٠٩:٤٢.</p></div><div className="backup-status"><Check size={16} /> جاهز</div></div><div className="backup-warning"><ShieldCheck size={17} /><span><strong>تنبيه:</strong> ملفات JSON وPDF وPNG غير مشفّرة. خزّنها بمكان موثوق وما تبعتها على قنوات عامة.</span></div><div className="export-grid"><ExportCard icon={FileJson} title="نسخة احتياطية JSON" description="رجّع كل الحسابات والدفعات بأي وقت." action="تصدير النسخة" tone="mint" onClick={onExport} /><ExportCard icon={FileText} title="تقرير PDF" description="تقرير مرتب للحسابات والحركات." action="تصدير PDF" tone="blue" onClick={onExportPdf} /><ExportCard icon={BarChart3} title="صورة PNG" description="ملخّص بصري سريع للمشاركة." action="تصدير PNG" tone="violet" onClick={onExportPng} /></div><section className="surface-card import-card"><div className="import-icon"><Upload size={21} /></div><div><h3>استيراد نسخة سابقة</h3><p>الاستيراد ممكن يرجّع البيانات لحالة أقدم، راجع الملف قبل التأكيد.</p></div><button className="secondary-btn" onClick={onImport}>اختيار ملف</button></section><section className="surface-card audit-card"><div className="section-head"><div><h2>سجل التغييرات</h2><p>آخر العمليات على هالجهاز</p></div><BookOpen size={18} className="muted-icon" /></div>{auditEntries.length ? <div className="audit-list">{auditEntries.slice(0, 6).map((entry) => <div className="audit-row" key={entry.id}><span className="audit-dot" /><div><strong>{actionLabel[entry.action] ?? entry.action} — {entry.label}</strong><small>{new Intl.DateTimeFormat("ar-SY", { day: "numeric", month: "short", hour: "numeric", minute: "numeric" }).format(new Date(entry.createdAt))}</small></div></div>)}</div> : <EmptyState text="لسا ما في تغييرات مسجّلة" />}</section></div>;
 }
 
 function StatCard({ icon: Icon, label, value, note, tone }: { icon: LucideIcon; label: string; value: string; note: string; tone: string }) {
