@@ -285,6 +285,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
             work.deletedPaymentIds,
           );
 
+          console.info("[AleppoCenterCash] pushed result:", pushed);
+          console.info("[AleppoCenterCash] setAccounts called with:", pushed.length, "accounts");
           console.info("[AleppoCenterCash] sync push", {
             candidateAccounts: work.accounts.length,
             pushedAccounts: pushed.length,
