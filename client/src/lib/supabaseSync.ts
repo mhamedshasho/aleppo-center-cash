@@ -139,24 +139,26 @@ export async function pushLocalAccounts(
     console.info("[AleppoCenterCash] deleting payment", deletion);
     let query = client.from("payments").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
     if (deletion.version !== undefined) query = query.eq("version", deletion.version);
-    const { error } = await query;
-    console.info("[AleppoCenterCash] payment delete result", { id: deletion.id, error });
+    const { data, error } = await query.select("id");
+    console.info("[AleppoCenterCash] payment delete result", { id: deletion.id, data, error });
     if (error) {
       console.error("[AleppoCenterCash] payment delete failed", error);
       throw error;
     }
+    if (!data?.length) throw new SyncConflictError("تعذر حذف الدفعة من السحابة: لم يتم العثور عليها أو لا تملك صلاحية حذفها");
   }
 
   for (const deletion of deletedAccountIds) {
     console.info("[AleppoCenterCash] deleting account", deletion);
     let query = client.from("accounts").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
     if (deletion.version !== undefined) query = query.eq("version", deletion.version);
-    const { error } = await query;
-    console.info("[AleppoCenterCash] account delete result", { id: deletion.id, error });
+    const { data, error } = await query.select("id");
+    console.info("[AleppoCenterCash] account delete result", { id: deletion.id, data, error });
     if (error) {
       console.error("[AleppoCenterCash] account delete failed", error);
       throw error;
     }
+    if (!data?.length) throw new SyncConflictError("تعذر حذف الحساب من السحابة: لم يتم العثور عليه أو لا تملك صلاحية حذفه");
   }
 
   const nextAccounts: LocalAccount[] = [];
@@ -227,6 +229,27 @@ export async function pushLocalAccounts(
       date: payment.occurred_on,
     })),
   }));
+}
+
+export async function resetWorkspaceData(workspaceId: string) {
+  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+
+  const paymentsResult = await supabase.from("payments").delete().eq("workspace_id", workspaceId).select("id");
+  if (paymentsResult.error) throw paymentsResult.error;
+
+  const accountsResult = await supabase.from("accounts").delete().eq("workspace_id", workspaceId).select("id");
+  if (accountsResult.error) throw accountsResult.error;
+
+  const remaining = await supabase.from("accounts").select("id").eq("workspace_id", workspaceId);
+  if (remaining.error) throw remaining.error;
+  if ((remaining.data ?? []).length > 0) {
+    throw new SyncConflictError("لم يتم حذف كل حسابات مساحة العمل. تأكد أنك المالك.");
+  }
+
+  return {
+    deletedPayments: paymentsResult.data?.length ?? 0,
+    deletedAccounts: accountsResult.data?.length ?? 0,
+  };
 }
 
 export function subscribeToWorkspace(workspaceId: string, onChange: () => void) {
