@@ -202,6 +202,48 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     });
   };
 
+  const flushSyncQueue = async () => {
+    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current || syncInFlight.current) return;
+
+    const queue = await readSyncQueue();
+    const matching = queue
+      .filter((item) => item.workspaceId === cloudWorkspace.id && item.userId === cloudUser.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const latest = matching.at(-1);
+    if (!latest) return;
+
+    syncInFlight.current = true;
+    try {
+      const pushed = await pushLocalAccounts(
+        latest.workspaceId,
+        latest.userId,
+        latest.accounts,
+        latest.deletedAccountIds ?? [],
+        latest.deletedPaymentIds ?? [],
+      );
+
+      if (latest.accounts.length > 0 && pushed.length === 0) {
+        throw new Error("Queued sync returned an empty account list");
+      }
+
+      const syncedAccounts = mergeServerMetadata(latest.accounts, pushed);
+      latestSyncedFingerprint.current = JSON.stringify(syncedAccounts);
+      await writeAccounts(syncedAccounts);
+      setAccounts(syncedAccounts);
+
+      for (const item of matching) await removeSyncQueueItem(item.id);
+      for (const deletion of latest.deletedAccountIds ?? []) deletedAccountIds.current.delete(deletion.id);
+      for (const deletion of latest.deletedPaymentIds ?? []) deletedPaymentIds.current.delete(deletion.id);
+      setSyncState("synced");
+      console.info("[AleppoCenterCash] queued sync flushed", { accounts: syncedAccounts.length });
+    } catch (error) {
+      console.error("[AleppoCenterCash] queued sync failed", error);
+      setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
+    } finally {
+      syncInFlight.current = false;
+    }
+  };
+
   const syncAccounts = async (
     candidate: Account[],
     deletionOverrides?: {
@@ -240,6 +282,17 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
             work.deletedPaymentIds,
           );
 
+          console.info("[AleppoCenterCash] sync push", {
+            candidateAccounts: work.accounts.length,
+            pushedAccounts: pushed.length,
+            deletedAccounts: work.deletedAccountIds.length,
+            deletedPayments: work.deletedPaymentIds.length,
+          });
+
+          if (work.accounts.length > 0 && pushed.length === 0) {
+            throw new Error("pushLocalAccounts returned empty for a non-empty candidate");
+          }
+
           if (generation !== syncGeneration.current) continue;
 
           const latestPending = pendingSync.current;
@@ -262,19 +315,11 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           for (const deletion of work.deletedAccountIds) deletedAccountIds.current.delete(deletion.id);
           for (const deletion of work.deletedPaymentIds) deletedPaymentIds.current.delete(deletion.id);
           setSyncState("synced");
-
-          if (refreshQueuedRef.current) {
-            refreshQueuedRef.current = false;
-            void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
-              if (!syncReadyRef.current || syncInFlight.current) return;
-              latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
-              setAccounts(remoteAccounts);
-              setSyncState("synced");
-            }).catch(() => setSyncState("offline"));
-          }
+          refreshQueuedRef.current = false;
         } catch (error) {
           if (generation !== syncGeneration.current) continue;
 
+          console.error("[AleppoCenterCash] syncAccounts error", error);
           await enqueueSyncSnapshot({
             workspaceId: cloudWorkspace.id,
             userId: cloudUser.id,
@@ -293,10 +338,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       }
     } finally {
       syncInFlight.current = false;
-      if (pendingSync.current) void syncAccounts(pendingSync.current.accounts, {
-        deletedAccountIds: pendingSync.current.deletedAccountIds,
-        deletedPaymentIds: pendingSync.current.deletedPaymentIds,
-      });
     }
   };
 
@@ -310,14 +351,21 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const generation = ++syncGeneration.current;
     let active = true;
 
-    void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
+    void pullCloudAccounts(cloudWorkspace.id).then(async (remoteAccounts) => {
       if (!active || generation !== syncGeneration.current) return;
+
       latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
       setAccounts(remoteAccounts);
       setSyncState("synced");
       syncReadyRef.current = true;
-    }).catch(() => {
+      setSyncReadyVersion((value) => value + 1);
+
+      await flushSyncQueue();
+    }).catch((error) => {
       if (!active || generation !== syncGeneration.current) return;
+      console.error("[AleppoCenterCash] initial cloud pull failed", error);
+      syncReadyRef.current = true;
+      setSyncReadyVersion((value) => value + 1);
       setSyncState("offline");
     });
 
@@ -340,7 +388,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     return () => {
       if (syncTimer.current) window.clearTimeout(syncTimer.current);
     };
-  }, [accounts, storageReady, cloudWorkspace?.id, cloudUser?.id]);
+  }, [accounts, storageReady, cloudWorkspace?.id, cloudUser?.id, syncReadyVersion]);
 
   useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
@@ -358,7 +406,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
         setAccounts(remoteAccounts);
         setSyncState("synced");
-      }).catch(() => setSyncState("offline"));
+      }).catch((error) => {
+        console.error("[AleppoCenterCash] realtime pull failed", error);
+        setSyncState("offline");
+      });
     };
 
     const unsubscribe = subscribeToWorkspace(cloudWorkspace.id, refresh);
@@ -371,37 +422,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   }, [cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
-    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current) return;
-
-    void readSyncQueue().then(async (queue) => {
-      const matching = queue
-        .filter((item) => item.workspaceId === cloudWorkspace.id && item.userId === cloudUser.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-
-      const latest = matching.at(-1);
-      if (!latest) return;
-
-      try {
-        const pushed = await pushLocalAccounts(
-          latest.workspaceId,
-          latest.userId,
-          latest.accounts,
-          latest.deletedAccountIds ?? [],
-          latest.deletedPaymentIds ?? [],
-        );
-        const syncedAccounts = mergeServerMetadata(latest.accounts, pushed);
-        latestSyncedFingerprint.current = JSON.stringify(syncedAccounts);
-        setAccounts(syncedAccounts);
-        await writeAccounts(syncedAccounts);
-        for (const item of matching) await removeSyncQueueItem(item.id);
-        for (const deletion of latest.deletedAccountIds ?? []) deletedAccountIds.current.delete(deletion.id);
-        for (const deletion of latest.deletedPaymentIds ?? []) deletedPaymentIds.current.delete(deletion.id);
-        setSyncState("synced");
-      } catch (error) {
-        setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
-      }
-    });
-  }, [cloudWorkspace?.id, cloudUser?.id, storageReady]);
+    if (syncReadyVersion > 0) void flushSyncQueue();
+  }, [syncReadyVersion, cloudWorkspace?.id, cloudUser?.id]);
 
   const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
     const entry = { action, entity, label, id: Date.now(), createdAt: new Date().toISOString() };
@@ -671,7 +693,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 <span>💾 نسخة احتياطية</span>
                 <Download size={14} />
               </button>
-              <button className="profile-menu-item" onClick={() => { window.location.href = "/credits"; }} role="menuitem">
+              <button className="profile-menu-item" onClick={() => { setLocation("/credits"); }} role="menuitem">
                 <span>👥 فريق التطوير</span>
                 <Heart size={14} />
               </button>
