@@ -595,6 +595,22 @@ export async function resetWorkspaceData(workspaceId: string) {
   };
 }
 
+export async function deleteWorkspaceFromCloud(workspaceId: string) {
+  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+
+  const { error } = await supabase.rpc("delete_my_workspace", { target_workspace: workspaceId });
+  if (error) throw error;
+
+  const { data, error: verifyError } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("id", workspaceId)
+    .maybeSingle();
+
+  if (verifyError) throw verifyError;
+  if (data) throw new SyncConflictError("مساحة العمل ما انحذفت من السحابة.");
+}
+
 export function subscribeToWorkspace(workspaceId: string, onChange: () => void) {
   if (!supabase) return () => undefined;
   const channel = supabase
