@@ -258,6 +258,64 @@ export async function pushLocalAccounts(
   });
 }
 
+export async function deleteAccountFromCloud(workspaceId: string, accountId: string, expectedVersion?: number) {
+  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+
+  console.info("[AleppoCenterCash] direct account delete", { workspaceId, accountId, expectedVersion });
+
+  let query = supabase
+    .from("accounts")
+    .delete()
+    .eq("id", accountId)
+    .eq("workspace_id", workspaceId);
+
+  if (expectedVersion !== undefined) query = query.eq("version", expectedVersion);
+
+  const { data, error } = await query.select("id");
+
+  console.info("[AleppoCenterCash] direct account delete result", { accountId, data, error });
+
+  if (error) {
+    console.error("[AleppoCenterCash] direct account delete failed", error);
+    throw error;
+  }
+
+  if (!data?.length) {
+    throw new SyncConflictError("تعذر حذف الحساب من السحابة: لم يتم العثور عليه أو لا تملك صلاحية حذفه");
+  }
+
+  return data[0].id as string;
+}
+
+export async function deletePaymentFromCloud(workspaceId: string, paymentId: string, expectedVersion?: number) {
+  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+
+  console.info("[AleppoCenterCash] direct payment delete", { workspaceId, paymentId, expectedVersion });
+
+  let query = supabase
+    .from("payments")
+    .delete()
+    .eq("id", paymentId)
+    .eq("workspace_id", workspaceId);
+
+  if (expectedVersion !== undefined) query = query.eq("version", expectedVersion);
+
+  const { data, error } = await query.select("id");
+
+  console.info("[AleppoCenterCash] direct payment delete result", { paymentId, data, error });
+
+  if (error) {
+    console.error("[AleppoCenterCash] direct payment delete failed", error);
+    throw error;
+  }
+
+  if (!data?.length) {
+    throw new SyncConflictError("تعذر حذف الدفعة من السحابة: لم يتم العثور عليها أو لا تملك صلاحية حذفها");
+  }
+
+  return data[0].id as string;
+}
+
 export async function resetWorkspaceData(workspaceId: string) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
 
