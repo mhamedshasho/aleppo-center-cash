@@ -40,7 +40,7 @@ function makeRemoteId() {
 export async function pullCloudAccounts(workspaceId: string): Promise<LocalAccount[]> {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
   const [accountsResult, paymentsResult] = await Promise.all([
-    supabase.from("accounts").select("id, workspace_id, name, owner_name, accent, version").eq("workspace_id", workspaceId).eq("is_archived", false).order("updated_at", { ascending: false }),
+    supabase.from("accounts").select("id, workspace_id, name, owner_name, accent, version").eq("workspace_id", workspaceId).or("is_archived.eq.false,is_archived.is.null").order("updated_at", { ascending: false }),
     supabase.from("payments").select("id, account_id, name, amount_minor, currency, payment_type, occurred_on, version").eq("workspace_id", workspaceId).order("occurred_on", { ascending: false }),
   ]);
   if (accountsResult.error) {
@@ -168,7 +168,55 @@ export async function pushLocalAccounts(
     });
   }
 
-  return nextAccounts;
+  const { data, error } = await client
+    .from("accounts")
+    .select("id, workspace_id, name, owner_name, accent, version")
+    .eq("workspace_id", workspaceId)
+    .or("is_archived.eq.false,is_archived.is.null")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.error("[AleppoCenterCash] fetch after push failed", error);
+    throw error;
+  }
+
+  const cloudAccounts = (data ?? []) as CloudAccount[];
+  console.info("[AleppoCenterCash] pushed result", {
+    count: cloudAccounts.length,
+    accounts: cloudAccounts,
+  });
+
+  const paymentRows = await client
+    .from("payments")
+    .select("id, account_id, name, amount_minor, currency, payment_type, occurred_on, version")
+    .eq("workspace_id", workspaceId)
+    .order("occurred_on", { ascending: false });
+
+  if (paymentRows.error) {
+    console.error("[AleppoCenterCash] fetch payments after push failed", paymentRows.error);
+    throw paymentRows.error;
+  }
+
+  const payments = (paymentRows.data ?? []) as CloudPayment[];
+
+  return cloudAccounts.map((account) => ({
+    id: localIdFromUuid(account.id),
+    remoteId: account.id,
+    version: account.version,
+    name: account.name,
+    owner: account.owner_name,
+    accent: account.accent,
+    payments: payments.filter((payment) => payment.account_id === account.id).map((payment) => ({
+      id: localIdFromUuid(payment.id),
+      remoteId: payment.id,
+      version: payment.version,
+      name: payment.name,
+      amount: payment.amount_minor,
+      currency: payment.currency,
+      type: payment.payment_type,
+      date: payment.occurred_on,
+    })),
+  }));
 }
 
 export function subscribeToWorkspace(workspaceId: string, onChange: () => void) {
