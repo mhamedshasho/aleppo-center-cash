@@ -112,13 +112,15 @@ export default function CloudAuthGate() {
       return;
     }
 
+    const client = supabase;
+
     let active = true;
     setWorkspace(null);
     setWorkspaceLoading(true);
 
     const loadWorkspace = async () => {
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        const { data, error } = await supabase
+        const { data, error } = await client
           .from("workspace_members")
           .select("workspace_id, role, workspaces(name)")
           .eq("user_id", session.user.id)
@@ -224,7 +226,6 @@ export default function CloudAuthGate() {
           role: existing.role,
         } as WorkspaceState;
         setWorkspace(existingWorkspaceState);
-        setWorkspaceCache(session.user.id, existingWorkspaceState);
         toast.info("عندك مساحة عمل موجودة، فتحناها بدل إنشاء مساحة جديدة");
         return;
       }

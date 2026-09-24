@@ -320,8 +320,14 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
           if (generation !== syncGeneration.current) continue;
 
-          const latestPending = pendingSync.current;
-          if (latestPending) {
+          const latestPending = (pendingSync as {
+            current: {
+              accounts: Account[];
+              deletedAccountIds: { id: string; version?: number }[];
+              deletedPaymentIds: { id: string; version?: number }[];
+            } | null;
+          }).current;
+          if (latestPending !== null) {
             pendingSync.current = {
               accounts: mergeServerMetadata(latestPending.accounts, pushed),
               deletedAccountIds: latestPending.deletedAccountIds,

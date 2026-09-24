@@ -6,7 +6,7 @@ const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
 if (!isSupabaseConfigured) {
-  console.warn("Supabase is not configured; continuing in local-first mode.");
+  console.warn("Supabase is not configured; cloud-only mode is unavailable.");
 }
 
 export const supabase = isSupabaseConfigured

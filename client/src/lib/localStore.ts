@@ -52,7 +52,7 @@ function openDatabase(): Promise<IDBDatabase> {
   if (databaseConnection) return Promise.resolve(databaseConnection);
   if (databaseOpenPromise) return databaseOpenPromise;
 
-  databaseOpenPromise = new Promise((resolve, reject) => {
+  const pending = new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = () => {
@@ -72,11 +72,21 @@ function openDatabase(): Promise<IDBDatabase> {
     };
 
     request.onerror = () => reject(request.error ?? new Error("تعذر فتح التخزين المحلي"));
-  }).finally(() => {
-    databaseOpenPromise = null;
   });
 
-  return databaseOpenPromise;
+  const opened: Promise<IDBDatabase> = pending.then(
+    (database) => {
+      databaseOpenPromise = null;
+      return database;
+    },
+    (error: unknown) => {
+      databaseOpenPromise = null;
+      throw error;
+    },
+  );
+  databaseOpenPromise = opened;
+
+  return opened;
 }
 
 export async function readAccounts(): Promise<LocalAccount[] | null> {

@@ -241,7 +241,7 @@ async function pushPayment(
   existing?: CloudPayment,
 ) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
-  const remoteId = payment.remoteId ?? makeRemoteId();
+  let remoteId = payment.remoteId ?? makeRemoteId();
   const payload = {
     workspace_id: workspaceId,
     account_id: accountRemoteId,
