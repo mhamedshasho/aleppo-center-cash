@@ -12,6 +12,7 @@ import {
 } from "@/lib/supabase";
 
 type Mode = "login" | "signup";
+type WorkspaceState = { id: string; name: string; role: "owner" | "member" } | null;
 
 function getAuthErrorMessage(error: unknown, mode: Mode) {
   const raw = error instanceof Error ? error.message : String(error ?? "");
@@ -45,7 +46,6 @@ function getAuthErrorMessage(error: unknown, mode: Mode) {
 
   return raw || (mode === "signup" ? "تعذر إنشاء الحساب حالياً." : "تعذر تسجيل الدخول حالياً.");
 }
-type WorkspaceState = { id: string; name: string; role: "owner" | "member" } | null;
 
 export default function CloudAuthGate() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSupabaseSession>>>(null);
@@ -113,7 +113,6 @@ export default function CloudAuthGate() {
     }
 
     const client = supabase;
-
     let active = true;
     setWorkspace(null);
     setWorkspaceLoading(true);
@@ -137,7 +136,7 @@ export default function CloudAuthGate() {
             ? { id: data.workspace_id, role: data.role, name: workspaceRow?.name ?? "مركز حلب" }
             : null;
           setWorkspace(nextWorkspace);
-                    setWorkspaceLoading(false);
+          setWorkspaceLoading(false);
           return;
         }
 
@@ -146,7 +145,7 @@ export default function CloudAuthGate() {
 
       if (active) {
         setWorkspace(null);
-                setWorkspaceLoading(false);
+        setWorkspaceLoading(false);
         toast.error("تعذر التحقق من مساحة العمل. لم نفتح بيانات محلية قديمة.");
       }
     };
@@ -208,37 +207,34 @@ export default function CloudAuthGate() {
     if (!supabase || !workspaceName.trim() || !session) return;
     setBusy(true);
     try {
-      const { data: existing, error: existingError } = await supabase
-        .from("workspace_members")
-        .select("workspace_id, role, workspaces(name)")
-        .eq("user_id", session.user.id)
-        .eq("active", true)
-        .order("joined_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-      if (existing) {
-        const existingWorkspace = Array.isArray(existing.workspaces) ? existing.workspaces[0] : existing.workspaces;
-        const existingWorkspaceState = {
-          id: existing.workspace_id,
-          name: existingWorkspace?.name ?? "مركز حلب",
-          role: existing.role,
-        } as WorkspaceState;
-        setWorkspace(existingWorkspaceState);
-        toast.info("عندك مساحة عمل موجودة، فتحناها بدل إنشاء مساحة جديدة");
-        return;
-      }
-
       const { data, error } = await supabase.rpc("create_workspace", {
         workspace_name: workspaceName.trim(),
         display_name: displayName.trim(),
       });
       if (error) throw error;
-      const createdWorkspace = { id: data, name: workspaceName.trim(), role: "owner" } as WorkspaceState;
-      toast.success("انعملت مساحة المحل");
+
+      const { data: membership, error: membershipError } = await supabase
+        .from("workspace_members")
+        .select("workspace_id, role, workspaces(name)")
+        .eq("user_id", session.user.id)
+        .eq("active", true)
+        .eq("workspace_id", data)
+        .maybeSingle();
+
+      if (membershipError) throw membershipError;
+      if (!membership) throw new Error("تم إنشاء مساحة العمل لكن تعذر تأكيد العضوية السحابية.");
+
+      const workspaceRow = Array.isArray(membership.workspaces) ? membership.workspaces[0] : membership.workspaces;
+      const createdWorkspace = {
+        id: membership.workspace_id,
+        name: workspaceRow?.name ?? workspaceName.trim(),
+        role: membership.role,
+      } as WorkspaceState;
+
+      setWorkspaceLoading(false);
       setWorkspace(createdWorkspace);
-          } catch (error) {
+      toast.success("انعملت مساحة المحل");
+    } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إنشاء مساحة العمل");
     } finally {
       setBusy(false);
@@ -251,10 +247,29 @@ export default function CloudAuthGate() {
     try {
       const { data, error } = await supabase.rpc("join_workspace", { target_workspace: workspaceId.trim() });
       if (error) throw error;
-      const joinedWorkspace = { id: workspaceId.trim(), name: data?.name ?? "مركز حلب", role: "member" } as WorkspaceState;
-      toast.success("انضمّيت لمساحة المحل");
+
+      const { data: membership, error: membershipError } = await supabase
+        .from("workspace_members")
+        .select("workspace_id, role, workspaces(name)")
+        .eq("user_id", session?.user.id ?? "")
+        .eq("active", true)
+        .eq("workspace_id", workspaceId.trim())
+        .maybeSingle();
+
+      if (membershipError) throw membershipError;
+      if (!membership) throw new Error("تم الانضمام لكن تعذر تأكيد العضوية السحابية.");
+
+      const workspaceRow = Array.isArray(membership.workspaces) ? membership.workspaces[0] : membership.workspaces;
+      const joinedWorkspace = {
+        id: membership.workspace_id,
+        name: workspaceRow?.name ?? data?.name ?? "مركز حلب",
+        role: membership.role,
+      } as WorkspaceState;
+
+      setWorkspaceLoading(false);
       setWorkspace(joinedWorkspace);
-          } catch (error) {
+      toast.success("انضمّيت لمساحة المحل");
+    } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر الانضمام. تأكد من Workspace ID");
     } finally {
       setBusy(false);
