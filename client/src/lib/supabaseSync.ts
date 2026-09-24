@@ -362,7 +362,17 @@ export async function pushLocalAccounts(
     const { data, error } = await query.select("id");
     console.info("[AleppoCenterCash] payment delete result", { id: deletion.id, data, error });
     if (error) throw error;
-    if (!data?.length) throw new SyncConflictError("تعذر حذف الدفعة من السحابة: لم يتم العثور عليها أو لا تملك صلاحية حذفها");
+    if (!data?.length) {
+      const { data: remaining, error: verifyError } = await client
+        .from("payments")
+        .select("id")
+        .eq("id", deletion.id)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      if (verifyError) throw verifyError;
+      if (!remaining) continue;
+      throw new SyncConflictError("تعذر حذف الدفعة من السحابة: تغيرت قبل الحذف");
+    }
   }
 
   for (const deletion of deletedAccountIds) {
@@ -372,7 +382,17 @@ export async function pushLocalAccounts(
     const { data, error } = await query.select("id");
     console.info("[AleppoCenterCash] account delete result", { id: deletion.id, data, error });
     if (error) throw error;
-    if (!data?.length) throw new SyncConflictError("تعذر حذف الحساب من السحابة: لم يتم العثور عليه أو لا تملك صلاحية حذفه");
+    if (!data?.length) {
+      const { data: remaining, error: verifyError } = await client
+        .from("accounts")
+        .select("id")
+        .eq("id", deletion.id)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      if (verifyError) throw verifyError;
+      if (!remaining) continue;
+      throw new SyncConflictError("تعذر حذف الحساب من السحابة: تغير قبل الحذف");
+    }
   }
 
   // Read the current server snapshot once. This lets us skip untouched rows and
