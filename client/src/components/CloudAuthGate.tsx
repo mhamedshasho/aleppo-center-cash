@@ -130,9 +130,8 @@ export default function CloudAuthGate() {
     }
 
     let active = true;
-    const cachedWorkspace = getWorkspaceCache(session.user.id);
-    setWorkspace(cachedWorkspace);
-    setWorkspaceLoading(!cachedWorkspace);
+    setWorkspace(null);
+    setWorkspaceLoading(true);
 
     const loadWorkspace = async () => {
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -162,8 +161,10 @@ export default function CloudAuthGate() {
       }
 
       if (active) {
+        setWorkspace(null);
+        setWorkspaceCache(session.user.id, null);
         setWorkspaceLoading(false);
-        if (!cachedWorkspace) toast.error("تعذر قراءة مساحة العمل");
+        toast.error("تعذر التحقق من مساحة العمل. لم نفتح بيانات محلية قديمة.");
       }
     };
 
