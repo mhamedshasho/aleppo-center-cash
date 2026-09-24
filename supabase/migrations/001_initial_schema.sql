@@ -233,7 +233,7 @@ returns void
 language plpgsql
 security definer
 set search_path = public, auth
-as $
+as $delete_account$
 declare
   current_user_id uuid := auth.uid();
 begin
@@ -260,7 +260,7 @@ begin
   delete from auth.users
   where id = current_user_id;
 end;
-$;
+$delete_account$;
 
 revoke all on function public.delete_my_account() from public;
 grant execute on function public.delete_my_account() to authenticated;
