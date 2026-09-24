@@ -96,6 +96,16 @@ async function pushAccount(
       .single();
     if (error) {
       console.error("[AleppoCenterCash] account insert failed", error);
+      if (error.code === "23505") {
+        const { data: raced, error: raceError } = await supabase
+          .from("accounts")
+          .select("id, workspace_id, version")
+          .eq("id", remoteId)
+          .maybeSingle();
+        if (!raceError && raced?.workspace_id === workspaceId) {
+          return { remoteId: raced.id as string, version: raced.version as number };
+        }
+      }
       throw error;
     }
     return { remoteId: data.id as string, version: data.version as number };
@@ -176,6 +186,16 @@ async function pushPayment(
       .single();
     if (error) {
       console.error("[AleppoCenterCash] payment insert failed", error);
+      if (error.code === "23505") {
+        const { data: raced, error: raceError } = await supabase
+          .from("payments")
+          .select("id, workspace_id, version")
+          .eq("id", remoteId)
+          .maybeSingle();
+        if (!raceError && raced?.workspace_id === workspaceId) {
+          return { remoteId: raced.id as string, version: raced.version as number };
+        }
+      }
       throw error;
     }
     return { remoteId: data.id as string, version: data.version as number };
