@@ -211,14 +211,25 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const latest = matching.at(-1);
     if (!latest) return true;
 
+    const deletedAccountMap = new Map<string, number | undefined>();
+    const deletedPaymentMap = new Map<string, number | undefined>();
+
+    for (const item of matching) {
+      for (const deletion of item.deletedAccountIds ?? []) deletedAccountMap.set(deletion.id, deletion.version);
+      for (const deletion of item.deletedPaymentIds ?? []) deletedPaymentMap.set(deletion.id, deletion.version);
+    }
+
+    const deletedAccounts = Array.from(deletedAccountMap, ([id, version]) => ({ id, version }));
+    const deletedPayments = Array.from(deletedPaymentMap, ([id, version]) => ({ id, version }));
+
     syncInFlight.current = true;
     try {
       const pushed = await pushLocalAccounts(
         latest.workspaceId,
         latest.userId,
         latest.accounts,
-        latest.deletedAccountIds ?? [],
-        latest.deletedPaymentIds ?? [],
+        deletedAccounts,
+        deletedPayments,
       );
 
       if (latest.accounts.length > 0 && pushed.length === 0) {
@@ -231,8 +242,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       setAccounts(syncedAccounts);
 
       for (const item of matching) await removeSyncQueueItem(item.id);
-      for (const deletion of latest.deletedAccountIds ?? []) deletedAccountIds.current.delete(deletion.id);
-      for (const deletion of latest.deletedPaymentIds ?? []) deletedPaymentIds.current.delete(deletion.id);
+      for (const deletion of deletedAccounts) deletedAccountIds.current.delete(deletion.id);
+      for (const deletion of deletedPayments) deletedPaymentIds.current.delete(deletion.id);
       setSyncState("synced");
       console.info("[AleppoCenterCash] queued sync flushed", { accounts: syncedAccounts.length });
       return true;
