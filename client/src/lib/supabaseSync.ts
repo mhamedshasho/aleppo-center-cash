@@ -43,8 +43,14 @@ export async function pullCloudAccounts(workspaceId: string): Promise<LocalAccou
     supabase.from("accounts").select("id, workspace_id, name, owner_name, accent, version").eq("workspace_id", workspaceId).eq("is_archived", false).order("updated_at", { ascending: false }),
     supabase.from("payments").select("id, account_id, name, amount_minor, currency, payment_type, occurred_on, version").eq("workspace_id", workspaceId).order("occurred_on", { ascending: false }),
   ]);
-  if (accountsResult.error) throw accountsResult.error;
-  if (paymentsResult.error) throw paymentsResult.error;
+  if (accountsResult.error) {
+    console.error("[AleppoCenterCash] pull accounts failed", accountsResult.error);
+    throw accountsResult.error;
+  }
+  if (paymentsResult.error) {
+    console.error("[AleppoCenterCash] pull payments failed", paymentsResult.error);
+    throw paymentsResult.error;
+  }
   const payments = (paymentsResult.data ?? []) as CloudPayment[];
   return ((accountsResult.data ?? []) as CloudAccount[]).map((account) => ({
     id: localIdFromUuid(account.id),
@@ -72,12 +78,18 @@ async function pushAccount(workspaceId: string, userId: string, account: LocalAc
   const payload = { workspace_id: workspaceId, name: account.name.trim(), owner_name: account.owner.trim(), accent: account.accent, created_by: userId };
   if (!account.remoteId) {
     const { data, error } = await supabase.from("accounts").insert({ id: remoteId, ...payload }).select("id, version").single();
-    if (error) throw error;
+    if (error) {
+      console.error("[AleppoCenterCash] account insert failed", error);
+      throw error;
+    }
     return { remoteId: data.id as string, version: data.version as number };
   }
   const expectedVersion = account.version ?? 1;
   const { data, error } = await supabase.from("accounts").update(payload).eq("id", remoteId).eq("version", expectedVersion).select("id, version").maybeSingle();
-  if (error) throw error;
+  if (error) {
+    console.error("[AleppoCenterCash] account update failed", error);
+    throw error;
+  }
   if (!data) throw new SyncConflictError();
   return { remoteId: data.id as string, version: data.version as number };
 }
@@ -97,12 +109,18 @@ async function pushPayment(workspaceId: string, userId: string, accountRemoteId:
   };
   if (!payment.remoteId) {
     const { data, error } = await supabase.from("payments").insert({ id: remoteId, ...payload }).select("id, version").single();
-    if (error) throw error;
+    if (error) {
+      console.error("[AleppoCenterCash] payment insert failed", error);
+      throw error;
+    }
     return { remoteId: data.id as string, version: data.version as number };
   }
   const expectedVersion = payment.version ?? 1;
   const { data, error } = await supabase.from("payments").update(payload).eq("id", remoteId).eq("version", expectedVersion).select("id, version").maybeSingle();
-  if (error) throw error;
+  if (error) {
+    console.error("[AleppoCenterCash] payment update failed", error);
+    throw error;
+  }
   if (!data) throw new SyncConflictError();
   return { remoteId: data.id as string, version: data.version as number };
 }
