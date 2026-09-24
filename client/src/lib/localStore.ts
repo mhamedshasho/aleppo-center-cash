@@ -178,6 +178,16 @@ export async function readAuditEntries(): Promise<AuditEntry[]> {
   });
 }
 
+export async function clearAllLocalData() {
+  if (typeof indexedDB === "undefined") return;
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error("تعذر مسح التخزين المحلي"));
+    request.onblocked = () => resolve();
+  });
+}
+
 export function downloadJson(filename: string, payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
