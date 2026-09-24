@@ -38,7 +38,7 @@ function makeRemoteId() {
 }
 
 export async function pullCloudAccounts(workspaceId: string): Promise<LocalAccount[]> {
-  if (!supabase) return [];
+  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
   const [accountsResult, paymentsResult] = await Promise.all([
     supabase.from("accounts").select("id, workspace_id, name, owner_name, accent, version").eq("workspace_id", workspaceId).eq("is_archived", false).order("updated_at", { ascending: false }),
     supabase.from("payments").select("id, account_id, name, amount_minor, currency, payment_type, occurred_on, version").eq("workspace_id", workspaceId).order("occurred_on", { ascending: false }),
@@ -107,36 +107,49 @@ async function pushPayment(workspaceId: string, userId: string, accountRemoteId:
   return { remoteId: data.id as string, version: data.version as number };
 }
 
-export async function pushLocalAccounts(workspaceId: string, userId: string, accounts: LocalAccount[]) {
+export async function pushLocalAccounts(
+  workspaceId: string,
+  userId: string,
+  accounts: LocalAccount[],
+  deletedAccountIds: { id: string; version?: number }[] = [],
+  deletedPaymentIds: { id: string; version?: number }[] = [],
+) {
   const client = supabase;
   if (!client) throw new Error("Supabase غير مهيأ بعد");
+
+  for (const deletion of deletedPaymentIds) {
+    let query = client.from("payments").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
+    if (deletion.version !== undefined) query = query.eq("version", deletion.version);
+    const { error } = await query;
+    if (error) throw error;
+  }
+
+  for (const deletion of deletedAccountIds) {
+    let query = client.from("accounts").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
+    if (deletion.version !== undefined) query = query.eq("version", deletion.version);
+    const { error } = await query;
+    if (error) throw error;
+  }
+
   const nextAccounts: LocalAccount[] = [];
+
   for (const account of accounts) {
     const savedAccount = await pushAccount(workspaceId, userId, account);
     const nextPayments: LocalPayment[] = [];
+
     for (const payment of account.payments) {
       const savedPayment = await pushPayment(workspaceId, userId, savedAccount.remoteId, payment);
       nextPayments.push({ ...payment, remoteId: savedPayment.remoteId, version: savedPayment.version });
     }
-    nextAccounts.push({ ...account, remoteId: savedAccount.remoteId, version: savedAccount.version, payments: nextPayments });
+
+    nextAccounts.push({
+      ...account,
+      remoteId: savedAccount.remoteId,
+      version: savedAccount.version,
+      payments: nextPayments,
+    });
   }
 
-  const localAccountIds = new Set(nextAccounts.flatMap((account) => account.remoteId ? [account.remoteId] : []));
-  const localPaymentIds = new Set(nextAccounts.flatMap((account) => account.payments.flatMap((payment) => payment.remoteId ? [payment.remoteId] : [])));
-  const { data: remoteAccounts, error: remoteAccountsError } = await client.from("accounts").select("id").eq("workspace_id", workspaceId);
-  if (remoteAccountsError) throw remoteAccountsError;
-  const orphanAccountIds = (remoteAccounts ?? []).map((row) => row.id as string).filter((id) => !localAccountIds.has(id));
-  if (orphanAccountIds.length) {
-    const { error } = await client.from("accounts").delete().in("id", orphanAccountIds).eq("workspace_id", workspaceId);
-    if (error) throw error;
-  }
-  const { data: remotePayments, error: remotePaymentsError } = await client.from("payments").select("id").eq("workspace_id", workspaceId);
-  if (remotePaymentsError) throw remotePaymentsError;
-  const orphanPaymentIds = (remotePayments ?? []).map((row) => row.id as string).filter((id) => !localPaymentIds.has(id));
-  if (orphanPaymentIds.length) {
-    const { error } = await client.from("payments").delete().in("id", orphanPaymentIds).eq("workspace_id", workspaceId);
-    if (error) throw error;
-  }
   return nextAccounts;
 }
 
