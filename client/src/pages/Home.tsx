@@ -14,6 +14,7 @@ import {
   CircleDollarSign,
   Download,
   FileText,
+  Heart,
   Home as HomeIcon,
   Landmark,
   LockKeyhole,
@@ -669,6 +670,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
               <button className="profile-menu-item" onClick={exportBackup} role="menuitem">
                 <span>💾 نسخة احتياطية</span>
                 <Download size={14} />
+              </button>
+              <button className="profile-menu-item" onClick={() => { window.location.href = "/credits"; }} role="menuitem">
+                <span>👥 فريق التطوير</span>
+                <Heart size={14} />
               </button>
               <div className="profile-menu-divider" />
               <button className="profile-menu-item danger" onClick={() => void handleLogout()} role="menuitem">
