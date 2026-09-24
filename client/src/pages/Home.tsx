@@ -32,11 +32,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { addAuditEntry, downloadJson, enqueueSyncSnapshot, readAccounts, readSyncQueue, removeSyncQueueItem, writeAccounts } from "@/lib/localStore";
+import { addAuditEntry, clearAllLocalData, downloadJson, enqueueSyncSnapshot, readAccounts, readSyncQueue, removeSyncQueueItem, writeAccounts } from "@/lib/localStore";
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
-import { pullCloudAccounts, pushLocalAccounts, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
+import { pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -182,10 +182,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     });
     return () => { active = false; };
   }, []);
-
-  useEffect(() => {
-    if (storageReady) void writeAccounts(accounts);
-  }, [accounts, storageReady]);
 
   const mergeServerMetadata = (candidate: Account[], pushed: Account[]) => {
     const pushedByAccountId = new Map(pushed.map((account) => [account.id, account]));
@@ -380,22 +376,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   }, [storageReady, cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
-    if (!storageReady || !cloudWorkspace || !cloudUser || !syncReadyRef.current) return;
-
-    const fingerprint = JSON.stringify(accounts);
-    if (latestSyncedFingerprint.current === fingerprint) return;
-
-    if (syncTimer.current) window.clearTimeout(syncTimer.current);
-    syncTimer.current = window.setTimeout(() => {
-      void syncAccounts(accounts);
-    }, 650);
-
-    return () => {
-      if (syncTimer.current) window.clearTimeout(syncTimer.current);
-    };
-  }, [accounts, storageReady, cloudWorkspace?.id, cloudUser?.id, syncReadyVersion]);
-
-  useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
 
     const refresh = () => {
@@ -471,89 +451,122 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     } else toast.error(result.message);
   };
 
-  const addAccount = () => {
+  const commitAccounts = async (
+    nextAccounts: Account[],
+    deletions?: {
+      deletedAccountIds?: { id: string; version?: number }[];
+      deletedPaymentIds?: { id: string; version?: number }[];
+    },
+  ) => {
+    await writeAccounts(nextAccounts);
+    setAccounts(nextAccounts);
+
+    if (cloudWorkspace && cloudUser && syncReadyRef.current) {
+      await syncAccounts(nextAccounts, deletions);
+    } else {
+      latestSyncedFingerprint.current = JSON.stringify(nextAccounts);
+    }
+  };
+
+  const addAccount = async () => {
     if (!newAccountName.trim() || !newAccountOwner.trim()) {
       toast.error("اكتب اسم الحساب وصاحب الحساب أولاً");
       return;
     }
     if (editingAccountId) {
-      setAccounts((current) => current.map((account) => account.id === editingAccountId ? { ...account, name: newAccountName.trim(), owner: newAccountOwner.trim() } : account));
-      void recordAudit("update", "account", newAccountName.trim());
-      setEditingAccountId(null);
+      const nextAccounts = accounts.map((account) => account.id === editingAccountId ? { ...account, name: newAccountName.trim(), owner: newAccountOwner.trim() } : account);
+      try {
+        await commitAccounts(nextAccounts);
+        void recordAudit("update", "account", newAccountName.trim());
+        setEditingAccountId(null);
+        setNewAccountName("");
+        setNewAccountOwner("");
+        setShowAccountModal(false);
+        toast.success("تعدّل الحساب بنجاح");
+      } catch {
+        toast.error("ما قدرنا نحفظ تعديل الحساب بالسحابة");
+      }
+      return;
+    }
+    const next: Account = { id: Date.now(), name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
+    try {
+      await commitAccounts([...accounts, next]);
+      void recordAudit("create", "account", next.name);
       setNewAccountName("");
       setNewAccountOwner("");
       setShowAccountModal(false);
-      toast.success("تعدّل الحساب بنجاح");
-      return;
+      toast.success("انضاف الحساب بنجاح");
+    } catch {
+      toast.error("ما قدرنا نحفظ الحساب بالسحابة");
     }
-    const next: Account = {
-      id: Date.now(),
-      name: newAccountName.trim(),
-      owner: newAccountOwner.trim(),
-      accent: ["mint", "violet", "amber", "blue"][accounts.length % 4],
-      payments: [],
-    };
-    setAccounts((current) => [...current, next]);
-    void recordAudit("create", "account", next.name);
-    setNewAccountName("");
-    setNewAccountOwner("");
-    setShowAccountModal(false);
-    toast.success("انضاف الحساب بنجاح");
   };
 
-  const addPayment = () => {
+  const addPayment = async () => {
     const validationError = validatePaymentDraft(paymentDraft);
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
+    if (validationError) { toast.error(validationError); return; }
     const targetAccountId = paymentAccountId ?? selectedAccountId;
     const targetAccount = accounts.find((account) => account.id === targetAccountId);
-    if (!targetAccount) {
-      toast.error("اختار حساب أولاً");
-      return;
+    if (!targetAccount) { toast.error("اختار حساب أولاً"); return; }
+    const existingPayment = editingPaymentId ? targetAccount.payments.find((item) => item.id === editingPaymentId) : undefined;
+    const payment: Payment = {
+      id: editingPaymentId ?? Date.now(),
+      remoteId: existingPayment?.remoteId,
+      version: existingPayment?.version,
+      name: paymentDraft.name.trim(),
+      amount: Number(paymentDraft.amount),
+      currency: paymentDraft.currency,
+      type: paymentDraft.type,
+      date: paymentDraft.date,
+    };
+    const nextAccounts = accounts.map((account) => account.id === targetAccountId
+      ? { ...account, payments: editingPaymentId ? account.payments.map((item) => item.id === editingPaymentId ? payment : item) : [payment, ...account.payments] }
+      : account);
+    try {
+      await commitAccounts(nextAccounts);
+      void recordAudit(editingPaymentId ? "update" : "create", "payment", payment.name);
+      setEditingPaymentId(null);
+      setPaymentAccountId(null);
+      setPaymentDraft({ name: "", amount: "", currency: "SYP", type: "credit", date: new Date().toISOString().slice(0, 10) });
+      setShowPaymentModal(false);
+      toast.success(editingPaymentId ? "انحفظ تعديل الدفعة" : "انضافت الدفعة للحساب");
+    } catch {
+      toast.error("ما قدرنا نحفظ الدفعة بالسحابة");
     }
-    const amount = Number(paymentDraft.amount);
-    const payment: Payment = { id: editingPaymentId ?? Date.now(), name: paymentDraft.name.trim(), amount, currency: paymentDraft.currency, type: paymentDraft.type, date: paymentDraft.date };
-    setAccounts((current) => current.map((account) => account.id === targetAccountId ? { ...account, payments: editingPaymentId ? account.payments.map((item) => item.id === editingPaymentId ? payment : item) : [payment, ...account.payments] } : account));
-    void recordAudit(editingPaymentId ? "update" : "create", "payment", payment.name);
-    setEditingPaymentId(null);
-    setPaymentAccountId(null);
-    setPaymentDraft({ name: "", amount: "", currency: "SYP", type: "credit", date: new Date().toISOString().slice(0, 10) });
-    setShowPaymentModal(false);
-    toast.success("انضافت الدفعة للحساب");
   };
 
-  const deletePayment = (paymentId: number) => {
+  const deletePayment = async (paymentId: number) => {
     const payment = selectedAccount?.payments.find((item) => item.id === paymentId);
-    if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\nالحذف محلي، وراح ينحذف من السحابة بعد المزامنة.`)) return;
-    if (payment.remoteId) {
-      deletedPaymentIds.current.set(payment.remoteId, payment.version);
-      console.info("[AleppoCenterCash] queued payment deletion", { id: payment.remoteId, version: payment.version });
+    if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\nالحذف نهائي وما في تراجع.`)) return;
+    const nextAccounts = accounts.map((account) => account.id === selectedAccountId ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) } : account);
+    const deletedPayment = payment.remoteId ? [{ id: payment.remoteId, version: payment.version }] : [];
+    try {
+      await commitAccounts(nextAccounts, { deletedPaymentIds: deletedPayment });
+      void recordAudit("delete", "payment", payment.name);
+      toast.success("انحذفت الدفعة");
+    } catch {
+      await writeAccounts(accounts);
+      setAccounts(accounts);
+      toast.error("ما قدرنا نحذف الدفعة من السحابة، رجّعنا الحالة");
     }
-    setAccounts((current) => current.map((account) => account.id === selectedAccountId ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) } : account));
-    void recordAudit("delete", "payment", payment.name);
-    toast.success("انحذفت الدفعة");
   };
 
-  const deleteAccount = (accountId: number) => {
+  const deleteAccount = async (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\nالحذف محلي، وراح ينحذف من السحابة بعد المزامنة.`)) return;
-    if (account.remoteId) {
-      deletedAccountIds.current.set(account.remoteId, account.version);
-      console.info("[AleppoCenterCash] queued account deletion", { id: account.remoteId, version: account.version });
+    if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\nالحذف نهائي وما في تراجع.`)) return;
+    const nextAccounts = accounts.filter((item) => item.id !== accountId);
+    const deletedAccount = account.remoteId ? [{ id: account.remoteId, version: account.version }] : [];
+    const deletedPayments = account.payments.filter((payment) => payment.remoteId).map((payment) => ({ id: payment.remoteId!, version: payment.version }));
+    try {
+      await commitAccounts(nextAccounts, { deletedAccountIds: deletedAccount, deletedPaymentIds: deletedPayments });
+      setSelectedAccountId(nextAccounts[0]?.id ?? 0);
+      setView("accounts");
+      void recordAudit("delete", "account", account.name);
+      toast.success("انحذف الحساب وكل حركاته");
+    } catch {
+      await writeAccounts(accounts);
+      setAccounts(accounts);
+      toast.error("ما قدرنا نحذف الحساب من السحابة، رجّعنا الحالة");
     }
-    for (const payment of account.payments) {
-      if (payment.remoteId) {
-        deletedPaymentIds.current.set(payment.remoteId, payment.version);
-        console.info("[AleppoCenterCash] queued payment deletion", { id: payment.remoteId, version: payment.version });
-      }
-    }
-    setAccounts((current) => current.filter((item) => item.id !== accountId));
-    setSelectedAccountId(accounts.find((item) => item.id !== accountId)?.id ?? 0);
-    setView("accounts");
-    void recordAudit("delete", "account", account.name);
-    toast.success("انحذف الحساب وكل حركاته");
   };
 
   const openPaymentFromDashboard = () => {
