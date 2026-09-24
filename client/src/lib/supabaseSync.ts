@@ -130,6 +130,12 @@ async function pushAccount(
     accent: account.accent,
     created_by: userId,
   };
+  const updatePayload = {
+    workspace_id: workspaceId,
+    name: account.name.trim(),
+    owner_name: account.owner.trim(),
+    accent: account.accent,
+  };
 
   if (!account.remoteId) {
     const { data, error } = await supabase
@@ -214,7 +220,7 @@ async function pushAccount(
   const expectedVersion = account.version ?? 1;
   const { data, error } = await supabase
     .from("accounts")
-    .update(payload)
+    .update(updatePayload)
     .eq("id", remoteId)
     .eq("version", expectedVersion)
     .select("id, version")
@@ -245,6 +251,15 @@ async function pushPayment(
     payment_type: payment.type,
     occurred_on: payment.date,
     created_by: userId,
+  };
+  const updatePayload = {
+    workspace_id: workspaceId,
+    account_id: accountRemoteId,
+    name: payment.name.trim(),
+    amount_minor: Math.round(payment.amount),
+    currency: payment.currency,
+    payment_type: payment.type,
+    occurred_on: payment.date,
   };
 
   if (!payment.remoteId) {
@@ -332,7 +347,7 @@ async function pushPayment(
   const expectedVersion = payment.version ?? 1;
   const { data, error } = await supabase
     .from("payments")
-    .update(payload)
+    .update(updatePayload)
     .eq("id", remoteId)
     .eq("version", expectedVersion)
     .select("id, version")
