@@ -445,7 +445,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       const { error } = await supabase.rpc("delete_my_account");
       if (error) throw error;
       await clearAllLocalData();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut().catch(() => undefined);
       window.location.href = "/";
     } catch (error) {
       console.error("[AleppoCenterCash] account deletion failed", error);
