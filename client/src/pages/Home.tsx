@@ -479,6 +479,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       if (error) throw error;
 
       await clearAllLocalData();
+      localStorage.removeItem(`aleppo-center-workspace:${cloudUser?.id ?? ""}`);
       await supabase.auth.signOut().catch(() => undefined);
       window.location.replace("/");
     } catch (error) {
