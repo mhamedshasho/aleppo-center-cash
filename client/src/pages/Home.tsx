@@ -10,6 +10,8 @@ import {
   BookOpen,
   Check,
   ChevronDown,
+  Copy,
+  LogOut,
   CircleDollarSign,
   Download,
   FileJson,
@@ -147,6 +149,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountOwner, setNewAccountOwner] = useState("");
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
@@ -424,6 +427,21 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     setShowAccountModal(true);
   };
 
+  const handleLogout = async () => {
+    const { supabase } = await import("@/lib/supabase");
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    window.location.reload();
+  };
+
+  const copyWorkspaceId = () => {
+    if (cloudWorkspace?.id) {
+      void navigator.clipboard?.writeText(cloudWorkspace.id);
+      toast.success("اننسخ Workspace ID");
+    }
+  };
+
   const attemptUnlock = async () => {
     const result = await authenticateKey(keyValue);
     if (result.ok) {
@@ -697,7 +715,35 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         </nav>
         <div className="sidebar-spacer" />
         <div className="local-card"><div className="local-card-icon"><ShieldCheck size={17} /></div><div><strong>محلي وآمن</strong><span>آخر نسخة تلقائية اليوم</span></div><Check size={16} className="check-icon" /></div>
-        <button className="sidebar-profile" onClick={() => toast("إعدادات الحساب رح تكون بالنسخة الجاية") }><div className="profile-avatar">م</div><div><strong>مستخدم مركز حلب</strong><span>حساب المالك</span></div><MoreHorizontal size={17} /></button>
+        <div className="profile-menu-wrapper">
+          <button className="sidebar-profile" onClick={() => setShowProfileMenu((current) => !current)} aria-expanded={showProfileMenu} aria-haspopup="menu">
+            <div className="profile-avatar">{cloudUser?.email?.[0]?.toUpperCase() ?? "م"}</div>
+            <div><strong>{cloudWorkspace?.name ?? "مركز حلب"}</strong><span>{cloudUser?.email ?? "حساب المالك"}</span></div>
+            <MoreHorizontal size={17} />
+          </button>
+          {showProfileMenu && (
+            <div className="profile-menu" role="menu">
+              <div className="profile-menu-item info">
+                <span>📧 البريد</span>
+                <strong dir="ltr">{cloudUser?.email ?? "—"}</strong>
+              </div>
+              <div className="profile-menu-item info">
+                <span>🏪 Workspace</span>
+                <strong>{cloudWorkspace?.name ?? "مركز حلب"}</strong>
+              </div>
+              <button className="profile-menu-item" onClick={copyWorkspaceId} disabled={!cloudWorkspace?.id} role="menuitem">
+                <span>🆔 Workspace ID</span>
+                <strong dir="ltr" className="mono">{cloudWorkspace?.id?.slice(0, 8) ?? "—"}{cloudWorkspace?.id ? "…" : ""}</strong>
+                <Copy size={14} />
+              </button>
+              <div className="profile-menu-divider" />
+              <button className="profile-menu-item danger" onClick={() => void handleLogout()} role="menuitem">
+                <span>🚪 تسجيل الخروج</span>
+                <LogOut size={14} />
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
       {showMobileNav && <button className="mobile-overlay" onClick={() => setShowMobileNav(false)} aria-label="إغلاق القائمة" />}
 
