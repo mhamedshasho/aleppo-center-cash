@@ -32,6 +32,8 @@ export type SyncQueueItem = {
   workspaceId: string;
   userId: string;
   accounts: LocalAccount[];
+  deletedAccountIds?: { id: string; version?: number }[];
+  deletedPaymentIds?: { id: string; version?: number }[];
   createdAt: string;
 };
 
