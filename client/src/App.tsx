@@ -14,6 +14,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={CloudAuthGate} />
       <Route path={"/credits"} component={Credits} />
+      <Route path={"/:workspaceSlug"} component={CloudAuthGate} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
