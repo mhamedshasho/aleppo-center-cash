@@ -138,11 +138,35 @@ export async function enqueueSyncSnapshot(item: Omit<SyncQueueItem, "id" | "crea
     const transaction = database.transaction(DATA_STORE, "readwrite");
     const store = transaction.objectStore(DATA_STORE);
     const request = store.get(SYNC_QUEUE_KEY);
+
     request.onsuccess = () => {
       const queue = (request.result as SyncQueueItem[] | undefined) ?? [];
-      queue.push({ ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
-      store.put(queue.slice(-10), SYNC_QUEUE_KEY);
+      const matching = queue.filter((entry) => entry.workspaceId === item.workspaceId && entry.userId === item.userId);
+      const others = queue.filter((entry) => entry.workspaceId !== item.workspaceId || entry.userId !== item.userId);
+
+      const deletedAccountMap = new Map<string, number | undefined>();
+      const deletedPaymentMap = new Map<string, number | undefined>();
+
+      for (const entry of matching) {
+        for (const deletion of entry.deletedAccountIds ?? []) deletedAccountMap.set(deletion.id, deletion.version);
+        for (const deletion of entry.deletedPaymentIds ?? []) deletedPaymentMap.set(deletion.id, deletion.version);
+      }
+
+      for (const deletion of item.deletedAccountIds ?? []) deletedAccountMap.set(deletion.id, deletion.version);
+      for (const deletion of item.deletedPaymentIds ?? []) deletedPaymentMap.set(deletion.id, deletion.version);
+
+      const merged: SyncQueueItem = {
+        ...item,
+        id: matching.at(-1)?.id ?? crypto.randomUUID(),
+        accounts: item.accounts,
+        deletedAccountIds: Array.from(deletedAccountMap, ([id, version]) => ({ id, version })),
+        deletedPaymentIds: Array.from(deletedPaymentMap, ([id, version]) => ({ id, version })),
+        createdAt: new Date().toISOString(),
+      };
+
+      store.put([...others, merged].slice(-10), SYNC_QUEUE_KEY);
     };
+
     request.onerror = () => transaction.abort();
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error ?? new Error("تعذر حفظ طابور المزامنة"));
@@ -157,10 +181,12 @@ export async function removeSyncQueueItem(id: string) {
     const transaction = database.transaction(DATA_STORE, "readwrite");
     const store = transaction.objectStore(DATA_STORE);
     const request = store.get(SYNC_QUEUE_KEY);
+
     request.onsuccess = () => {
       const queue = ((request.result as SyncQueueItem[] | undefined) ?? []).filter((item) => item.id !== id);
       store.put(queue, SYNC_QUEUE_KEY);
     };
+
     request.onerror = () => transaction.abort();
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error ?? new Error("تعذر تحديث طابور المزامنة"));
