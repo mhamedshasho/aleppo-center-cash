@@ -527,6 +527,16 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     toast.success("انحذف الحساب وكل حركاته");
   };
 
+  const openPaymentFromDashboard = () => {
+    if (!accounts.length) {
+      toast.error("أضف حساب أولاً قبل تسجيل دفعة");
+      return;
+    }
+    setEditingPaymentId(null);
+    setPaymentAccountId(accounts[0].id);
+    setShowPaymentModal(true);
+  };
+
   const openPaymentEditor = (payment: Payment) => {
     setEditingPaymentId(payment.id);
     setPaymentAccountId(null);
@@ -764,17 +774,18 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         </header>
 
         <div className="content-wrap">
-          {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={() => { setPaymentAccountId(accounts[0]?.id ?? null); setShowPaymentModal(true); }} onGoAccounts={() => setView("accounts")} />}
+          {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={openPaymentFromDashboard} onGoAccounts={() => setView("accounts")} />}
           {view === "accounts" && <AccountsView accounts={filteredAccounts} searchTerm={searchTerm} setSearchTerm={setSearchTerm} onOpenAccount={openAccount} onAddAccount={() => setShowAccountModal(true)} />}
           {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
           {view === "backup" && <BackupView auditEntries={auditEntries} onExport={exportBackup} onExportPdf={exportPdf} onExportPng={exportPng} onImport={handleImport} />}
         </div>
       </section>
 
-      {showPaymentModal && <Modal title={`${editingPaymentId ? "تعديل الدفعة" : "دفعة جديدة"}${!editingPaymentId && paymentAccountId !== null ? "" : ` — ${selectedAccount?.name ?? "الحساب"}`}`} onClose={() => { setShowPaymentModal(false); setEditingPaymentId(null); setPaymentAccountId(null); }}><div className="modal-form">
-        {!editingPaymentId && paymentAccountId !== null && (
+      {showPaymentModal && <Modal title={editingPaymentId ? "تعديل الدفعة" : "دفعة جديدة"} onClose={() => { setShowPaymentModal(false); setEditingPaymentId(null); setPaymentAccountId(null); }}><div className="modal-form">
+        {!editingPaymentId && view === "dashboard" && (
           <label>الحساب
-            <select value={paymentAccountId} onChange={(event) => setPaymentAccountId(Number(event.target.value))}>
+            <select value={paymentAccountId ?? ""} onChange={(event) => setPaymentAccountId(Number(event.target.value))} required>
+              <option value="" disabled>اختار الحساب</option>
               {accounts.map((account) => <option key={account.id} value={account.id}>{account.name} — {account.owner}</option>)}
             </select>
           </label>
