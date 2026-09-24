@@ -173,6 +173,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const latestSyncedFingerprint = useRef<string | null>(null);
   const syncGeneration = useRef(0);
   const refreshQueuedRef = useRef(false);
+  const cloudRecoveryInFlightRef = useRef(false);
   const deletedAccountIds = useRef(new Map<string, number | undefined>());
   const deletedPaymentIds = useRef(new Map<string, number | undefined>());
 
@@ -452,6 +453,43 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   useEffect(() => {
     if (syncReadyVersion > 0) void flushSyncQueue();
   }, [syncReadyVersion, cloudWorkspace?.id, cloudUser?.id]);
+
+  useEffect(() => {
+    if (!cloudWorkspace || !cloudUser || syncState !== "offline") return;
+
+    let active = true;
+    const recoverCloudConnection = async () => {
+      if (!active || cloudRecoveryInFlightRef.current || syncInFlight.current || pendingSync.current) return;
+      cloudRecoveryInFlightRef.current = true;
+      setSyncState("syncing");
+      try {
+        const queueFlushed = await flushSyncQueue();
+        if (!active || !queueFlushed) {
+          if (active) setSyncState("offline");
+          return;
+        }
+        const remoteAccounts = await pullCloudAccounts(cloudWorkspace.id);
+        if (!active) return;
+        latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
+        await writeAccounts(remoteAccounts);
+        setAccounts(remoteAccounts);
+        setSyncState("synced");
+        console.info("[AleppoCenterCash] cloud connection recovered");
+      } catch (error) {
+        console.error("[AleppoCenterCash] cloud recovery failed", error);
+        if (active) setSyncState("offline");
+      } finally {
+        cloudRecoveryInFlightRef.current = false;
+      }
+    };
+
+    void recoverCloudConnection();
+    const timer = window.setInterval(() => void recoverCloudConnection(), 5000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [syncState, cloudWorkspace?.id, cloudUser?.id]);
 
   const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
     const entry = { action, entity, label, id: Date.now(), createdAt: new Date().toISOString() };
