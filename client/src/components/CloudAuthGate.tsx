@@ -12,6 +12,39 @@ import {
 } from "@/lib/supabase";
 
 type Mode = "login" | "signup";
+
+function getAuthErrorMessage(error: unknown, mode: Mode) {
+  const raw = error instanceof Error ? error.message : String(error ?? "");
+  const normalized = raw.toLowerCase();
+
+  if (
+    normalized.includes("email rate limit exceeded") ||
+    normalized.includes("rate limit exceeded") ||
+    normalized.includes("over_email_send_rate_limit")
+  ) {
+    return mode === "signup"
+      ? "تم تجاوز حد إرسال رسائل البريد مؤقتاً. لا تعيد المحاولة الآن؛ انتظر قليلاً ثم جرّب مرة واحدة."
+      : "تم تجاوز حد إرسال رسائل البريد مؤقتاً. انتظر قليلاً ثم جرّب مرة أخرى.";
+  }
+
+  if (normalized.includes("user already registered")) {
+    return "هذا البريد مسجّل مسبقاً. جرّب تسجيل الدخول بدل إنشاء حساب جديد.";
+  }
+
+  if (normalized.includes("invalid login credentials")) {
+    return "البريد أو كلمة المرور غير صحيحة.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "البريد غير مؤكّد بعد. افتح رسالة التأكيد من Supabase ثم جرّب تسجيل الدخول.";
+  }
+
+  if (normalized.includes("password should be at least")) {
+    return "كلمة المرور قصيرة. استخدم ٨ محارف أو أكثر.";
+  }
+
+  return raw || (mode === "signup" ? "تعذر إنشاء الحساب حالياً." : "تعذر تسجيل الدخول حالياً.");
+}
 type WorkspaceState = { id: string; name: string; role: "owner" | "member" } | null;
 
 export default function CloudAuthGate() {
@@ -99,7 +132,7 @@ export default function CloudAuthGate() {
       }
       setPassword("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر إتمام العملية");
+      toast.error(getAuthErrorMessage(error, mode));
     } finally {
       setBusy(false);
     }
