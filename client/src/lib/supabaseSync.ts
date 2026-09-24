@@ -72,20 +72,54 @@ export async function pullCloudAccounts(workspaceId: string): Promise<LocalAccou
   }));
 }
 
-async function pushAccount(workspaceId: string, userId: string, account: LocalAccount) {
+async function pushAccount(
+  workspaceId: string,
+  userId: string,
+  account: LocalAccount,
+  existing?: CloudAccount,
+) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
   const remoteId = account.remoteId ?? makeRemoteId();
-  const payload = { workspace_id: workspaceId, name: account.name.trim(), owner_name: account.owner.trim(), accent: account.accent, created_by: userId };
+  const payload = {
+    workspace_id: workspaceId,
+    name: account.name.trim(),
+    owner_name: account.owner.trim(),
+    accent: account.accent,
+    created_by: userId,
+  };
+
   if (!account.remoteId || account.version === 0) {
-    const { data, error } = await supabase.from("accounts").insert({ id: remoteId, ...payload }).select("id, version").single();
+    const { data, error } = await supabase
+      .from("accounts")
+      .insert({ id: remoteId, ...payload })
+      .select("id, version")
+      .single();
     if (error) {
       console.error("[AleppoCenterCash] account insert failed", error);
       throw error;
     }
     return { remoteId: data.id as string, version: data.version as number };
   }
+
+  if (!existing) throw new SyncConflictError("الحساب لم يعد موجوداً على السحابة");
+
+  // Do not rewrite untouched rows. Rewriting every row on each mutation was
+  // causing false version conflicts between devices.
+  const unchanged =
+    existing.name === payload.name &&
+    existing.owner_name === payload.owner_name &&
+    existing.accent === payload.accent;
+
+  if (unchanged) return { remoteId: existing.id, version: existing.version };
+
   const expectedVersion = account.version ?? 1;
-  const { data, error } = await supabase.from("accounts").update(payload).eq("id", remoteId).eq("version", expectedVersion).select("id, version").maybeSingle();
+  const { data, error } = await supabase
+    .from("accounts")
+    .update(payload)
+    .eq("id", remoteId)
+    .eq("version", expectedVersion)
+    .select("id, version")
+    .maybeSingle();
   if (error) {
     console.error("[AleppoCenterCash] account update failed", error);
     throw error;
@@ -94,7 +128,13 @@ async function pushAccount(workspaceId: string, userId: string, account: LocalAc
   return { remoteId: data.id as string, version: data.version as number };
 }
 
-async function pushPayment(workspaceId: string, userId: string, accountRemoteId: string, payment: LocalPayment) {
+async function pushPayment(
+  workspaceId: string,
+  userId: string,
+  accountRemoteId: string,
+  payment: LocalPayment,
+  existing?: CloudPayment,
+) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
   const remoteId = payment.remoteId ?? makeRemoteId();
   const payload = {
@@ -107,16 +147,40 @@ async function pushPayment(workspaceId: string, userId: string, accountRemoteId:
     occurred_on: payment.date,
     created_by: userId,
   };
+
   if (!payment.remoteId || payment.version === 0) {
-    const { data, error } = await supabase.from("payments").insert({ id: remoteId, ...payload }).select("id, version").single();
+    const { data, error } = await supabase
+      .from("payments")
+      .insert({ id: remoteId, ...payload })
+      .select("id, version")
+      .single();
     if (error) {
       console.error("[AleppoCenterCash] payment insert failed", error);
       throw error;
     }
     return { remoteId: data.id as string, version: data.version as number };
   }
+
+  if (!existing) throw new SyncConflictError("الدفعة لم تعد موجودة على السحابة");
+
+  const unchanged =
+    existing.account_id === payload.account_id &&
+    existing.name === payload.name &&
+    existing.amount_minor === payload.amount_minor &&
+    existing.currency === payload.currency &&
+    existing.payment_type === payload.payment_type &&
+    existing.occurred_on === payload.occurred_on;
+
+  if (unchanged) return { remoteId: existing.id, version: existing.version };
+
   const expectedVersion = payment.version ?? 1;
-  const { data, error } = await supabase.from("payments").update(payload).eq("id", remoteId).eq("version", expectedVersion).select("id, version").maybeSingle();
+  const { data, error } = await supabase
+    .from("payments")
+    .update(payload)
+    .eq("id", remoteId)
+    .eq("version", expectedVersion)
+    .select("id, version")
+    .maybeSingle();
   if (error) {
     console.error("[AleppoCenterCash] payment update failed", error);
     throw error;
@@ -141,10 +205,7 @@ export async function pushLocalAccounts(
     if (deletion.version !== undefined) query = query.eq("version", deletion.version);
     const { data, error } = await query.select("id");
     console.info("[AleppoCenterCash] payment delete result", { id: deletion.id, data, error });
-    if (error) {
-      console.error("[AleppoCenterCash] payment delete failed", error);
-      throw error;
-    }
+    if (error) throw error;
     if (!data?.length) throw new SyncConflictError("تعذر حذف الدفعة من السحابة: لم يتم العثور عليها أو لا تملك صلاحية حذفها");
   }
 
@@ -154,21 +215,34 @@ export async function pushLocalAccounts(
     if (deletion.version !== undefined) query = query.eq("version", deletion.version);
     const { data, error } = await query.select("id");
     console.info("[AleppoCenterCash] account delete result", { id: deletion.id, data, error });
-    if (error) {
-      console.error("[AleppoCenterCash] account delete failed", error);
-      throw error;
-    }
+    if (error) throw error;
     if (!data?.length) throw new SyncConflictError("تعذر حذف الحساب من السحابة: لم يتم العثور عليه أو لا تملك صلاحية حذفه");
   }
+
+  // Read the current server snapshot once. This lets us skip untouched rows and
+  // makes version checks meaningful instead of incrementing every row on every save.
+  const [existingAccountsResult, existingPaymentsResult] = await Promise.all([
+    client.from("accounts").select("id, workspace_id, name, owner_name, accent, version").eq("workspace_id", workspaceId),
+    client.from("payments").select("id, account_id, name, amount_minor, currency, payment_type, occurred_on, version").eq("workspace_id", workspaceId),
+  ]);
+  if (existingAccountsResult.error) throw existingAccountsResult.error;
+  if (existingPaymentsResult.error) throw existingPaymentsResult.error;
+
+  const existingAccounts = (existingAccountsResult.data ?? []) as CloudAccount[];
+  const existingPayments = (existingPaymentsResult.data ?? []) as CloudPayment[];
+  const existingAccountsById = new Map(existingAccounts.map((account) => [account.id, account]));
+  const existingPaymentsById = new Map(existingPayments.map((payment) => [payment.id, payment]));
 
   const nextAccounts: LocalAccount[] = [];
 
   for (const account of accounts) {
-    const savedAccount = await pushAccount(workspaceId, userId, account);
+    const existingAccount = account.remoteId ? existingAccountsById.get(account.remoteId) : undefined;
+    const savedAccount = await pushAccount(workspaceId, userId, account, existingAccount);
     const nextPayments: LocalPayment[] = [];
 
     for (const payment of account.payments) {
-      const savedPayment = await pushPayment(workspaceId, userId, savedAccount.remoteId, payment);
+      const existingPayment = payment.remoteId ? existingPaymentsById.get(payment.remoteId) : undefined;
+      const savedPayment = await pushPayment(workspaceId, userId, savedAccount.remoteId, payment, existingPayment);
       nextPayments.push({ ...payment, remoteId: savedPayment.remoteId, version: savedPayment.version });
     }
 
@@ -187,31 +261,18 @@ export async function pushLocalAccounts(
     .or("is_archived.eq.false,is_archived.is.null")
     .order("updated_at", { ascending: false });
 
-  if (error) {
-    console.error("[AleppoCenterCash] fetch after push failed", error);
-    throw error;
-  }
+  if (error) throw error;
 
   const cloudAccounts = (data ?? []) as CloudAccount[];
-  console.info("[AleppoCenterCash] pushed result", {
-    count: cloudAccounts.length,
-    accounts: cloudAccounts,
-  });
-
+  const cloudByRemoteId = new Map(cloudAccounts.map((account) => [account.id, account]));
   const paymentRows = await client
     .from("payments")
     .select("id, account_id, name, amount_minor, currency, payment_type, occurred_on, version")
     .eq("workspace_id", workspaceId)
     .order("occurred_on", { ascending: false });
-
-  if (paymentRows.error) {
-    console.error("[AleppoCenterCash] fetch payments after push failed", paymentRows.error);
-    throw paymentRows.error;
-  }
+  if (paymentRows.error) throw paymentRows.error;
 
   const payments = (paymentRows.data ?? []) as CloudPayment[];
-
-  const cloudByRemoteId = new Map(cloudAccounts.map((account) => [account.id, account]));
   const paymentsByAccountId = new Map<string, CloudPayment[]>();
   for (const payment of payments) {
     const list = paymentsByAccountId.get(payment.account_id) ?? [];
@@ -219,17 +280,15 @@ export async function pushLocalAccounts(
     paymentsByAccountId.set(payment.account_id, list);
   }
 
-  // Preserve each candidate's local numeric ID. Newly-created local rows cannot
-  // be matched by localIdFromUuid until the server ID exists, so matching by
-  // remoteId here is what makes the next edit/delete target the same cloud row.
+  console.info("[AleppoCenterCash] pushed result", { count: cloudAccounts.length, accounts: cloudAccounts });
+
   return nextAccounts.flatMap((account) => {
     if (!account.remoteId) return [];
     const serverAccount = cloudByRemoteId.get(account.remoteId);
     if (!serverAccount) return [];
 
     const serverPayments = paymentsByAccountId.get(serverAccount.id) ?? [];
-    const serverPaymentsByRemoteId = new Map(serverPayments.map((payment) => [payment.id, payment]));
-
+    const serverPaymentsByRemoteId = new Map(serverPayments.map((payment) => [payment.id, payment.id]));
     return [{
       ...account,
       remoteId: serverAccount.id,
@@ -238,18 +297,9 @@ export async function pushLocalAccounts(
       owner: serverAccount.owner_name,
       accent: serverAccount.accent,
       payments: account.payments.flatMap((payment) => {
-        if (!payment.remoteId) {
-          const saved = serverPayments.find((item) =>
-            item.name === payment.name &&
-            item.amount_minor === Math.round(payment.amount) &&
-            item.currency === payment.currency &&
-            item.payment_type === payment.type &&
-            item.occurred_on === payment.date,
-          );
-          if (!saved) return [];
-          return [{ ...payment, remoteId: saved.id, version: saved.version }];
-        }
-        const saved = serverPaymentsByRemoteId.get(payment.remoteId);
+        if (!payment.remoteId) return [];
+        if (!serverPaymentsByRemoteId.has(payment.remoteId)) return [];
+        const saved = serverPayments.find((item) => item.id === payment.remoteId);
         return saved
           ? [{ ...payment, remoteId: saved.id, version: saved.version, name: saved.name, amount: saved.amount_minor, currency: saved.currency, type: saved.payment_type, date: saved.occurred_on }]
           : [];
@@ -257,7 +307,6 @@ export async function pushLocalAccounts(
     }];
   });
 }
-
 export async function deleteAccountFromCloud(workspaceId: string, accountId: string, expectedVersion?: number) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
 
