@@ -526,8 +526,11 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const deletePayment = (paymentId: number) => {
     const payment = selectedAccount?.payments.find((item) => item.id === paymentId);
-    if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\nالحذف محلي وما في تراجع تلقائي.`)) return;
-    if (payment.remoteId) deletedPaymentIds.current.set(payment.remoteId, payment.version);
+    if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\nالحذف محلي، وراح ينحذف من السحابة بعد المزامنة.`)) return;
+    if (payment.remoteId) {
+      deletedPaymentIds.current.set(payment.remoteId, payment.version);
+      console.info("[AleppoCenterCash] queued payment deletion", { id: payment.remoteId, version: payment.version });
+    }
     setAccounts((current) => current.map((account) => account.id === selectedAccountId ? { ...account, payments: account.payments.filter((item) => item.id !== paymentId) } : account));
     void recordAudit("delete", "payment", payment.name);
     toast.success("انحذفت الدفعة");
@@ -535,10 +538,16 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const deleteAccount = (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\nالحذف محلي وما في تراجع تلقائي.`)) return;
-    if (account.remoteId) deletedAccountIds.current.set(account.remoteId, account.version);
+    if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\nالحذف محلي، وراح ينحذف من السحابة بعد المزامنة.`)) return;
+    if (account.remoteId) {
+      deletedAccountIds.current.set(account.remoteId, account.version);
+      console.info("[AleppoCenterCash] queued account deletion", { id: account.remoteId, version: account.version });
+    }
     for (const payment of account.payments) {
-      if (payment.remoteId) deletedPaymentIds.current.set(payment.remoteId, payment.version);
+      if (payment.remoteId) {
+        deletedPaymentIds.current.set(payment.remoteId, payment.version);
+        console.info("[AleppoCenterCash] queued payment deletion", { id: payment.remoteId, version: payment.version });
+      }
     }
     setAccounts((current) => current.filter((item) => item.id !== accountId));
     setSelectedAccountId(accounts.find((item) => item.id !== accountId)?.id ?? 0);
