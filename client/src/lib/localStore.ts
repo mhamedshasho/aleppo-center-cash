@@ -133,26 +133,38 @@ export async function readSyncQueue(): Promise<SyncQueueItem[]> {
 
 export async function enqueueSyncSnapshot(item: Omit<SyncQueueItem, "id" | "createdAt">) {
   if (typeof indexedDB === "undefined") return;
-  const queue = await readSyncQueue();
-  queue.push({ ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
   const database = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(DATA_STORE, "readwrite");
-    transaction.objectStore(DATA_STORE).put(queue.slice(-10), SYNC_QUEUE_KEY);
+    const store = transaction.objectStore(DATA_STORE);
+    const request = store.get(SYNC_QUEUE_KEY);
+    request.onsuccess = () => {
+      const queue = (request.result as SyncQueueItem[] | undefined) ?? [];
+      queue.push({ ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+      store.put(queue.slice(-10), SYNC_QUEUE_KEY);
+    };
+    request.onerror = () => transaction.abort();
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
+    transaction.onerror = () => reject(transaction.error ?? new Error("تعذر حفظ طابور المزامنة"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("تعذر حفظ طابور المزامنة"));
   });
 }
 
 export async function removeSyncQueueItem(id: string) {
   if (typeof indexedDB === "undefined") return;
-  const queue = (await readSyncQueue()).filter((item) => item.id !== id);
   const database = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(DATA_STORE, "readwrite");
-    transaction.objectStore(DATA_STORE).put(queue, SYNC_QUEUE_KEY);
+    const store = transaction.objectStore(DATA_STORE);
+    const request = store.get(SYNC_QUEUE_KEY);
+    request.onsuccess = () => {
+      const queue = ((request.result as SyncQueueItem[] | undefined) ?? []).filter((item) => item.id !== id);
+      store.put(queue, SYNC_QUEUE_KEY);
+    };
+    request.onerror = () => transaction.abort();
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
+    transaction.onerror = () => reject(transaction.error ?? new Error("تعذر تحديث طابور المزامنة"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("تعذر تحديث طابور المزامنة"));
   });
 }
 
