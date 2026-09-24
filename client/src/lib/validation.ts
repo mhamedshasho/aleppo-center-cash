@@ -1,6 +1,15 @@
 import type { LocalAccount, LocalPayment } from "./localStore";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export function isValidEmail(value: string) {
+  return EMAIL_PATTERN.test(normalizeEmail(value));
+}
 
 export function isValidPayment(value: unknown): value is LocalPayment {
   if (!value || typeof value !== "object") return false;
