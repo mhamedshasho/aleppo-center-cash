@@ -136,17 +136,27 @@ export async function pushLocalAccounts(
   if (!client) throw new Error("Supabase غير مهيأ بعد");
 
   for (const deletion of deletedPaymentIds) {
+    console.info("[AleppoCenterCash] deleting payment", deletion);
     let query = client.from("payments").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
     if (deletion.version !== undefined) query = query.eq("version", deletion.version);
     const { error } = await query;
-    if (error) throw error;
+    console.info("[AleppoCenterCash] payment delete result", { id: deletion.id, error });
+    if (error) {
+      console.error("[AleppoCenterCash] payment delete failed", error);
+      throw error;
+    }
   }
 
   for (const deletion of deletedAccountIds) {
+    console.info("[AleppoCenterCash] deleting account", deletion);
     let query = client.from("accounts").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
     if (deletion.version !== undefined) query = query.eq("version", deletion.version);
     const { error } = await query;
-    if (error) throw error;
+    console.info("[AleppoCenterCash] account delete result", { id: deletion.id, error });
+    if (error) {
+      console.error("[AleppoCenterCash] account delete failed", error);
+      throw error;
+    }
   }
 
   const nextAccounts: LocalAccount[] = [];
