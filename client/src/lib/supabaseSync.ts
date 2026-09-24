@@ -37,6 +37,49 @@ function makeRemoteId() {
   return crypto.randomUUID();
 }
 
+function makeUniqueRemoteId(used: Set<string>) {
+  let id = makeRemoteId();
+  while (used.has(id)) id = makeRemoteId();
+  used.add(id);
+  return id;
+}
+
+function normalizeLocalRemoteIds(accounts: LocalAccount[]) {
+  const usedAccountIds = new Set<string>();
+  const usedPaymentIds = new Set<string>();
+
+  return accounts.map((account) => {
+    let nextAccount = account;
+    if (!account.remoteId || usedAccountIds.has(account.remoteId)) {
+      const remoteId = makeUniqueRemoteId(usedAccountIds);
+      console.warn("[AleppoCenterCash] duplicate/missing local account remoteId repaired", {
+        oldRemoteId: account.remoteId,
+        newRemoteId: remoteId,
+        accountName: account.name,
+      });
+      nextAccount = { ...account, remoteId, version: 0 };
+    } else {
+      usedAccountIds.add(account.remoteId);
+    }
+
+    const payments = nextAccount.payments.map((payment) => {
+      if (!payment.remoteId || usedPaymentIds.has(payment.remoteId)) {
+        const remoteId = makeUniqueRemoteId(usedPaymentIds);
+        console.warn("[AleppoCenterCash] duplicate/missing local payment remoteId repaired", {
+          oldRemoteId: payment.remoteId,
+          newRemoteId: remoteId,
+          paymentName: payment.name,
+        });
+        return { ...payment, remoteId, version: 0 };
+      }
+      usedPaymentIds.add(payment.remoteId);
+      return payment;
+    });
+
+    return { ...nextAccount, payments };
+  });
+}
+
 export async function pullCloudAccounts(workspaceId: string): Promise<LocalAccount[]> {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
   const [accountsResult, paymentsResult] = await Promise.all([
@@ -79,7 +122,7 @@ async function pushAccount(
   existing?: CloudAccount,
 ) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
-  const remoteId = account.remoteId ?? makeRemoteId();
+  let remoteId = account.remoteId ?? makeRemoteId();
   const payload = {
     workspace_id: workspaceId,
     name: account.name.trim(),
@@ -117,16 +160,42 @@ async function pushAccount(
   // existing server row avoids inserting the same primary key twice.
   if (account.version === 0) {
     if (!existing) {
-      const { data, error } = await supabase
-        .from("accounts")
-        .insert({ id: remoteId, ...payload })
-        .select("id, version")
-        .single();
-      if (error) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { data, error } = await supabase
+          .from("accounts")
+          .insert({ id: remoteId, ...payload })
+          .select("id, version")
+          .single();
+
+        if (!error) {
+          return { remoteId: data.id as string, version: data.version as number };
+        }
+
         console.error("[AleppoCenterCash] account insert failed", error);
-        throw error;
+
+        if (error.code !== "23505") throw error;
+
+        const { data: collided, error: collisionError } = await supabase
+          .from("accounts")
+          .select("id, workspace_id, name, owner_name, accent, version")
+          .eq("id", remoteId)
+          .maybeSingle();
+
+        if (collisionError) throw collisionError;
+
+        if (
+          collided?.workspace_id === workspaceId &&
+          collided.name === payload.name &&
+          collided.owner_name === payload.owner_name &&
+          collided.accent === payload.accent
+        ) {
+          return { remoteId: collided.id as string, version: collided.version as number };
+        }
+
+        remoteId = makeRemoteId();
       }
-      return { remoteId: data.id as string, version: data.version as number };
+
+      throw new SyncConflictError("تعذر إنشاء معرف فريد للحساب بعد عدة محاولات");
     }
     return { remoteId: existing.id, version: existing.version };
   }
@@ -205,16 +274,45 @@ async function pushPayment(
   // not yet received server metadata, not that the remote row does not exist.
   if (payment.version === 0) {
     if (!existing) {
-      const { data, error } = await supabase
-        .from("payments")
-        .insert({ id: remoteId, ...payload })
-        .select("id, version")
-        .single();
-      if (error) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { data, error } = await supabase
+          .from("payments")
+          .insert({ id: remoteId, ...payload })
+          .select("id, version")
+          .single();
+
+        if (!error) {
+          return { remoteId: data.id as string, version: data.version as number };
+        }
+
         console.error("[AleppoCenterCash] payment insert failed", error);
-        throw error;
+
+        if (error.code !== "23505") throw error;
+
+        const { data: collided, error: collisionError } = await supabase
+          .from("payments")
+          .select("id, workspace_id, account_id, name, amount_minor, currency, payment_type, occurred_on, version")
+          .eq("id", remoteId)
+          .maybeSingle();
+
+        if (collisionError) throw collisionError;
+
+        if (
+          collided?.workspace_id === workspaceId &&
+          collided.account_id === accountRemoteId &&
+          collided.name === payload.name &&
+          collided.amount_minor === payload.amount_minor &&
+          collided.currency === payload.currency &&
+          collided.payment_type === payload.payment_type &&
+          collided.occurred_on === payload.occurred_on
+        ) {
+          return { remoteId: collided.id as string, version: collided.version as number };
+        }
+
+        remoteId = makeRemoteId();
       }
-      return { remoteId: data.id as string, version: data.version as number };
+
+      throw new SyncConflictError("تعذر إنشاء معرف فريد للدفعة بعد عدة محاولات");
     }
     return { remoteId: existing.id, version: existing.version };
   }
@@ -292,8 +390,9 @@ export async function pushLocalAccounts(
   const existingPaymentsById = new Map(existingPayments.map((payment) => [payment.id, payment]));
 
   const nextAccounts: LocalAccount[] = [];
+  const normalizedAccounts = normalizeLocalRemoteIds(accounts);
 
-  for (const account of accounts) {
+  for (const account of normalizedAccounts) {
     const existingAccount = account.remoteId ? existingAccountsById.get(account.remoteId) : undefined;
     const savedAccount = await pushAccount(workspaceId, userId, account, existingAccount);
     const nextPayments: LocalPayment[] = [];
