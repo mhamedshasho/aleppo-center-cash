@@ -147,6 +147,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [selectedAccountId, setSelectedAccountId] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAccountId, setPaymentAccountId] = useState<number | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -486,11 +487,18 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       toast.error(validationError);
       return;
     }
+    const targetAccountId = paymentAccountId ?? selectedAccountId;
+    const targetAccount = accounts.find((account) => account.id === targetAccountId);
+    if (!targetAccount) {
+      toast.error("اختار حساب أولاً");
+      return;
+    }
     const amount = Number(paymentDraft.amount);
     const payment: Payment = { id: editingPaymentId ?? Date.now(), name: paymentDraft.name.trim(), amount, currency: paymentDraft.currency, type: paymentDraft.type, date: paymentDraft.date };
-    setAccounts((current) => current.map((account) => account.id === selectedAccountId ? { ...account, payments: editingPaymentId ? account.payments.map((item) => item.id === editingPaymentId ? payment : item) : [payment, ...account.payments] } : account));
+    setAccounts((current) => current.map((account) => account.id === targetAccountId ? { ...account, payments: editingPaymentId ? account.payments.map((item) => item.id === editingPaymentId ? payment : item) : [payment, ...account.payments] } : account));
     void recordAudit(editingPaymentId ? "update" : "create", "payment", payment.name);
     setEditingPaymentId(null);
+    setPaymentAccountId(null);
     setPaymentDraft({ name: "", amount: "", currency: "SYP", type: "credit", date: new Date().toISOString().slice(0, 10) });
     setShowPaymentModal(false);
     toast.success("انضافت الدفعة للحساب");
@@ -521,6 +529,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const openPaymentEditor = (payment: Payment) => {
     setEditingPaymentId(payment.id);
+    setPaymentAccountId(null);
     setPaymentDraft({ name: payment.name, amount: String(payment.amount), currency: payment.currency, type: payment.type, date: payment.date });
     setShowPaymentModal(true);
   };
@@ -755,14 +764,22 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         </header>
 
         <div className="content-wrap">
-          {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={() => { setSelectedAccountId(1); setShowPaymentModal(true); }} onGoAccounts={() => setView("accounts")} />}
+          {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={() => { setPaymentAccountId(accounts[0]?.id ?? null); setShowPaymentModal(true); }} onGoAccounts={() => setView("accounts")} />}
           {view === "accounts" && <AccountsView accounts={filteredAccounts} searchTerm={searchTerm} setSearchTerm={setSearchTerm} onOpenAccount={openAccount} onAddAccount={() => setShowAccountModal(true)} />}
-          {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
+          {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
           {view === "backup" && <BackupView auditEntries={auditEntries} onExport={exportBackup} onExportPdf={exportPdf} onExportPng={exportPng} onImport={handleImport} />}
         </div>
       </section>
 
-      {showPaymentModal && <Modal title={`${editingPaymentId ? "تعديل الدفعة" : "دفعة جديدة"} — ${selectedAccount?.name ?? "الحساب"}`} onClose={() => { setShowPaymentModal(false); setEditingPaymentId(null); }}><div className="modal-form"><label>اسم الدفعة<input value={paymentDraft.name} onChange={(event) => setPaymentDraft({ ...paymentDraft, name: event.target.value })} placeholder="مثلاً: دفعة بضاعة" /></label><div className="form-grid"><label>المبلغ<input type="number" min="0" value={paymentDraft.amount} onChange={(event) => setPaymentDraft({ ...paymentDraft, amount: event.target.value })} placeholder="0" /></label><label>العملة<select value={paymentDraft.currency} onChange={(event) => setPaymentDraft({ ...paymentDraft, currency: event.target.value as Currency })}><option value="SYP">ليرة سورية</option><option value="USD">دولار</option></select></label></div><label>التاريخ<input type="date" value={paymentDraft.date} onChange={(event) => setPaymentDraft({ ...paymentDraft, date: event.target.value })} /></label><div className="type-picker"><span>نوع الحركة</span><div><button className={paymentDraft.type === "credit" ? "selected credit" : ""} onClick={() => setPaymentDraft({ ...paymentDraft, type: "credit" })}><ArrowDownLeft size={16} /> له <small>إلك</small></button><button className={paymentDraft.type === "debit" ? "selected debit" : ""} onClick={() => setPaymentDraft({ ...paymentDraft, type: "debit" })}><ArrowUpRight size={16} /> عليه <small>إلك عليه</small></button></div></div><button className="primary-btn full" onClick={addPayment}>{editingPaymentId ? "حفظ التعديل" : "حفظ الدفعة"} <Check size={17} /></button></div></Modal>}
+      {showPaymentModal && <Modal title={`${editingPaymentId ? "تعديل الدفعة" : "دفعة جديدة"}${!editingPaymentId && paymentAccountId !== null ? "" : ` — ${selectedAccount?.name ?? "الحساب"}`}`} onClose={() => { setShowPaymentModal(false); setEditingPaymentId(null); setPaymentAccountId(null); }}><div className="modal-form">
+        {!editingPaymentId && paymentAccountId !== null && (
+          <label>الحساب
+            <select value={paymentAccountId} onChange={(event) => setPaymentAccountId(Number(event.target.value))}>
+              {accounts.map((account) => <option key={account.id} value={account.id}>{account.name} — {account.owner}</option>)}
+            </select>
+          </label>
+        )}
+        <label>اسم الدفعة<input value={paymentDraft.name} onChange={(event) => setPaymentDraft({ ...paymentDraft, name: event.target.value })} placeholder="مثلاً: دفعة بضاعة" /></label><div className="form-grid"><label>المبلغ<input type="number" min="0" value={paymentDraft.amount} onChange={(event) => setPaymentDraft({ ...paymentDraft, amount: event.target.value })} placeholder="0" /></label><label>العملة<select value={paymentDraft.currency} onChange={(event) => setPaymentDraft({ ...paymentDraft, currency: event.target.value as Currency })}><option value="SYP">ليرة سورية</option><option value="USD">دولار</option></select></label></div><label>التاريخ<input type="date" value={paymentDraft.date} onChange={(event) => setPaymentDraft({ ...paymentDraft, date: event.target.value })} /></label><div className="type-picker"><span>نوع الحركة</span><div><button className={paymentDraft.type === "credit" ? "selected credit" : ""} onClick={() => setPaymentDraft({ ...paymentDraft, type: "credit" })}><ArrowDownLeft size={16} /> له <small>إلك</small></button><button className={paymentDraft.type === "debit" ? "selected debit" : ""} onClick={() => setPaymentDraft({ ...paymentDraft, type: "debit" })}><ArrowUpRight size={16} /> عليه <small>إلك عليه</small></button></div></div><button className="primary-btn full" onClick={addPayment}>{editingPaymentId ? "حفظ التعديل" : "حفظ الدفعة"} <Check size={17} /></button></div></Modal>}
       {showAccountModal && <Modal title={editingAccountId ? "تعديل الحساب" : "إضافة حساب جديد"} onClose={() => { setShowAccountModal(false); setEditingAccountId(null); setNewAccountName(""); setNewAccountOwner(""); }}><div className="modal-form"><label>اسم الحساب<input value={newAccountName} onChange={(event) => setNewAccountName(event.target.value)} placeholder="مثلاً: محل أبو علي" autoFocus /></label><label>اسم صاحب الحساب<input value={newAccountOwner} onChange={(event) => setNewAccountOwner(event.target.value)} placeholder="مثلاً: أحمد العلي" /></label><button className="primary-btn full" onClick={addAccount}>{editingAccountId ? "حفظ التعديل" : "إضافة الحساب"} <Plus size={17} /></button></div></Modal>}
       <input ref={importInputRef} className="sr-only-input" type="file" accept="application/json,.json" onChange={handleImportFile} />
     </main>
