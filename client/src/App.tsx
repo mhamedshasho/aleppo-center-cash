@@ -6,12 +6,14 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import CloudAuthGate from "./components/CloudAuthGate";
 import Home from "./pages/Home";
+import Credits from "./pages/Credits";
 
 
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={CloudAuthGate} />
+      <Route path={"/credits"} component={Credits} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
