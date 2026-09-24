@@ -76,6 +76,28 @@ export default function CloudAuthGate() {
   const [workspaceName, setWorkspaceName] = useState("Aleppo Center Cash");
   const [workspaceId, setWorkspaceId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [signupCooldownUntil, setSignupCooldownUntil] = useState(0);
+
+  useEffect(() => {
+    if (mode !== "signup") return;
+    const stored = Number(localStorage.getItem("aleppo-center-signup-cooldown") ?? "0");
+    if (stored <= Date.now()) {
+      localStorage.removeItem("aleppo-center-signup-cooldown");
+      return;
+    }
+    setSignupCooldownUntil(stored);
+    const timer = window.setInterval(() => {
+      const remaining = Number(localStorage.getItem("aleppo-center-signup-cooldown") ?? "0");
+      if (remaining <= Date.now()) {
+        localStorage.removeItem("aleppo-center-signup-cooldown");
+        setSignupCooldownUntil(0);
+        window.clearInterval(timer);
+      } else {
+        setSignupCooldownUntil(remaining);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [mode]);
 
   useEffect(() => {
     let active = true;
@@ -153,6 +175,12 @@ export default function CloudAuthGate() {
 
   const submitAuth = async () => {
     const cleanEmail = normalizeEmail(email);
+
+    if (mode === "signup" && signupCooldownUntil > Date.now()) {
+      const seconds = Math.max(1, Math.ceil((signupCooldownUntil - Date.now()) / 1000));
+      toast.info(`تم طلب رسالة تأكيد قبل شوي. انتظر ${seconds} ثانية ولا تعيد الإرسال.`);
+      return;
+    }
     if (!isValidEmail(cleanEmail)) {
       toast.error("اكتب بريد إلكتروني صحيح");
       return;
@@ -169,12 +197,23 @@ export default function CloudAuthGate() {
         : await signUpWithPassword(cleanEmail, password);
       if (result.error) throw result.error;
       if (mode === "signup" && !result.data.session) {
-        toast.success("تم إنشاء الحساب. إذا طلب Supabase تأكيد البريد، أكّده وبعدين فوت");
+        const cooldown = Date.now() + 10 * 60 * 1000;
+        localStorage.setItem("aleppo-center-signup-cooldown", String(cooldown));
+        setSignupCooldownUntil(cooldown);
+        toast.success("تم إنشاء الحساب. افتح رسالة التأكيد مرة واحدة، وبعدها فوت.");
       } else {
         toast.success(mode === "login" ? "أهلا فيك" : "انعمل الحساب بنجاح");
       }
       setPassword("");
     } catch (error) {
+      if (mode === "signup") {
+        const raw = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
+        if (raw.includes("email rate limit exceeded") || raw.includes("rate limit exceeded") || raw.includes("over_email_send_rate_limit")) {
+          const cooldown = Date.now() + 10 * 60 * 1000;
+          localStorage.setItem("aleppo-center-signup-cooldown", String(cooldown));
+          setSignupCooldownUntil(cooldown);
+        }
+      }
       toast.error(getAuthErrorMessage(error, mode));
     } finally {
       setBusy(false);
@@ -282,7 +321,7 @@ export default function CloudAuthGate() {
         <div className="key-input-wrap"><input id="auth-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" dir="ltr" autoComplete="email" /></div>
         <label className="field-label" htmlFor="auth-password">كلمة المرور</label>
         <div className="key-input-wrap"><input id="auth-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submitAuth(); }} placeholder="٨ محارف أو أكتر" dir="ltr" autoComplete={mode === "login" ? "current-password" : "new-password"} /></div>
-        <button className="primary-btn full" disabled={busy} onClick={() => void submitAuth()}>{busy ? <Loader2 className="spin" size={17} /> : mode === "login" ? <LogIn size={17} /> : <UserPlus size={17} />}{mode === "login" ? "فوت على الحساب" : "إنشاء حساب"}<ArrowLeft size={17} /></button>
+        <button className="primary-btn full" disabled={busy || (mode === "signup" && signupCooldownUntil > Date.now())} onClick={() => void submitAuth()}>{busy ? <Loader2 className="spin" size={17} /> : mode === "login" ? <LogIn size={17} /> : <UserPlus size={17} />}{mode === "login" ? "فوت على الحساب" : signupCooldownUntil > Date.now() ? `انتظر ${Math.ceil((signupCooldownUntil - Date.now()) / 1000)}ث` : "إنشاء حساب"}<ArrowLeft size={17} /></button>
         <div className="privacy-note"><KeyRound size={16} /> TLS وحماية صلاحيات — مو E2EE</div>
       </section>
       <footer className="login-footer">Aleppo Center Cash <span>© 2026</span></footer>
