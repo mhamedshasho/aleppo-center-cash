@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { addAuditEntry, downloadJson, enqueueSyncSnapshot, readAccounts, readSyncQueue, removeSyncQueueItem, writeAccounts } from "@/lib/localStore";
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
@@ -153,6 +154,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [paymentDraft, setPaymentDraft] = useState({ name: "", amount: "", currency: "SYP" as Currency, type: "credit" as PaymentType, date: new Date().toISOString().slice(0, 10) });
   const [syncState, setSyncState] = useState<"local" | "syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "local");
+  const [, setLocation] = useLocation();
+  const [syncReadyVersion, setSyncReadyVersion] = useState(0);
   const syncTimer = useRef<number | null>(null);
   const syncInFlight = useRef(false);
   const pendingSync = useRef<{ accounts: Account[]; deletedAccountIds: { id: string; version?: number }[]; deletedPaymentIds: { id: string; version?: number }[] } | null>(null);
