@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { ArrowLeft, Building2, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import Home from "@/pages/Home";
@@ -12,7 +13,7 @@ import {
 } from "@/lib/supabase";
 
 type Mode = "login" | "signup";
-type WorkspaceState = { id: string; name: string; role: "owner" | "member" } | null;
+type WorkspaceState = { id: string; name: string; slug: string; role: "owner" | "member" } | null;
 
 function getAuthErrorMessage(error: unknown, mode: Mode) {
   const raw = error instanceof Error ? error.message : String(error ?? "");
@@ -60,6 +61,8 @@ export default function CloudAuthGate() {
   const [workspaceId, setWorkspaceId] = useState("");
   const [busy, setBusy] = useState(false);
   const [signupCooldownUntil, setSignupCooldownUntil] = useState(0);
+  const [location] = useLocation();
+  const routeSlug = location === "/" ? "" : decodeURIComponent(location.replace(/^\/+/, "").split("/")[0]).trim().toUpperCase();
 
   useEffect(() => {
     if (mode !== "signup") return;
@@ -119,9 +122,74 @@ export default function CloudAuthGate() {
 
     const loadWorkspace = async () => {
       for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (routeSlug) {
+          const { data: workspaceRow, error: workspaceError } = await client
+            .from("workspaces")
+            .select("id, name, slug")
+            .eq("slug", routeSlug)
+            .maybeSingle();
+
+          if (!active) return;
+
+          if (workspaceError) {
+            if (attempt < 2) {
+              await new Promise((resolve) => window.setTimeout(resolve, 400));
+              continue;
+            }
+            setWorkspace(null);
+            setWorkspaceLoading(false);
+            toast.error("تعذر فتح مساحة العمل من الرابط.");
+            return;
+          }
+
+          if (!workspaceRow) {
+            setWorkspace(null);
+            setWorkspaceLoading(false);
+            toast.error("مساحة العمل غير موجودة.");
+            return;
+          }
+
+          const { data: membership, error: membershipError } = await client
+            .from("workspace_members")
+            .select("workspace_id, role")
+            .eq("user_id", session.user.id)
+            .eq("active", true)
+            .eq("workspace_id", workspaceRow.id)
+            .maybeSingle();
+
+          if (!active) return;
+
+          if (membershipError) {
+            if (attempt < 2) {
+              await new Promise((resolve) => window.setTimeout(resolve, 400));
+              continue;
+            }
+            setWorkspace(null);
+            setWorkspaceLoading(false);
+            toast.error("تعذر التحقق من صلاحية مساحة العمل.");
+            return;
+          }
+
+          if (!membership) {
+            setWorkspace(null);
+            setWorkspaceLoading(false);
+            toast.error("هذا الحساب لا يملك صلاحية الدخول إلى مساحة العمل.");
+            return;
+          }
+
+          setWorkspace({
+            id: workspaceRow.id,
+            name: workspaceRow.name,
+            slug: workspaceRow.slug,
+            role: membership.role,
+          });
+          setWorkspaceLoading(false);
+          return;
+        }
+
         const { data, error } = await client
           .from("workspace_members")
-          .select("workspace_id, role, workspaces(name)")
+          .select("workspace_id, role, workspaces(name, slug)")
           .eq("user_id", session.user.id)
           .eq("active", true)
           .order("joined_at", { ascending: true })
@@ -132,9 +200,20 @@ export default function CloudAuthGate() {
 
         if (!error) {
           const workspaceRow = Array.isArray(data?.workspaces) ? data?.workspaces[0] : data?.workspaces;
-          const nextWorkspace = data
-            ? { id: data.workspace_id, role: data.role, name: workspaceRow?.name ?? "مركز حلب" }
-            : null;
+          if (!data || !workspaceRow?.slug) {
+            setWorkspace(null);
+            setWorkspaceLoading(false);
+            return;
+          }
+
+          const nextWorkspace = {
+            id: data.workspace_id,
+            role: data.role,
+            name: workspaceRow.name ?? "مركز حلب",
+            slug: workspaceRow.slug,
+          } as WorkspaceState;
+
+          window.history.replaceState(null, "", "/" + encodeURIComponent(workspaceRow.slug));
           setWorkspace(nextWorkspace);
           setWorkspaceLoading(false);
           return;
@@ -154,7 +233,7 @@ export default function CloudAuthGate() {
     return () => {
       active = false;
     };
-  }, [session]);
+  }, [session, routeSlug]);
 
   const submitAuth = async () => {
     const cleanEmail = normalizeEmail(email);
@@ -215,7 +294,7 @@ export default function CloudAuthGate() {
 
       const { data: membership, error: membershipError } = await supabase
         .from("workspace_members")
-        .select("workspace_id, role, workspaces(name)")
+        .select("workspace_id, role, workspaces(name, slug)")
         .eq("user_id", session.user.id)
         .eq("active", true)
         .eq("workspace_id", data)
@@ -228,11 +307,13 @@ export default function CloudAuthGate() {
       const createdWorkspace = {
         id: membership.workspace_id,
         name: workspaceRow?.name ?? workspaceName.trim(),
+        slug: workspaceRow?.slug ?? workspaceName.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
         role: membership.role,
       } as WorkspaceState;
 
       setWorkspaceLoading(false);
       setWorkspace(createdWorkspace);
+      window.history.replaceState(null, "", "/" + encodeURIComponent(createdWorkspace.slug));
       toast.success("انعملت مساحة المحل");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إنشاء مساحة العمل");
@@ -263,11 +344,13 @@ export default function CloudAuthGate() {
       const joinedWorkspace = {
         id: membership.workspace_id,
         name: workspaceRow?.name ?? data?.name ?? "مركز حلب",
+        slug: workspaceRow?.slug ?? workspaceId.trim().toUpperCase(),
         role: membership.role,
       } as WorkspaceState;
 
       setWorkspaceLoading(false);
       setWorkspace(joinedWorkspace);
+      window.history.replaceState(null, "", "/" + encodeURIComponent(joinedWorkspace.slug));
       toast.success("انضمّيت لمساحة المحل");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر الانضمام. تأكد من Workspace ID");
