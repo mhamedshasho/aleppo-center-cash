@@ -45,17 +45,38 @@ const ACCOUNTS_KEY = "accounts";
 const SNAPSHOT_KEY = "accounts-before-import";
 const SYNC_QUEUE_KEY = "sync-queue";
 
+let databaseConnection: IDBDatabase | null = null;
+let databaseOpenPromise: Promise<IDBDatabase> | null = null;
+
 function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (databaseConnection) return Promise.resolve(databaseConnection);
+  if (databaseOpenPromise) return databaseOpenPromise;
+
+  databaseOpenPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
+
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(DATA_STORE)) database.createObjectStore(DATA_STORE);
       if (!database.objectStoreNames.contains(AUDIT_STORE)) database.createObjectStore(AUDIT_STORE, { keyPath: "id" });
     };
-    request.onsuccess = () => resolve(request.result);
+
+    request.onsuccess = () => {
+      const database = request.result;
+      database.onversionchange = () => {
+        database.close();
+        if (databaseConnection === database) databaseConnection = null;
+      };
+      databaseConnection = database;
+      resolve(database);
+    };
+
     request.onerror = () => reject(request.error ?? new Error("تعذر فتح التخزين المحلي"));
+  }).finally(() => {
+    databaseOpenPromise = null;
   });
+
+  return databaseOpenPromise;
 }
 
 export async function readAccounts(): Promise<LocalAccount[] | null> {
@@ -218,11 +239,16 @@ export async function readAuditEntries(): Promise<AuditEntry[]> {
 
 export async function clearAllLocalData() {
   if (typeof indexedDB === "undefined") return;
+
+  databaseConnection?.close();
+  databaseConnection = null;
+  databaseOpenPromise = null;
+
   await new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(DB_NAME);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error ?? new Error("تعذر مسح التخزين المحلي"));
-    request.onblocked = () => resolve();
+    request.onblocked = () => reject(new Error("تعذر مسح التخزين المحلي لأن نسخة أخرى من التطبيق ما زالت مفتوحة"));
   });
 }
 
