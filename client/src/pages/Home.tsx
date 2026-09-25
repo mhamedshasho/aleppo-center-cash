@@ -779,6 +779,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
       setAccounts(nextAccounts);
       void recordAudit("delete", "payment", payment.name);
+      void saveCloudBackup();
       toast.success("انحذفت الدفعة");
     } catch (error) {
       console.error("[AleppoCenterCash] delete payment failed", error);
@@ -807,6 +808,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       setSelectedAccountId(nextAccounts[0]?.id ?? 0);
       setView("accounts");
       void recordAudit("delete", "account", account.name);
+      void saveCloudBackup();
       toast.success("انحذف الحساب وكل حركاته");
     } catch (error) {
       console.error("[AleppoCenterCash] delete account failed", error);
