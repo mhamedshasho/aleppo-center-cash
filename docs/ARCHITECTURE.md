@@ -1,43 +1,115 @@
 # Architecture
 
-## Scope
+## Product boundary
 
-Aleppo Center Cash is a single-workspace application for one shop with two users: `owner` and `member`. The design deliberately excludes E2EE, recovery keys, device keys, multiple workspaces, and general team administration.
+Aleppo Center Cash is a cloud accounting workspace for a small shop. Its core workflow is:
 
-## Runtime flow
+1. Sign in.
+2. Enter the shared workspace.
+3. Create customer accounts.
+4. Record **له / عليه** movements.
+5. Review balances independently in SYP and USD.
+6. Inspect the activity history.
+7. Export reports or create a restoration backup.
+
+The browser is a user interface and synchronization client. PostgreSQL is the accounting source of truth while connected.
+
+## Runtime
 
 ```text
-React RTL client
-  ├─ Supabase Auth / JWT
-  ├─ PostgreSQL tables protected by RLS
-  ├─ Realtime events for accounts, payments, and sync cursors
-  └─ IndexedDB local persistence and offline retry queue
+React + TypeScript
+       │
+       ├── Supabase Auth
+       ├── PostgreSQL + RLS
+       ├── Realtime
+       └── Edge Functions
+              │
+              └── private restoration storage
 ```
 
-PostgreSQL is authoritative when connected. The client may render an optimistic local state, but it must reconcile with server versions after reconnect. Realtime is an invalidation/update channel, not the accounting source of truth.
+The application currently disables stale service workers and browser caches rather than presenting an offline accounting mode. Accounting writes require an active internet connection.
 
-## Roles
+## Workspace permissions
 
-`owner` can manage the workspace, member, accounts, payments, exports, and audit visibility. `member` can read and update accounts and payments but cannot manage the workspace or other members. Both users have individual Auth accounts.
+Active workspace members receive the application's normal workspace permissions. The project does not use a separate owner-only UI restriction for ordinary accounting operations.
+
+Each person uses an individual authentication account.
 
 ## Data model
 
-The migration creates `workspaces`, `profiles`, `workspace_members`, `accounts`, `payments`, `audit_log`, and `sync_events`. Every domain row carries `workspace_id`. Money is validated as a positive integer amount with `SYP` or `USD`; payment type is `credit` or `debit`.
+Core tables:
 
-## RLS
+- `workspaces`
+- `profiles`
+- `workspace_members`
+- `accounts`
+- `payments`
+- `audit_log`
 
-Every exposed table has RLS enabled. Membership is checked by `is_workspace_member`; Owner-only operations use `is_workspace_owner`. The browser receives only the publishable key. Secret keys and database credentials remain server-side and outside the repository.
+Every accounting record is associated with a workspace. Money is represented with an explicit currency: `SYP` or `USD`.
 
-## Sync and conflicts
+Payment semantics:
 
-Accounts and payments have a monotonic `version`. An update should include the expected version; a stale update is treated as a conflict instead of silently overwriting the other user. Payments should be corrected or voided with an auditable action rather than changing financial meaning without history.
+- `credit` = **له**
+- `debit` = **عليه**
 
-The client stores pending local changes and retries after reconnect. It should fetch canonical rows after a Realtime event. A missing, duplicated, or delayed Realtime message must not corrupt the ledger.
+The UI calculates balance as debit minus credit, preserving the distinction between the two directions.
+
+## Synchronization
+
+Supabase is authoritative.
+
+The client:
+
+- reads canonical cloud data
+- writes through the synchronization layer
+- subscribes to Realtime changes
+- recovers from transient sync failures
+- periodically retries the cloud backup
+
+A failed backup must not be reported as a failed accounting write.
 
 ## Audit
 
-Important writes, exports, imports, login/session events, sync failures, and conflicts are recorded in `audit_log`. Users cannot delete audit rows through normal RLS policies.
+Important account and payment changes are represented in `audit_log`. The activity view exposes recent changes and actor information.
+
+Restoration is a controlled backend operation and does not expose the service-role key to the browser.
+
+## Backup
+
+### Cloud snapshot
+
+The Edge Function creates a complete workspace snapshot containing the workspace, active members, relevant profiles, accounts, payments, and audit records. The latest snapshot replaces the previous workspace snapshot.
+
+### Portable restoration file
+
+The browser requests a server snapshot, encrypts it with:
+
+- AES-GCM
+- PBKDF2-SHA-256
+- 250,000 iterations
+- random salt
+- random IV
+
+The resulting JSON envelope is portable and does not contain Supabase credentials or the user's login password.
+
+### Dropbox
+
+Dropbox is an off-site backup target, not the primary database. The application must not put a Dropbox access token in client-side code. Dropbox credentials belong in server-side secrets.
 
 ## Security boundary
 
-The system uses TLS, Supabase Auth, RLS, session persistence, local validation, and restricted dashboard access. It does **not** use E2EE. Supabase administrators and permitted backend operations can read hosted records. This is an explicit product decision for the two-user simplified beta.
+This system is not E2EE. Supabase administrators and authorized backend operations can access hosted records.
+
+The intended model is secure authenticated cloud storage plus encrypted portable recovery files, not zero-knowledge accounting.
+
+## Deployment
+
+Vercel builds the application from the GitHub repository. Supabase hosts the database and Edge Functions.
+
+Every production change should pass:
+
+```bash
+pnpm check
+pnpm build
+```
