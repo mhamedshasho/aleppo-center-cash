@@ -12,14 +12,14 @@ begin
   on conflict (workspace_id) do update set password_hash = excluded.password_hash, updated_at = now();
   return true;
 end; $$;
-revoke all on function public.set_workspace_restore_password(uuid, text) from public;
+revoke all on function public.set_workspace_restore_password(uuid, text) from public, anon, authenticated;
 grant execute on function public.set_workspace_restore_password(uuid, text) to service_role;
 
 create or replace function public.verify_workspace_restore_password(target_workspace uuid, candidate_password text)
 returns boolean language sql security definer set search_path = public, extensions as $$
 select exists (select 1 from public.workspace_restore_secrets s where s.workspace_id = target_workspace and s.password_hash = extensions.crypt(candidate_password, s.password_hash));
 $$;
-revoke all on function public.verify_workspace_restore_password(uuid, text) from public;
+revoke all on function public.verify_workspace_restore_password(uuid, text) from public, anon, authenticated;
 grant execute on function public.verify_workspace_restore_password(uuid, text) to service_role;
 
 create or replace function public.restore_workspace_snapshot(target_workspace uuid, snapshot jsonb)
@@ -58,7 +58,7 @@ begin
   end loop;
   return true;
 end; $$;
-revoke all on function public.restore_workspace_snapshot(uuid,jsonb) from public;
+revoke all on function public.restore_workspace_snapshot(uuid,jsonb) from public, anon, authenticated;
 grant execute on function public.restore_workspace_snapshot(uuid,jsonb) to service_role;
 
 insert into storage.buckets(id,name,public) values ('workspace-restorations','workspace-restorations',false) on conflict (id) do update set public=false;
