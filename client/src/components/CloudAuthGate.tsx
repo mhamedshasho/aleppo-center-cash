@@ -15,6 +15,8 @@ import {
 type Mode = "login" | "signup";
 type WorkspaceState = { id: string; name: string; slug: string; role: "owner" | "member" } | null;
 
+let signupCooldownUntilMemory = 0;
+
 function getAuthErrorMessage(error: unknown, mode: Mode) {
   const raw = error instanceof Error ? error.message : String(error ?? "");
   const normalized = raw.toLowerCase();
@@ -69,20 +71,18 @@ export default function CloudAuthGate() {
 
   useEffect(() => {
     if (mode !== "signup") return;
-    const stored = Number(localStorage.getItem("aleppo-center-signup-cooldown") ?? "0");
-    if (stored <= Date.now()) {
-      localStorage.removeItem("aleppo-center-signup-cooldown");
+    if (signupCooldownUntilMemory <= Date.now()) {
+      setSignupCooldownUntil(0);
       return;
     }
-    setSignupCooldownUntil(stored);
+    setSignupCooldownUntil(signupCooldownUntilMemory);
     const timer = window.setInterval(() => {
-      const remaining = Number(localStorage.getItem("aleppo-center-signup-cooldown") ?? "0");
-      if (remaining <= Date.now()) {
-        localStorage.removeItem("aleppo-center-signup-cooldown");
+      if (signupCooldownUntilMemory <= Date.now()) {
+        signupCooldownUntilMemory = 0;
         setSignupCooldownUntil(0);
         window.clearInterval(timer);
       } else {
-        setSignupCooldownUntil(remaining);
+        setSignupCooldownUntil(signupCooldownUntilMemory);
       }
     }, 1000);
     return () => window.clearInterval(timer);
@@ -264,7 +264,7 @@ export default function CloudAuthGate() {
       if (result.error) throw result.error;
       if (mode === "signup" && !result.data.session) {
         const cooldown = Date.now() + 60 * 1000;
-        localStorage.setItem("aleppo-center-signup-cooldown", String(cooldown));
+        signupCooldownUntilMemory = cooldown;
         setSignupCooldownUntil(cooldown);
         toast.success("تم إنشاء الحساب. افتح رسالة التأكيد مرة واحدة، وبعدها فوت.");
       } else {
@@ -276,7 +276,7 @@ export default function CloudAuthGate() {
         const raw = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
         if (raw.includes("email rate limit exceeded") || raw.includes("rate limit exceeded") || raw.includes("over_email_send_rate_limit")) {
           const cooldown = Date.now() + 60 * 1000;
-          localStorage.setItem("aleppo-center-signup-cooldown", String(cooldown));
+          signupCooldownUntilMemory = cooldown;
           setSignupCooldownUntil(cooldown);
         }
       }
@@ -359,7 +359,7 @@ export default function CloudAuthGate() {
 
       const { data: membership, error: membershipError } = await supabase
         .from("workspace_members")
-        .select("workspace_id, role, workspaces(name)")
+        .select("workspace_id, role, workspaces(name, slug)")
         .eq("user_id", session?.user.id ?? "")
         .eq("active", true)
         .eq("workspace_id", workspaceId.trim())
