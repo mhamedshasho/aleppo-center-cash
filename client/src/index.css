@@ -196,6 +196,8 @@ button:active { transform: scale(.975); }
 .ring-two { width: 102px; height: 145px; transform: rotate(49deg); border-color: rgba(177,236,203,.16); }
 .orbit-core { display: grid; place-items: center; width: 71px; height: 71px; color: #c4f0d3; border: 1px solid rgba(198,240,211,.32); background: rgba(143,210,177,.1); border-radius: 50%; box-shadow: 0 0 32px rgba(154,226,177,.18); }
 .orbit-core span { margin-top: -4px; color: #91c3b0; font: 700 9px 'Manrope'; }
+.currency-toggle { padding: 0; cursor: pointer; font: inherit; appearance: none; -webkit-appearance: none; }
+.currency-toggle:focus-visible { outline: 2px solid #c4f0d3; outline-offset: 5px; }
 .summary-breakdown { display: grid; gap: 15px; justify-self: end; min-width: 160px; }
 .summary-breakdown > div { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 12px; border-bottom: 1px solid rgba(207,238,221,.12); }
 .summary-breakdown span { display: flex; align-items: center; gap: 7px; color: #9fcabb; font-size: 11px; }
