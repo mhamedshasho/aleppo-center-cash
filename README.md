@@ -1,55 +1,182 @@
 # Aleppo Center Cash
 
-Aleppo Center Cash is a privacy-first Arabic RTL cash-accounting workspace for one shop. The current beta supports two people: an **Owner** and one **Member** sharing the same workspace.
+**Arabic RTL cloud accounting for a small shop — built around accounts, payments, audit history, and reliable recovery.**
 
-## Product scope
+Aleppo Center Cash is a focused accounting workspace for recording what is **owed to a customer (له)** and what a **customer owes the shop (عليه)**, with separate SYP and USD balances.
 
-The app provides account and payment records, SYP and USD validation, local exports, audit-friendly changes, and a Supabase-backed authentication and workspace onboarding path. It is intentionally simple: one workspace, two roles, no E2EE, no recovery-key system, and no multi-team administration.
+Production: **https://aleppo-center-cash.vercel.app/**
 
-## Stack
+## What it does
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS 4 and shadcn/ui primitives
-- Wouter routing
-- Supabase Auth, PostgreSQL, Row Level Security, and Realtime
-- IndexedDB local-first persistence and backup helpers
-- jsPDF/html2canvas for local exports
-- PWA manifest and service worker
+- Arabic RTL accounting workflow
+- Customer accounts with phone/owner information
+- Payments classified as **له / عليه**
+- Separate **SYP / USD** accounting
+- Dashboard with account and balance summaries
+- Account-level transaction history
+- Search and account navigation
+- Audit/activity history for important changes
+- Supabase Auth and PostgreSQL as the cloud source of truth
+- Row Level Security and workspace membership
+- Realtime synchronization
+- Automatic cloud restoration snapshots
+- Encrypted portable JSON restoration files using AES-GCM
+- PDF and PNG account reports
+- Responsive desktop and mobile UI
+- Vercel production deployment
+
+## Product model
+
+The accounting meaning is intentionally explicit:
+
+| Entry | Meaning |
+|---|---|
+| **له** | The shop owes the customer |
+| **عليه** | The customer owes the shop |
+
+Balances are calculated independently for each currency. SYP and USD are never silently mixed.
+
+## Architecture
+
+```text
+Browser
+  │
+  ├── React 19 + TypeScript + Vite
+  ├── Arabic RTL UI
+  └── Supabase client
+          │
+          ├── Auth / JWT
+          ├── PostgreSQL
+          ├── Row Level Security
+          ├── Realtime
+          └── Edge Functions
+                  │
+                  └── Private restoration storage
+```
+
+PostgreSQL is authoritative while connected. The application does not treat browser storage as the accounting database.
+
+### Backup layers
+
+1. **Cloud restoration snapshot** — maintained in private Supabase Storage.
+2. **Portable restoration file** — exported as an AES-GCM encrypted JSON file.
+3. **Off-site backup** — Dropbox integration is planned as an additional encrypted copy; it is not represented as active until its server-side credentials are configured.
+
+The restoration file never contains a login password or Supabase secret.
+
+## Technology
+
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS 4
+- shadcn/ui / Radix UI primitives
+- Supabase Auth
+- PostgreSQL + RLS
+- Supabase Realtime
+- Supabase Edge Functions
+- Vercel
+- jsPDF
+- html2canvas
+- Lucide React
+- pnpm
+
+## Repository layout
+
+```text
+client/                 React application
+client/src/lib/         Supabase, sync, validation, backup helpers
+client/src/pages/       Dashboard, accounts, activity views
+supabase/migrations/    Database migrations
+supabase/functions/     Server-side Edge Functions
+docs/                   Architecture and deployment documentation
+.github/                CI and repository automation
+```
 
 ## Local development
+
+Requirements:
+
+- Node.js
+- pnpm 10.x
+- A Supabase project
 
 ```bash
 pnpm install
 cp .env.example .env.local
+pnpm check
+pnpm build
 pnpm dev
 ```
 
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. Never add `.env.local`, a database password, a `service_role` key, or an `sb_secret_` key to Git.
+Configure:
 
-## Supabase setup
+```env
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_PUBLISHABLE_KEY=...
+```
 
-Run [`supabase/migrations/001_initial_schema.sql`](supabase/migrations/001_initial_schema.sql) in the Supabase SQL Editor. It creates the simplified two-user workspace schema, RLS policies, version checks, the Owner bootstrap RPC, and the Member join RPC.
+Never commit:
 
-After signing up, the Owner creates the workspace. The Member signs up separately and joins using the Workspace ID shown in the app. Each person must use an individual email/password account; do not share one login.
+- `.env.local`
+- database passwords
+- `service_role` keys
+- `sb_secret_` keys
+- access tokens
+- production accounting exports
 
-## Validation
+## Database
+
+Migrations live in `supabase/migrations/`.
+
+Apply migrations through the Supabase workflow used by the project. Do not manually delete production tables to resolve application problems.
+
+Important domain tables include:
+
+- `workspaces`
+- `workspace_members`
+- `profiles`
+- `accounts`
+- `payments`
+- `audit_log`
+
+## Security model
+
+This project is **not end-to-end encrypted**.
+
+The security boundary is:
+
+- browser receives only the Supabase publishable key
+- database access is protected by RLS
+- authenticated workspace membership is required
+- sensitive server operations run through Edge Functions
+- restoration files can be encrypted locally with AES-GCM
+- production security headers are configured at Vercel
+
+Do not describe the hosted application as zero-knowledge or E2EE.
+
+## Quality checks
+
+Run before shipping:
 
 ```bash
 pnpm check
 pnpm build
 ```
 
-## Security boundary
-
-This beta uses TLS, Supabase storage encryption, Auth, RLS, and least-privilege application roles. It is **not end-to-end encrypted**: the hosted backend can read records under its administrative authority. Do not describe this version as E2EE or zero-knowledge.
+The repository also includes GitHub Actions for repeatable type-check and build validation.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Setup](docs/SETUP.md)
 - [Deployment](docs/DEPLOY.md)
-- [Simplified multi-user decision](docs/multi-user-simplified-architecture.md)
+- [Multi-user architecture](docs/multi-user-simplified-architecture.md)
 
-## License and data
+## Project status
 
-The repository is private. Production data must not be committed. Use the Supabase project and local backup workflow described in the setup documentation.
+This is an actively developed production application. The repository is the source for the deployed application; production accounting data is stored outside GitHub.
+
+## License
+
+MIT
