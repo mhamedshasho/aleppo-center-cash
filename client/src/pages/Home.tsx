@@ -598,8 +598,34 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         throw error;
       }
 
+      try {
+        const recovered = await pullCloudAccounts(cloudWorkspace.id);
+        const candidateRemoteIds = new Set(
+          nextAccounts
+            .flatMap((account) => [account.remoteId, ...account.payments.map((payment) => payment.remoteId)])
+            .filter((value): value is string => Boolean(value)),
+        );
+        const recoveredRemoteIds = new Set(
+          recovered
+            .flatMap((account) => [account.remoteId, ...account.payments.map((payment) => payment.remoteId)])
+            .filter((value): value is string => Boolean(value)),
+        );
+        const candidateExists = Array.from(candidateRemoteIds).some((id) => recoveredRemoteIds.has(id));
+        const hasNewAccount = nextAccounts.some((account) =>
+          !accounts.some((previous) => previous.remoteId === account.remoteId) &&
+          recovered.some((remote) => remote.remoteId === account.remoteId || (remote.name === account.name && remote.owner === account.owner)),
+        );
+        if (candidateExists || hasNewAccount) {
+          setAccounts(recovered);
+          latestSyncedFingerprint.current = JSON.stringify(recovered);
+          setSyncState("synced");
+          return;
+        }
+      } catch (recoveryError) {
+        console.error("[AleppoCenterCash] cloud recovery after sync failure failed", recoveryError);
+      }
+
       setSyncState("offline");
-      toast.error("تعذر الاتصال بـ Supabase. لم يتم حفظ التعديل.");
       throw error;
     }
   };
