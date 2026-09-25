@@ -404,42 +404,26 @@ export async function pushLocalAccounts(
   if (!client) throw new Error("Supabase غير مهيأ بعد");
 
   for (const deletion of deletedPaymentIds) {
-    console.info("[AleppoCenterCash] deleting payment", deletion);
-    let query = client.from("payments").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
-    if (deletion.version !== undefined) query = query.eq("version", deletion.version);
-    const { data, error } = await query.select("id");
-    console.info("[AleppoCenterCash] payment delete result", { id: deletion.id, data, error });
+    console.info("[AleppoCenterCash] deleting payment through owner RPC", deletion);
+    const { data, error } = await client.rpc("delete_workspace_payment", {
+      target_workspace: workspaceId,
+      target_payment: deletion.id,
+    });
     if (error) throw error;
-    if (!data?.length) {
-      const { data: remaining, error: verifyError } = await client
-        .from("payments")
-        .select("id")
-        .eq("id", deletion.id)
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
-      if (verifyError) throw verifyError;
-      if (!remaining) continue;
-      throw new SyncConflictError("تعذر حذف الدفعة من السحابة: تغيرت قبل الحذف");
+    if (data === false) {
+      console.info("[AleppoCenterCash] payment was already absent", deletion.id);
     }
   }
 
   for (const deletion of deletedAccountIds) {
-    console.info("[AleppoCenterCash] deleting account", deletion);
-    let query = client.from("accounts").delete().eq("id", deletion.id).eq("workspace_id", workspaceId);
-    if (deletion.version !== undefined) query = query.eq("version", deletion.version);
-    const { data, error } = await query.select("id");
-    console.info("[AleppoCenterCash] account delete result", { id: deletion.id, data, error });
+    console.info("[AleppoCenterCash] deleting account through owner RPC", deletion);
+    const { data, error } = await client.rpc("delete_workspace_account", {
+      target_workspace: workspaceId,
+      target_account: deletion.id,
+    });
     if (error) throw error;
-    if (!data?.length) {
-      const { data: remaining, error: verifyError } = await client
-        .from("accounts")
-        .select("id")
-        .eq("id", deletion.id)
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
-      if (verifyError) throw verifyError;
-      if (!remaining) continue;
-      throw new SyncConflictError("تعذر حذف الحساب من السحابة: تغير قبل الحذف");
+    if (data === false) {
+      console.info("[AleppoCenterCash] account was already absent", deletion.id);
     }
   }
 
