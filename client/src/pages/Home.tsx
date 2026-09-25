@@ -504,8 +504,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   const resetEverything = async () => {
-    if (!cloudWorkspace || cloudWorkspace.role !== "owner") {
-      toast.error("حذف مساحة العمل متاح للمالك فقط");
+    if (!cloudWorkspace || !cloudWorkspace) {
+      toast.error("حذف مساحة العمل متاح لأعضاء مساحة العمل");
       return;
     }
     if (!window.confirm("متأكد؟ رح تنحذف مساحة العمل نهائياً مع كل الحسابات والدفعات، وما في تراجع.")) return;
