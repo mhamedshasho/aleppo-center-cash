@@ -66,45 +66,6 @@ type Account = {
 };
 
 const initialAccounts: Account[] = [];
-  {
-    id: 1,
-    name: "مركز حلب للألبسة",
-    owner: "أبو محمد",
-    accent: "mint",
-    payments: [
-      { id: 11, name: "بضاعة أيلول", amount: 1250000, currency: "SYP", type: "debit", date: "2026-09-18" },
-      { id: 12, name: "دفعة نقدية", amount: 500000, currency: "SYP", type: "credit", date: "2026-09-20" },
-      { id: 13, name: "فاتورة شحن", amount: 420, currency: "USD", type: "debit", date: "2026-09-21" },
-    ],
-  },
-  {
-    id: 2,
-    name: "شركة الندى للتوزيع",
-    owner: "سامر الندى",
-    accent: "violet",
-    payments: [
-      { id: 21, name: "دفعة أولى", amount: 850000, currency: "SYP", type: "credit", date: "2026-09-15" },
-      { id: 22, name: "طلبية جملة", amount: 1250, currency: "USD", type: "debit", date: "2026-09-17" },
-    ],
-  },
-  {
-    id: 3,
-    name: "محمصة باب الفرج",
-    owner: "ليان خليل",
-    accent: "amber",
-    payments: [
-      { id: 31, name: "حساب قديم", amount: 275000, currency: "SYP", type: "debit", date: "2026-09-09" },
-      { id: 32, name: "تسديد كامل", amount: 275000, currency: "SYP", type: "credit", date: "2026-09-11" },
-    ],
-  },
-  {
-    id: 4,
-    name: "مكتبة القلعة",
-    owner: "نور الدين",
-    accent: "blue",
-    payments: [],
-  },
-];
 
 const navItems: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "نظرة عامة", icon: HomeIcon },
@@ -947,7 +908,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
           <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : selectedAccount?.name}</strong></div>
-          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "syned" ? <Wifi size={15} /> : syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
+          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
         </header>
 
         <div className="content-wrap">
