@@ -909,7 +909,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 <span>👥 فريق التطوير</span>
                 <Heart size={14} />
               </button>
-              {cloudWorkspace?.role === "owner" && (
+              {cloudWorkspace && (
                 <>
                   <div className="profile-menu-divider" />
                   <button className="profile-menu-item danger" onClick={() => void resetEverything()} role="menuitem">
