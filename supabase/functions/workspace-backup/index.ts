@@ -22,6 +22,9 @@ const safeName = (value: string) => value
   .replace(/^-|-$/g, "")
   .slice(0, 100) || "workspace";
 
+const backupPath = (workspaceId: string) => `${workspaceId}.json`;
+const legacyBackupPath = (workspaceName: string) => `${safeName(workspaceName)}.json`;
+
 async function getUser(request: Request) {
   const authorization = request.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ")) return null;
@@ -78,7 +81,7 @@ async function createBackup(workspaceId: string, userId: string) {
     audit_log: audit.data ?? [],
   };
 
-  const path = safeName(workspace.name) + ".json";
+  const path = backupPath(workspaceId);
   const body = new TextEncoder().encode(JSON.stringify(snapshot, null, 2));
   const { error } = await admin.storage
     .from("workspace-restorations")
@@ -108,12 +111,19 @@ async function restore(workspaceId: string, userId: string, password: string) {
   if (verifyError) throw verifyError;
   if (!valid) throw new Error("invalid_restore_password");
 
-  const path = safeName(workspace.name) + ".json";
-  const { data: file, error } = await admin.storage.from("workspace-restorations").download(path);
-  if (error) throw error;
+  const primaryPath = backupPath(workspaceId);
+  let file: Blob | null = null;
+  const primary = await admin.storage.from("workspace-restorations").download(primaryPath);
+  if (!primary.error && primary.data) {
+    file = primary.data;
+  } else {
+    const legacy = await admin.storage.from("workspace-restorations").download(legacyBackupPath(workspace.name));
+    if (!legacy.error && legacy.data) file = legacy.data;
+  }
+  if (!file) throw new Error("backup_not_found");
 
   const snapshot = JSON.parse(await file.text());
-  if (snapshot?.format !== "aleppo-center-cash-restoration" || snapshot?.version !== 1) {
+  if (snapshot?.format !== "aleppo-center-cash-restoration" || snapshot?.version !== 1 || snapshot?.workspace?.id !== workspaceId) {
     throw new Error("invalid_backup");
   }
 
