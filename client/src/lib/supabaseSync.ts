@@ -516,79 +516,28 @@ export async function pushLocalAccounts(
     }];
   });
 }
-export async function deleteAccountFromCloud(workspaceId: string, accountId: string, expectedVersion?: number) {
+export async function deleteAccountFromCloud(workspaceId: string, accountId: string, _expectedVersion?: number) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
 
-  console.info("[AleppoCenterCash] direct account delete", { workspaceId, accountId, expectedVersion });
+  const { error } = await supabase.rpc("delete_workspace_account", {
+    target_workspace: workspaceId,
+    target_account: accountId,
+  });
 
-  let query = supabase
-    .from("accounts")
-    .delete()
-    .eq("id", accountId)
-    .eq("workspace_id", workspaceId);
-
-  if (expectedVersion !== undefined) query = query.eq("version", expectedVersion);
-
-  const { data, error } = await query.select("id");
-
-  console.info("[AleppoCenterCash] direct account delete result", { accountId, data, error });
-
-  if (error) {
-    console.error("[AleppoCenterCash] direct account delete failed", error);
-    throw error;
-  }
-
-  if (!data?.length) {
-    const { data: remaining, error: verifyError } = await supabase
-      .from("accounts")
-      .select("id, version")
-      .eq("id", accountId)
-      .eq("workspace_id", workspaceId)
-      .maybeSingle();
-
-    if (verifyError) {
-      console.error("[AleppoCenterCash] account delete verification failed", verifyError);
-      throw verifyError;
-    }
-
-    if (!remaining) {
-      console.info("[AleppoCenterCash] account already absent after delete attempt", { accountId });
-      return accountId;
-    }
-
-    throw new SyncConflictError("تعذر حذف الحساب من السحابة: تغير قبل الحذف");
-  }
-
-  return data[0].id as string;
+  if (error) throw error;
+  return accountId;
 }
 
-export async function deletePaymentFromCloud(workspaceId: string, paymentId: string, expectedVersion?: number) {
+export async function deletePaymentFromCloud(workspaceId: string, paymentId: string, _expectedVersion?: number) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
 
-  console.info("[AleppoCenterCash] direct payment delete", { workspaceId, paymentId, expectedVersion });
+  const { error } = await supabase.rpc("delete_workspace_payment", {
+    target_workspace: workspaceId,
+    target_payment: paymentId,
+  });
 
-  let query = supabase
-    .from("payments")
-    .delete()
-    .eq("id", paymentId)
-    .eq("workspace_id", workspaceId);
-
-  if (expectedVersion !== undefined) query = query.eq("version", expectedVersion);
-
-  const { data, error } = await query.select("id");
-
-  console.info("[AleppoCenterCash] direct payment delete result", { paymentId, data, error });
-
-  if (error) {
-    console.error("[AleppoCenterCash] direct payment delete failed", error);
-    throw error;
-  }
-
-  if (!data?.length) {
-    throw new SyncConflictError("تعذر حذف الدفعة من السحابة: لم يتم العثور عليها أو لا تملك صلاحية حذفها");
-  }
-
-  return data[0].id as string;
+  if (error) throw error;
+  return paymentId;
 }
 
 export async function resetWorkspaceData(workspaceId: string) {
