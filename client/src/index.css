@@ -288,3 +288,16 @@ button:active { transform: scale(.975); }
 .credits-love { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; color: #c27b4e; }
 .credits-love svg { color: #d14c4c; }
 @media (max-width: 560px) { .credits-shell { padding: 20px 14px; } .credits-card { padding: 26px 20px; border-radius: 20px; } }
+
+
+@media (min-width: 1101px) {
+  .sidebar { width: 270px; padding: 30px 20px 20px; }
+  .main-area { width: calc(100% - 270px); margin-inline-start: 270px; }
+  .topbar { padding-inline: clamp(30px, 3vw, 54px); }
+  .content-wrap { width: 100%; max-width: 1500px; padding: 46px clamp(30px, 3vw, 54px) 70px; }
+  .page-heading { margin-bottom: 34px; }
+  .page-heading h1 { font-size: 34px; }
+  .hero-summary { min-height: 220px; padding-inline: 42px; }
+  .account-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  .account-card { padding: 20px; }
+}
