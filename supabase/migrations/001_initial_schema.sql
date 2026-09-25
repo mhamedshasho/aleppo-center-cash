@@ -265,6 +265,59 @@ $delete_account$;
 revoke all on function public.delete_my_account() from public;
 grant execute on function public.delete_my_account() to authenticated;
 
+
+create or replace function public.delete_workspace_payment(target_workspace uuid, target_payment uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  deleted boolean := false;
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+  if not public.is_workspace_owner(target_workspace) then
+    raise exception 'not_workspace_owner';
+  end if;
+  delete from public.payments
+   where id = target_payment
+     and workspace_id = target_workspace;
+  deleted := found;
+  return deleted;
+end;
+$;
+
+revoke all on function public.delete_workspace_payment(uuid, uuid) from public;
+grant execute on function public.delete_workspace_payment(uuid, uuid) to authenticated;
+
+create or replace function public.delete_workspace_account(target_workspace uuid, target_account uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  deleted boolean := false;
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+  if not public.is_workspace_owner(target_workspace) then
+    raise exception 'not_workspace_owner';
+  end if;
+  delete from public.accounts
+   where id = target_account
+     and workspace_id = target_workspace;
+  deleted := found;
+  return deleted;
+end;
+$;
+
+revoke all on function public.delete_workspace_account(uuid, uuid) from public;
+grant execute on function public.delete_workspace_account(uuid, uuid) to authenticated;
+
 create or replace function public.touch_updated_at()
 returns trigger
 language plpgsql
