@@ -548,18 +548,26 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     }
   };
 
-  const saveCloudBackup = async () => {
-    if (!cloudWorkspace) return;
+  const saveCloudBackup = async (notify = true) => {
+    if (!cloudWorkspace) return null;
     try {
       const result = await createCloudBackup(cloudWorkspace.id);
-      toast.success("انحفظت آخر نسخة سحابية تلقائياً");
+      if (notify) toast.success("انحفظت آخر نسخة سحابية تلقائياً");
       return result;
     } catch (error) {
       console.error("[AleppoCenterCash] automatic backup failed", error);
-      toast.error("الحفظ الأساسي تم، لكن النسخة الاحتياطية لم تتحدث");
+      if (notify) toast.error("الحفظ الأساسي تم، لكن النسخة الاحتياطية لم تتحدث");
       return null;
     }
   };
+
+  useEffect(() => {
+    if (!cloudWorkspace) return;
+    const interval = window.setInterval(() => {
+      void saveCloudBackup(false);
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [cloudWorkspace?.id]);
 
   const downloadRestorationFile = async () => {
     if (!cloudWorkspace) return;
