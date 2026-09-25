@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Building2, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -53,6 +53,7 @@ export default function CloudAuthGate() {
   const [workspace, setWorkspace] = useState<WorkspaceState>(null);
   const [pendingWorkspace, setPendingWorkspace] = useState<WorkspaceState>(null);
   const [workspacePassword, setWorkspacePassword] = useState("");
+  const workspaceUnlockInProgressRef = useRef(false);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>("login");
@@ -119,6 +120,7 @@ export default function CloudAuthGate() {
 
     const client = supabase;
     let active = true;
+    if (routeSlug && workspaceUnlockInProgressRef.current) return;
     setWorkspace(null);
     setPendingWorkspace(null);
     setWorkspacePassword("");
@@ -327,6 +329,8 @@ export default function CloudAuthGate() {
 
   const enterWorkspace = async () => {
     if (!supabase || !session || !pendingWorkspace || !workspacePassword) return;
+    const targetWorkspace = pendingWorkspace;
+    workspaceUnlockInProgressRef.current = true;
     setBusy(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -335,10 +339,11 @@ export default function CloudAuthGate() {
       });
       if (error) throw error;
       setWorkspacePassword("");
-      setWorkspace(pendingWorkspace);
+      setWorkspace(targetWorkspace);
       setPendingWorkspace(null);
       toast.success("تم فتح مساحة العمل");
     } catch (error) {
+      workspaceUnlockInProgressRef.current = false;
       toast.error("كلمة مرور الحساب غير صحيحة.");
     } finally {
       setBusy(false);
