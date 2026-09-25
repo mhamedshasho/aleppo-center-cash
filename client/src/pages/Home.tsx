@@ -36,7 +36,7 @@ import { addAuditEntry, clearAllLocalData, downloadJson, enqueueSyncSnapshot, re
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
-import { deleteAccountFromCloud, deletePaymentFromCloud, deleteWorkspaceFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, SyncConflictError } from "@/lib/supabaseSync";
+import { deleteAccountFromCloud, deletePaymentFromCloud, deleteWorkspaceFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, verifyWorkspaceAccess, SyncConflictError, WorkspaceUnavailableError } from "@/lib/supabaseSync";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -276,6 +276,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   ) => {
     if (!cloudWorkspace || !cloudUser) return;
 
+    await verifyWorkspaceAccess(cloudWorkspace.id, cloudUser.id);
+
     const deletedAccounts = deletionOverrides?.deletedAccountIds ?? Array.from(deletedAccountIds.current, ([id, version]) => ({ id, version }));
     const deletedPayments = deletionOverrides?.deletedPaymentIds ?? Array.from(deletedPaymentIds.current, ([id, version]) => ({ id, version }));
 
@@ -421,6 +423,34 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       active = false;
     };
   }, [storageReady, cloudWorkspace?.id, cloudUser?.id]);
+
+  useEffect(() => {
+    if (!cloudWorkspace || !cloudUser) return;
+
+    let active = true;
+    const verify = async () => {
+      try {
+        await verifyWorkspaceAccess(cloudWorkspace.id, cloudUser.id);
+      } catch (error) {
+        if (!active) return;
+        if (error instanceof WorkspaceUnavailableError) {
+          await clearAllLocalData().catch(() => undefined);
+          const { supabase } = await import("@/lib/supabase");
+          await supabase?.auth.signOut().catch(() => undefined);
+          toast.error("مساحة العمل لم تعد موجودة. رجعناك لصفحة الدخول.");
+          window.location.replace("/");
+        }
+      }
+    };
+
+    void verify();
+    const verifyTimer = window.setInterval(() => void verify(), 5000);
+
+    return () => {
+      active = false;
+      window.clearInterval(verifyTimer);
+    };
+  }, [cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
@@ -602,6 +632,15 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         latestSyncedFingerprint.current = JSON.stringify(nextAccounts);
       }
     } catch (error) {
+      if (error instanceof WorkspaceUnavailableError) {
+        await clearAllLocalData().catch(() => undefined);
+        const { supabase } = await import("@/lib/supabase");
+        await supabase?.auth.signOut().catch(() => undefined);
+        toast.error("مساحة العمل لم تعد موجودة. رجعناك لصفحة الدخول.");
+        window.location.replace("/");
+        throw error;
+      }
+
       if (cloudWorkspace && cloudUser && !(error instanceof SyncConflictError)) {
         // Keep a successful local edit when the network is temporarily down.
         // The latest snapshot is retried automatically when the cloud becomes
