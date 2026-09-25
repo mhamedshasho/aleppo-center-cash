@@ -327,7 +327,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 ? "السجل موجود مسبقاً — أعد المحاولة مرة ثانية"
                 : errorMessage === "sync_busy"
                   ? "المزامنة ما زالت جارية — انتظر لحظة وجرب مرة ثانية"
-                  : "تعذر مزامنة التعديل حالياً، وانحفظ محلياً لإعادة المحاولة",
+                  : "تعذر الاتصال بـ Supabase. لم يتم حفظ التعديل.",
           );
           throw error;
         }
@@ -349,6 +349,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     let active = true;
 
     const initialSync = (async () => {
+      let connected = false;
       try {
         const remoteAccounts = await pullCloudAccounts(cloudWorkspace.id);
         if (!active || generation !== syncGeneration.current) return;
@@ -357,17 +358,16 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         setAccounts(remoteAccounts);
         setSyncState("synced");
         syncReadyRef.current = true;
+        connected = true;
         setSyncReadyVersion((value) => value + 1);
-        await flushSyncQueue();
       } catch (error) {
         if (!active || generation !== syncGeneration.current) return;
         console.error("[AleppoCenterCash] initial cloud pull failed", error);
+        syncReadyRef.current = false;
         setSyncState("offline");
       } finally {
-        if (active && generation === syncGeneration.current) {
-          // The initial read must never permanently block a user mutation.
-          // A failed pull is allowed to fall through to the normal write path.
-          syncReadyRef.current = true;
+        if (active && generation === syncGeneration.current && !connected) {
+          syncReadyRef.current = false;
           setSyncReadyVersion((value) => value + 1);
         }
       }
