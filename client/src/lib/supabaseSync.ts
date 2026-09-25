@@ -1,6 +1,13 @@
 import type { LocalAccount, LocalPayment } from "./localStore";
 import { supabase } from "./supabase";
 
+export class WorkspaceUnavailableError extends Error {
+  constructor(message = "مساحة العمل لم تعد موجودة أو لم تعد متاحة لهذا الحساب") {
+    super(message);
+    this.name = "WorkspaceUnavailableError";
+  }
+}
+
 export class SyncConflictError extends Error {
   constructor(message = "تعارض بالتعديل: في جهاز تاني سبقك") {
     super(message);
@@ -78,6 +85,32 @@ function normalizeLocalRemoteIds(accounts: LocalAccount[]) {
 
     return { ...nextAccount, payments };
   });
+}
+
+export async function verifyWorkspaceAccess(workspaceId: string, userId: string) {
+  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+
+  const { data: workspace, error: workspaceError } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("id", workspaceId)
+    .maybeSingle();
+
+  if (workspaceError) throw workspaceError;
+  if (!workspace) throw new WorkspaceUnavailableError();
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("workspace_members")
+    .select("workspace_id")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (membershipError) throw membershipError;
+  if (!membership) throw new WorkspaceUnavailableError();
+
+  return true;
 }
 
 export async function pullCloudAccounts(workspaceId: string): Promise<LocalAccount[]> {
