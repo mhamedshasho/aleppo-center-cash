@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
   ArrowDownLeft,
   ArrowLeft,
   ArrowUpRight,
