@@ -39,10 +39,11 @@ import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
 import { deleteAccountFromCloud, deletePaymentFromCloud, deleteWorkspaceFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, verifyWorkspaceAccess, SyncConflictError, WorkspaceUnavailableError } from "@/lib/supabaseSync";
+import ActivityView from "@/pages/Activity";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
-type View = "dashboard" | "accounts" | "account";
+type View = "dashboard" | "accounts" | "account" | "activity";
 
 type Payment = {
   id: number;
@@ -70,6 +71,7 @@ const initialAccounts: Account[] = [];
 const navItems: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "نظرة عامة", icon: HomeIcon },
   { id: "accounts", label: "الحسابات", icon: WalletCards },
+  { id: "activity", label: "التعديلات", icon: Activity },
 ];
 
 const formatAmount = (amount: number, currency: Currency) => {
@@ -907,13 +909,14 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       <section className="main-area">
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
-          <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : selectedAccount?.name}</strong></div>
+          <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : view === "activity" ? "التعديلات" : selectedAccount?.name}</strong></div>
           <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
         </header>
 
         <div className="content-wrap">
           {view === "dashboard" && <DashboardView accounts={accounts} totals={totals} onOpenAccount={openAccount} onAddPayment={openPaymentFromDashboard} onGoAccounts={() => setView("accounts")} />}
           {view === "accounts" && <AccountsView accounts={filteredAccounts} searchTerm={searchTerm} setSearchTerm={setSearchTerm} onOpenAccount={openAccount} onAddAccount={() => setShowAccountModal(true)} />}
+          {view === "activity" && <ActivityView workspaceId={cloudWorkspace?.id} currentUserId={cloudUser?.id} />}
           {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(null); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
         </div>
       </section>
