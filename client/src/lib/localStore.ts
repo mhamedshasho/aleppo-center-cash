@@ -38,227 +38,58 @@ export type SyncQueueItem = {
 };
 
 const DB_NAME = "aleppo-center-cash";
-const DB_VERSION = 1;
-const DATA_STORE = "app-data";
-const AUDIT_STORE = "audit-log";
-const ACCOUNTS_KEY = "accounts";
-const SNAPSHOT_KEY = "accounts-before-import";
-const SYNC_QUEUE_KEY = "sync-queue";
-
-let databaseConnection: IDBDatabase | null = null;
-let databaseOpenPromise: Promise<IDBDatabase> | null = null;
-
-function openDatabase(): Promise<IDBDatabase> {
-  if (databaseConnection) return Promise.resolve(databaseConnection);
-  if (databaseOpenPromise) return databaseOpenPromise;
-
-  const pending = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = () => {
-      const database = request.result;
-      if (!database.objectStoreNames.contains(DATA_STORE)) database.createObjectStore(DATA_STORE);
-      if (!database.objectStoreNames.contains(AUDIT_STORE)) database.createObjectStore(AUDIT_STORE, { keyPath: "id" });
-    };
-
-    request.onsuccess = () => {
-      const database = request.result;
-      database.onversionchange = () => {
-        database.close();
-        if (databaseConnection === database) databaseConnection = null;
-      };
-      databaseConnection = database;
-      resolve(database);
-    };
-
-    request.onerror = () => reject(request.error ?? new Error("تعذر فتح التخزين المحلي"));
-  });
-
-  const opened: Promise<IDBDatabase> = pending.then(
-    (database) => {
-      databaseOpenPromise = null;
-      return database;
-    },
-    (error: unknown) => {
-      databaseOpenPromise = null;
-      throw error;
-    },
-  );
-  databaseOpenPromise = opened;
-
-  return opened;
-}
 
 export async function readAccounts(): Promise<LocalAccount[] | null> {
-  if (typeof indexedDB === "undefined") return null;
-  const database = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(ACCOUNTS_KEY);
-    request.onsuccess = () => resolve((request.result as LocalAccount[] | undefined) ?? null);
-    request.onerror = () => reject(request.error);
-  });
+  return null;
 }
 
-export async function writeAccounts(accounts: LocalAccount[]) {
-  if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
-  return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(DATA_STORE, "readwrite");
-    transaction.objectStore(DATA_STORE).put(accounts, ACCOUNTS_KEY);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+export async function writeAccounts(_accounts: LocalAccount[]) {
+  return;
 }
 
-export async function readSetting(key: string): Promise<string | null> {
-  if (typeof indexedDB === "undefined") return null;
-  const database = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(`setting:${key}`);
-    request.onsuccess = () => resolve((request.result as string | undefined) ?? null);
-    request.onerror = () => reject(request.error);
-  });
+export async function readSetting(_key: string): Promise<string | null> {
+  return null;
 }
 
-export async function writeSetting(key: string, value: string): Promise<void> {
-  if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
-  return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(DATA_STORE, "readwrite");
-    transaction.objectStore(DATA_STORE).put(value, `setting:${key}`);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+export async function writeSetting(_key: string, _value: string): Promise<void> {
+  return;
 }
 
-export async function snapshotAccounts(accounts: LocalAccount[]) {
-  if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
-  return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(DATA_STORE, "readwrite");
-    transaction.objectStore(DATA_STORE).put(structuredClone(accounts), SNAPSHOT_KEY);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+export async function snapshotAccounts(_accounts: LocalAccount[]) {
+  return;
 }
 
 export async function restoreSnapshot(): Promise<LocalAccount[] | null> {
-  if (typeof indexedDB === "undefined") return null;
-  const database = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(SNAPSHOT_KEY);
-    request.onsuccess = () => resolve((request.result as LocalAccount[] | undefined) ?? null);
-    request.onerror = () => reject(request.error);
-  });
+  return null;
 }
 
 export async function readSyncQueue(): Promise<SyncQueueItem[]> {
-  if (typeof indexedDB === "undefined") return [];
-  const database = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(DATA_STORE, "readonly").objectStore(DATA_STORE).get(SYNC_QUEUE_KEY);
-    request.onsuccess = () => resolve((request.result as SyncQueueItem[] | undefined) ?? []);
-    request.onerror = () => reject(request.error);
-  });
+  return [];
 }
 
-export async function enqueueSyncSnapshot(item: Omit<SyncQueueItem, "id" | "createdAt">) {
-  if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
-  return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(DATA_STORE, "readwrite");
-    const store = transaction.objectStore(DATA_STORE);
-    const request = store.get(SYNC_QUEUE_KEY);
-
-    request.onsuccess = () => {
-      const queue = (request.result as SyncQueueItem[] | undefined) ?? [];
-      const matching = queue.filter((entry) => entry.workspaceId === item.workspaceId && entry.userId === item.userId);
-      const others = queue.filter((entry) => entry.workspaceId !== item.workspaceId || entry.userId !== item.userId);
-
-      const deletedAccountMap = new Map<string, number | undefined>();
-      const deletedPaymentMap = new Map<string, number | undefined>();
-
-      for (const entry of matching) {
-        for (const deletion of entry.deletedAccountIds ?? []) deletedAccountMap.set(deletion.id, deletion.version);
-        for (const deletion of entry.deletedPaymentIds ?? []) deletedPaymentMap.set(deletion.id, deletion.version);
-      }
-
-      for (const deletion of item.deletedAccountIds ?? []) deletedAccountMap.set(deletion.id, deletion.version);
-      for (const deletion of item.deletedPaymentIds ?? []) deletedPaymentMap.set(deletion.id, deletion.version);
-
-      const merged: SyncQueueItem = {
-        ...item,
-        id: matching.at(-1)?.id ?? crypto.randomUUID(),
-        accounts: item.accounts,
-        deletedAccountIds: Array.from(deletedAccountMap, ([id, version]) => ({ id, version })),
-        deletedPaymentIds: Array.from(deletedPaymentMap, ([id, version]) => ({ id, version })),
-        createdAt: new Date().toISOString(),
-      };
-
-      store.put([...others, merged].slice(-10), SYNC_QUEUE_KEY);
-    };
-
-    request.onerror = () => transaction.abort();
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error("تعذر حفظ طابور المزامنة"));
-    transaction.onabort = () => reject(transaction.error ?? new Error("تعذر حفظ طابور المزامنة"));
-  });
+export async function enqueueSyncSnapshot(_item: Omit<SyncQueueItem, "id" | "createdAt">) {
+  return;
 }
 
-export async function removeSyncQueueItem(id: string) {
-  if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
-  return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(DATA_STORE, "readwrite");
-    const store = transaction.objectStore(DATA_STORE);
-    const request = store.get(SYNC_QUEUE_KEY);
-
-    request.onsuccess = () => {
-      const queue = ((request.result as SyncQueueItem[] | undefined) ?? []).filter((item) => item.id !== id);
-      store.put(queue, SYNC_QUEUE_KEY);
-    };
-
-    request.onerror = () => transaction.abort();
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error("تعذر تحديث طابور المزامنة"));
-    transaction.onabort = () => reject(transaction.error ?? new Error("تعذر تحديث طابور المزامنة"));
-  });
+export async function removeSyncQueueItem(_id: string) {
+  return;
 }
 
-export async function addAuditEntry(entry: Omit<AuditEntry, "id" | "createdAt">) {
-  if (typeof indexedDB === "undefined") return;
-  const database = await openDatabase();
-  const auditEntry: AuditEntry = { ...entry, id: Date.now() + Math.floor(Math.random() * 1000), createdAt: new Date().toISOString() };
-  return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(AUDIT_STORE, "readwrite");
-    transaction.objectStore(AUDIT_STORE).put(auditEntry);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+export async function addAuditEntry(_entry: Omit<AuditEntry, "id" | "createdAt">) {
+  return;
 }
 
 export async function readAuditEntries(): Promise<AuditEntry[]> {
-  if (typeof indexedDB === "undefined") return [];
-  const database = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(AUDIT_STORE, "readonly").objectStore(AUDIT_STORE).getAll();
-    request.onsuccess = () => resolve((request.result as AuditEntry[]).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
-    request.onerror = () => reject(request.error);
-  });
+  return [];
 }
 
 export async function clearAllLocalData() {
   if (typeof indexedDB === "undefined") return;
-
-  databaseConnection?.close();
-  databaseConnection = null;
-  databaseOpenPromise = null;
-
-  await new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve) => {
     const request = indexedDB.deleteDatabase(DB_NAME);
     request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error ?? new Error("تعذر مسح التخزين المحلي"));
-    request.onblocked = () => reject(new Error("تعذر مسح التخزين المحلي لأن نسخة أخرى من التطبيق ما زالت مفتوحة"));
+    request.onerror = () => resolve();
+    request.onblocked = () => resolve();
   });
 }
 
