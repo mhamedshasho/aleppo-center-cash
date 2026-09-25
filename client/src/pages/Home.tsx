@@ -39,6 +39,7 @@ import { addAuditEntry, clearAllLocalData, enqueueSyncSnapshot, readAccounts, re
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
+import { supabase } from "@/lib/supabase";
 import { deleteAccountFromCloud, deletePaymentFromCloud, deleteWorkspaceFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, verifyWorkspaceAccess, SyncConflictError, WorkspaceUnavailableError } from "@/lib/supabaseSync";
 import { createCloudBackup, createEncryptedRestorationFile, restoreCloudBackup, restoreEncryptedRestorationFile, setCloudRestorePassword } from "@/lib/backup";
 import ActivityView from "@/pages/Activity";
@@ -66,6 +67,60 @@ type Account = {
   owner: string;
   accent: string;
   payments: Payment[];
+};
+
+type NotificationItem = {
+  id: string;
+  remoteId?: number;
+  action: string;
+  entity: string;
+  title: string;
+  detail: string;
+  createdAt: string;
+  read: boolean;
+};
+
+const notificationActionLabels: Record<string, string> = {
+  create: "إضافة",
+  update: "تعديل",
+  delete: "حذف",
+  import: "استيراد",
+  export: "تصدير",
+  login: "تسجيل دخول",
+  sync: "مزامنة",
+  conflict: "تعارض",
+};
+
+const notificationEntityLabels: Record<string, string> = {
+  account: "حساب",
+  payment: "دفعة",
+  backup: "نسخة احتياطية",
+  workspace: "مساحة العمل",
+  member: "عضو",
+  session: "جلسة",
+};
+
+const parseNotificationSummary = (summary: string) => {
+  try {
+    return JSON.parse(summary) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+};
+
+const makeNotification = (entry: { id: number; action: string; entity: string; summary: string; created_at: string }, read: boolean): NotificationItem => {
+  const data = parseNotificationSummary(entry.summary);
+  const detail = String(data.name ?? data.label ?? (entry.entity === "backup" ? "نسخة احتياطية" : notificationEntityLabels[entry.entity] ?? entry.entity));
+  return {
+    id: "remote-" + entry.id,
+    remoteId: entry.id,
+    action: entry.action,
+    entity: entry.entity,
+    title: (notificationActionLabels[entry.action] ?? entry.action) + " " + (notificationEntityLabels[entry.entity] ?? entry.entity),
+    detail,
+    createdAt: entry.created_at,
+    read,
+  };
 };
 
 const initialAccounts: Account[] = [];
@@ -127,6 +182,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [backupPassword, setBackupPassword] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
   const restorationFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -152,6 +209,24 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? accounts[0];
   const totals = useMemo(() => calculateTotals(accounts), [accounts]);
   const filteredAccounts = accounts.filter((account) => `${account.name} ${account.owner}`.toLowerCase().includes(searchTerm.toLowerCase()));
+  const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
+
+  const pushClientNotification = (action: string, entity: string, detail: string) => {
+    const item: NotificationItem = {
+      id: "local-" + Date.now() + "-" + Math.random().toString(36).slice(2),
+      action,
+      entity,
+      title: (notificationActionLabels[action] ?? action) + " " + (notificationEntityLabels[entity] ?? entity),
+      detail,
+      createdAt: new Date().toISOString(),
+      read: false,
+    };
+    setNotifications((current) => [item, ...current].slice(0, 12));
+  };
+
+  const markNotificationsRead = () => {
+    setNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
+  };
 
   useEffect(() => {
     let active = true;
@@ -418,6 +493,60 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   }, [cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
+    if (!cloudWorkspace?.id || !cloudUser?.id || !supabase) {
+      setNotifications([]);
+      setShowNotifications(false);
+      return;
+    }
+
+    let active = true;
+
+    const loadNotifications = async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("id,action,entity,summary,created_at")
+        .eq("workspace_id", cloudWorkspace.id)
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (!error && active) {
+        setNotifications(((data ?? []) as Array<{ id: number; action: string; entity: string; summary: string; created_at: string }>).map((entry) => makeNotification(entry, true)));
+      }
+    };
+
+    void loadNotifications();
+
+    const channel = supabase
+      .channel("notifications-" + cloudWorkspace.id)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_log", filter: "workspace_id=eq." + cloudWorkspace.id }, (payload) => {
+        const entry = payload.new as { id: number; action: string; entity: string; summary: string; created_at: string };
+        const incoming = makeNotification(entry, false);
+        setNotifications((current) => {
+          const duplicateIndex = current.findIndex((notification) =>
+            notification.remoteId === incoming.remoteId ||
+            (!notification.remoteId &&
+              notification.action === incoming.action &&
+              notification.entity === incoming.entity &&
+              notification.detail === incoming.detail &&
+              Date.now() - new Date(notification.createdAt).getTime() < 10000),
+          );
+          if (duplicateIndex >= 0) {
+            const next = [...current];
+            next[duplicateIndex] = { ...incoming, read: current[duplicateIndex].read };
+            return next;
+          }
+          return [incoming, ...current].slice(0, 12);
+        });
+      })
+      .subscribe();
+
+    return () => {
+      active = false;
+      void supabase?.removeChannel(channel);
+    };
+  }, [cloudWorkspace?.id, cloudUser?.id]);
+
+  useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
 
     const refresh = async () => {
@@ -492,7 +621,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   }, [syncState, cloudWorkspace?.id, cloudUser?.id]);
 
   const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
-    const entry = { action, entity, label, id: Date.now(), createdAt: new Date().toISOString() };
+    pushClientNotification(action, entity, label);
     await addAuditEntry({ action, entity, label });
   };
 
@@ -552,7 +681,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     if (!cloudWorkspace) return null;
     try {
       const result = await createCloudBackup(cloudWorkspace.id);
-      if (notify) toast.success("انحفظت آخر نسخة سحابية تلقائياً");
+      if (notify) {
+        pushClientNotification("export", "backup", "تم تحديث النسخة السحابية");
+        toast.success("انحفظت آخر نسخة سحابية تلقائياً");
+      }
       return result;
     } catch (error) {
       console.error("[AleppoCenterCash] automatic backup failed", error);
@@ -609,6 +741,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     try {
       const result = await restoreEncryptedRestorationFile(cloudWorkspace.id, backupPassword, file);
       setBackupPassword("");
+      pushClientNotification("import", "backup", "تمت استعادة ملف JSON");
       toast.success("تمت استعادة ملف الاستعادة. رح نعيد تحميل البيانات الآن.");
       console.info("[AleppoCenterCash] file restore completed", result);
       window.setTimeout(() => window.location.reload(), 700);
@@ -657,6 +790,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     try {
       const result = await restoreCloudBackup(cloudWorkspace.id, backupPassword);
       setBackupPassword("");
+      pushClientNotification("import", "backup", "تمت استعادة النسخة السحابية");
       toast.success("تمت الاستعادة. رح نعيد تحميل البيانات الآن.");
       console.info("[AleppoCenterCash] restore completed", result);
       window.setTimeout(() => window.location.reload(), 700);
@@ -1074,7 +1208,40 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
           <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : view === "activity" ? "التعديلات" : selectedAccount?.name}</strong></div>
-          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
+          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><div className="notification-wrapper">
+            <button className="icon-btn" onClick={() => { const next = !showNotifications; setShowNotifications(next); if (next) markNotificationsRead(); }} aria-label="الإشعارات" aria-expanded={showNotifications} aria-haspopup="true">
+              <Bell size={18} />
+              {unreadNotificationCount > 0 && <span className="notification-dot" />}
+            </button>
+            {showNotifications && (
+              <div className="notification-panel" role="dialog" aria-label="الإشعارات">
+                <div className="notification-panel-head">
+                  <div><strong>الإشعارات</strong><span>{notifications.length ? notifications.length + " إشعار محفوظ" : "ما في إشعارات لسا"}</span></div>
+                  {unreadNotificationCount > 0 && <button onClick={markNotificationsRead}>تحديد الكل كمقروء</button>}
+                </div>
+                <div className="notification-list">
+                  {notifications.length === 0 ? (
+                    <div className="notification-empty"><Bell size={20} /><strong>ما في إشعارات جديدة</strong><span>أي إضافة أو تعديل أو حذف رح يظهر هون.</span></div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <button key={notification.id} className={"notification-item " + (notification.read ? "" : "unread")} onClick={() => { markNotificationsRead(); setShowNotifications(false); setView("activity"); }}>
+                        <div className={"notification-icon " + (notification.entity === "account" ? "account" : notification.entity === "payment" ? "payment" : "activity")}>
+                          {notification.entity === "account" ? <WalletCards size={16} /> : notification.entity === "payment" ? <CircleDollarSign size={16} /> : <Activity size={16} />}
+                        </div>
+                        <div className="notification-copy">
+                          <strong>{notification.title}</strong>
+                          <span>{notification.detail}</span>
+                          <small>{new Intl.DateTimeFormat("ar-SY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(notification.createdAt))}</small>
+                        </div>
+                        {!notification.read && <i />}
+                      </button>
+                    ))
+                  )}
+                </div>
+                {notifications.length > 0 && <button className="notification-footer" onClick={() => { markNotificationsRead(); setShowNotifications(false); setView("activity"); }}>عرض سجل التعديلات <ArrowLeft size={14} /></button>}
+              </div>
+            )}
+          </div><div className="top-avatar">م</div></div>
         </header>
 
         <div className="content-wrap">
