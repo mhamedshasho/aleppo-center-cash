@@ -40,7 +40,7 @@ import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
 import { deleteAccountFromCloud, deletePaymentFromCloud, deleteWorkspaceFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, verifyWorkspaceAccess, SyncConflictError, WorkspaceUnavailableError } from "@/lib/supabaseSync";
-import { createCloudBackup, restoreCloudBackup, setCloudRestorePassword } from "@/lib/backup";
+import { createCloudBackup, createEncryptedRestorationFile, restoreCloudBackup, restoreEncryptedRestorationFile, setCloudRestorePassword } from "@/lib/backup";
 import ActivityView from "@/pages/Activity";
 
 type Currency = "SYP" | "USD";
@@ -129,6 +129,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [backupPassword, setBackupPassword] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
+  const restorationFileInputRef = useRef<HTMLInputElement | null>(null);
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountOwner, setNewAccountOwner] = useState("");
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
@@ -560,6 +561,64 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     }
   };
 
+  const downloadRestorationFile = async () => {
+    if (!cloudWorkspace) return;
+    if (backupPassword.length < 8) {
+      toast.error("اكتب كلمة مرور الاستعادة أولاً");
+      return;
+    }
+    setBackupBusy(true);
+    try {
+      const file = await createEncryptedRestorationFile(cloudWorkspace.id, cloudWorkspace.name, backupPassword);
+      const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "aleppo-center-cash-restoration-" + new Date().toISOString().slice(0, 10) + ".json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      void recordAudit("export", "backup", "ملف استعادة JSON مشفر");
+      toast.success("نزلنا ملف الاستعادة المشفر");
+    } catch (error) {
+      console.error("[AleppoCenterCash] restoration export failed", error);
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(message.includes("restore_password_too_short") ? "كلمة مرور الاستعادة لازم تكون 8 أحرف على الأقل" : "ما قدرنا نجهّز ملف الاستعادة");
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const importRestorationFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !cloudWorkspace) return;
+    if (backupPassword.length < 8) {
+      toast.error("اكتب كلمة مرور الاستعادة أولاً");
+      return;
+    }
+    if (!window.confirm("استيراد الملف سيستبدل الحسابات والدفعات وسجل التعديلات بالحالة الموجودة داخل الملف. متأكد؟")) return;
+    setBackupBusy(true);
+    try {
+      const result = await restoreEncryptedRestorationFile(cloudWorkspace.id, backupPassword, file);
+      setBackupPassword("");
+      toast.success("تمت استعادة ملف الاستعادة. رح نعيد تحميل البيانات الآن.");
+      console.info("[AleppoCenterCash] file restore completed", result);
+      window.setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      console.error("[AleppoCenterCash] restoration file import failed", error);
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(
+        message.includes("invalid_restore_password") || message.includes("invalid_restoration_password_or_file")
+          ? "كلمة المرور غير صحيحة أو ملف الاستعادة غير صالح"
+          : message.includes("invalid_backup")
+            ? "ملف الاستعادة لا يخص مساحة العمل الحالية"
+            : "ما قدرنا نستعيد ملف الاستعادة",
+      );
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   const saveBackupPassword = async () => {
     if (!cloudWorkspace) return;
     if (backupPassword.length < 8) {
@@ -835,10 +894,12 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   const exportBackup = () => {
-    downloadJson(`aleppo-center-cash-${new Date().toISOString().slice(0, 10)}.json`, { app: "Aleppo Center Cash", exportedAt: new Date().toISOString(), accounts });
-    void recordAudit("export", "backup", "نسخة JSON");
-    void saveCloudBackup();
-    toast.success("جهزنا ملف النسخة الاحتياطية");
+    if (!cloudWorkspace) {
+      toast.error("لا توجد مساحة سحابية متصلة.");
+      return;
+    }
+    setShowBackupModal(true);
+    setShowProfileMenu(false);
   };
 
   const exportPng = (accountId: number) => {
@@ -970,7 +1031,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 <ShieldCheck size={14} />
               </button>
               <button className="profile-menu-item" onClick={() => void exportBackup()} role="menuitem">
-                <span>💾 تنزيل نسخة JSON</span>
+                <span>💾 ملف استعادة JSON</span>
                 <Download size={14} />
               </button>
               <button className="profile-menu-item" onClick={() => { setLocation("/credits"); }} role="menuitem">
@@ -1017,12 +1078,15 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       </section>
 
       {showBackupModal && <Modal title="النسخ والاستعادة" onClose={() => { if (!backupBusy) { setShowBackupModal(false); setBackupPassword(""); } }}><div className="modal-form">
-        <div className="privacy-note"><ShieldCheck size={16} /> كل إضافة أو تعديل أو حذف ناجح يحدّث نسخة السحابة تلقائياً باسم مساحة العمل.</div>
+        <div className="privacy-note"><ShieldCheck size={16} /> النسخة السحابية خاصة بمساحة العمل، وملف JSON يُحفظ مشفراً بكلمة مرور الاستعادة.</div>
         <label>كلمة مرور الاستعادة<input type="password" value={backupPassword} onChange={(event) => setBackupPassword(event.target.value)} placeholder="8 أحرف أو أكثر" disabled={backupBusy} /></label>
         <button className="primary-btn full" onClick={() => void saveBackupPassword()} disabled={backupBusy}>حفظ كلمة مرور الاستعادة <LockKeyhole size={16} /></button>
-        <button className="secondary-btn full" onClick={() => void saveCloudBackup()} disabled={backupBusy}>إنشاء نسخة الآن <ShieldCheck size={16} /></button>
-        <button className="danger-btn full" onClick={() => void restoreFromCloudBackup()} disabled={backupBusy}>استعادة آخر نسخة محفوظة <ArrowLeft size={16} /></button>
-        <small>هذه كلمة مرور خاصة بالاستعادة. لا نستخدم كلمة مرور تسجيل الدخول ولا نخزنها كنص.</small>
+        <button className="secondary-btn full" onClick={() => void downloadRestorationFile()} disabled={backupBusy}>تنزيل ملف استعادة JSON مشفر <Download size={16} /></button>
+        <button className="secondary-btn full" onClick={() => void saveCloudBackup()} disabled={backupBusy}>إنشاء نسخة سحابية الآن <ShieldCheck size={16} /></button>
+        <button className="secondary-btn full" onClick={() => restorationFileInputRef.current?.click()} disabled={backupBusy}>استيراد ملف استعادة JSON <Download size={16} /></button>
+        <input ref={restorationFileInputRef} type="file" accept=".json,application/json" onChange={(event) => void importRestorationFile(event)} style={{ display: "none" }} />
+        <button className="danger-btn full" onClick={() => void restoreFromCloudBackup()} disabled={backupBusy}>استعادة آخر نسخة سحابية <ArrowLeft size={16} /></button>
+        <small>ملف JSON لا يحتوي كلمة مرور تسجيل الدخول أو مفاتيح Supabase. محتواه المحاسبي مشفّر محلياً بـ AES-GCM.</small>
       </div></Modal>}
       {showPaymentModal && <Modal title={editingPaymentId ? "تعديل الدفعة" : "دفعة جديدة"} onClose={() => { setShowPaymentModal(false); setEditingPaymentId(null); setPaymentAccountId(null); }}><div className="modal-form">
         {view === "dashboard" && !editingPaymentId && paymentAccountId !== null && (
