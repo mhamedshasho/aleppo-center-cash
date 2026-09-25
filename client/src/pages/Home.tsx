@@ -28,6 +28,8 @@ import {
   Trash2,
   UserRound,
   WalletCards,
+  Wifi,
+  WifiOff,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -63,7 +65,7 @@ type Account = {
   payments: Payment[];
 };
 
-const initialAccounts: Account[] = [
+const initialAccounts: Account[] = [];
   {
     id: 1,
     name: "مركز حلب للألبسة",
@@ -163,7 +165,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
   const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [paymentDraft, setPaymentDraft] = useState({ name: "", amount: "", currency: "SYP" as Currency, type: "credit" as PaymentType, date: new Date().toISOString().slice(0, 10) });
-  const [syncState, setSyncState] = useState<"local" | "syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "local");
+  const [syncState, setSyncState] = useState<"local" | "syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "offline");
   const [, setLocation] = useLocation();
   const [syncReadyVersion, setSyncReadyVersion] = useState(0);
   const syncInFlight = useRef(false);
@@ -183,13 +185,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   useEffect(() => {
     let active = true;
-    readAccounts().then((savedAccounts) => {
-      if (!active) return;
-      if (!cloudWorkspace && savedAccounts !== null) setAccounts(savedAccounts);
-      setStorageReady(true);
-    }).catch(() => {
-      setStorageReady(true);
-      toast.error("تعذر فتح التخزين المحلي، رح نكمل بوضع مؤقت");
+    void clearAllLocalData().catch(() => undefined).finally(() => {
+      if (active) setStorageReady(true);
     });
     return () => { active = false; };
   }, []);
@@ -249,7 +246,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
       const syncedAccounts = mergeServerMetadata(latest.accounts, pushed);
       latestSyncedFingerprint.current = JSON.stringify(syncedAccounts);
-      await writeAccounts(syncedAccounts);
       setAccounts(syncedAccounts);
 
       for (const item of matching) await removeSyncQueueItem(item.id);
@@ -340,7 +336,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
           const syncedAccounts = mergeServerMetadata(work.accounts, pushed);
           latestSyncedFingerprint.current = JSON.stringify(syncedAccounts);
-          await writeAccounts(syncedAccounts);
 
           if (generation !== syncGeneration.current) continue;
 
@@ -507,7 +502,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         const remoteAccounts = await pullCloudAccounts(cloudWorkspace.id);
         if (!active) return;
         latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
-        await writeAccounts(remoteAccounts);
         setAccounts(remoteAccounts);
         setSyncState("synced");
         console.info("[AleppoCenterCash] cloud connection recovered");
@@ -614,23 +608,22 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       deletedPaymentIds?: { id: string; version?: number }[];
     },
   ) => {
-    const previousAccounts = accounts;
-
-    if (cloudWorkspace && cloudUser) {
-      // Wait for the initial cloud read to settle so an in-flight pull cannot
-      // overwrite a just-created local mutation.
-      await initialCloudSyncRef.current;
+    if (!cloudWorkspace || !cloudUser) {
+      setSyncState("offline");
+      toast.error("لا توجد مساحة سحابية متصلة.");
+      throw new Error("cloud_required");
+    }
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setSyncState("offline");
+      toast.error("لا يوجد اتصال بالإنترنت. لم يتم حفظ التعديل.");
+      throw new Error("offline");
     }
 
-    await writeAccounts(nextAccounts);
-    setAccounts(nextAccounts);
+    await initialCloudSyncRef.current;
 
     try {
-      if (cloudWorkspace && cloudUser) {
-        await syncAccounts(nextAccounts, deletions);
-      } else {
-        latestSyncedFingerprint.current = JSON.stringify(nextAccounts);
-      }
+      await syncAccounts(nextAccounts, deletions);
+      setAccounts(nextAccounts);
     } catch (error) {
       if (error instanceof WorkspaceUnavailableError) {
         await clearAllLocalData().catch(() => undefined);
@@ -641,25 +634,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         throw error;
       }
 
-      if (cloudWorkspace && cloudUser && !(error instanceof SyncConflictError)) {
-        // Keep a successful local edit when the network is temporarily down.
-        // The latest snapshot is retried automatically when the cloud becomes
-        // reachable again.
-        await enqueueSyncSnapshot({
-          workspaceId: cloudWorkspace.id,
-          userId: cloudUser.id,
-          accounts: nextAccounts,
-          deletedAccountIds: deletions?.deletedAccountIds ?? [],
-          deletedPaymentIds: deletions?.deletedPaymentIds ?? [],
-        });
-        setAccounts(nextAccounts);
-        setSyncState("offline");
-        toast.info("انحفظ التعديل محلياً، ورح يتزامن تلقائياً عند رجوع الاتصال");
-        return;
-      }
-
-      await writeAccounts(previousAccounts);
-      setAccounts(previousAccounts);
+      setSyncState("offline");
+      toast.error("تعذر الاتصال بـ Supabase. لم يتم حفظ التعديل.");
       throw error;
     }
   };
@@ -747,35 +723,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           throw new Error("الدفعة ما انزامنت بعد");
         }
 
-        try {
-          await deletePaymentFromCloud(cloudWorkspace.id, payment.remoteId, payment.version);
-        } catch (error) {
-          if (error instanceof SyncConflictError || !isTransientSyncError(error)) throw error;
-
-          await writeAccounts(nextAccounts);
-          await enqueueSyncSnapshot({
-            workspaceId: cloudWorkspace.id,
-            userId: cloudUser.id,
-            accounts: nextAccounts,
-            deletedPaymentIds: [{ id: payment.remoteId, version: payment.version }],
-          });
-          setAccounts(nextAccounts);
-          setSyncState("offline");
-          void recordAudit("delete", "payment", payment.name);
-          toast.info("انحذفت محلياً، ورح يتزامن الحذف تلقائياً عند رجوع الاتصال");
-          return;
-        }
-
-        await writeAccounts(nextAccounts);
-        await enqueueSyncSnapshot({
-          workspaceId: cloudWorkspace.id,
-          userId: cloudUser.id,
-          accounts: nextAccounts,
-          deletedPaymentIds: [{ id: payment.remoteId, version: payment.version }],
-        });
+        await verifyWorkspaceAccess(cloudWorkspace.id, cloudUser.id);
+        await deletePaymentFromCloud(cloudWorkspace.id, payment.remoteId, payment.version);
       }
 
-      await writeAccounts(nextAccounts);
       setAccounts(nextAccounts);
       void recordAudit("delete", "payment", payment.name);
       toast.success("انحذفت الدفعة");
@@ -798,37 +749,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           throw new Error("الحساب ما انزامن بعد");
         }
 
-        try {
-          await deleteAccountFromCloud(cloudWorkspace.id, account.remoteId, account.version);
-        } catch (error) {
-          if (error instanceof SyncConflictError || !isTransientSyncError(error)) throw error;
-
-          await writeAccounts(nextAccounts);
-          await enqueueSyncSnapshot({
-            workspaceId: cloudWorkspace.id,
-            userId: cloudUser.id,
-            accounts: nextAccounts,
-            deletedAccountIds: [{ id: account.remoteId, version: account.version }],
-          });
-          setAccounts(nextAccounts);
-          setSelectedAccountId(nextAccounts[0]?.id ?? 0);
-          setView("accounts");
-          setSyncState("offline");
-          void recordAudit("delete", "account", account.name);
-          toast.info("انحذف محلياً، ورح يتزامن الحذف تلقائياً عند رجوع الاتصال");
-          return;
-        }
-
-        await writeAccounts(nextAccounts);
-        await enqueueSyncSnapshot({
-          workspaceId: cloudWorkspace.id,
-          userId: cloudUser.id,
-          accounts: nextAccounts,
-          deletedAccountIds: [{ id: account.remoteId, version: account.version }],
-        });
+        await verifyWorkspaceAccess(cloudWorkspace.id, cloudUser.id);
+        await deleteAccountFromCloud(cloudWorkspace.id, account.remoteId, account.version);
       }
 
-      await writeAccounts(nextAccounts);
       setAccounts(nextAccounts);
       setSelectedAccountId(nextAccounts[0]?.id ?? 0);
       setView("accounts");
@@ -1023,7 +947,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
           <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : selectedAccount?.name}</strong></div>
-          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`}><span className="saved-dot" /> {syncState === "syncing" ? "عم نزامن…" : syncState === "synced" ? "متزامن" : syncState === "offline" ? "محفوظ بالطابور" : syncState === "conflict" ? "في تعارض" : "محفوظ محلياً"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
+          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "syned" ? <Wifi size={15} /> : syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><button className="icon-btn" onClick={() => toast("ما في إشعارات جديدة") } aria-label="الإشعارات"><Bell size={18} /><span className="notification-dot" /></button><div className="top-avatar">م</div></div>
         </header>
 
         <div className="content-wrap">
