@@ -91,6 +91,34 @@ async function createBackup(workspaceId: string, userId: string) {
   return { path, savedAt: snapshot.saved_at, accounts: snapshot.accounts.length, payments: snapshot.payments.length };
 }
 
+async function exportSnapshot(workspaceId: string, userId: string) {
+  const workspace = await getWorkspace(workspaceId, userId);
+  const [members, profiles, accounts, payments, audit] = await Promise.all([
+    admin.from("workspace_members").select("*").eq("workspace_id", workspaceId),
+    admin.from("profiles").select("*"),
+    admin.from("accounts").select("*").eq("workspace_id", workspaceId),
+    admin.from("payments").select("*").eq("workspace_id", workspaceId),
+    admin.from("audit_log").select("*").eq("workspace_id", workspaceId).order("id", { ascending: true }),
+  ]);
+
+  for (const result of [members, profiles, accounts, payments, audit]) {
+    if (result.error) throw result.error;
+  }
+
+  const memberIds = new Set((members.data ?? []).map((item) => item.user_id));
+  return {
+    format: "aleppo-center-cash-restoration",
+    version: 1,
+    saved_at: new Date().toISOString(),
+    workspace,
+    members: members.data ?? [],
+    profiles: (profiles.data ?? []).filter((profile) => memberIds.has(profile.user_id)),
+    accounts: accounts.data ?? [],
+    payments: payments.data ?? [],
+    audit_log: audit.data ?? [],
+  };
+}
+
 async function setRestorePassword(workspaceId: string, userId: string, password: string) {
   await getWorkspace(workspaceId, userId);
   if (password.length < 8) throw new Error("restore_password_too_short");
@@ -100,6 +128,33 @@ async function setRestorePassword(workspaceId: string, userId: string, password:
   });
   if (error) throw error;
   return { ok: true };
+}
+
+async function restoreSnapshot(workspaceId: string, userId: string, password: string, snapshot: any) {
+  await getWorkspace(workspaceId, userId);
+  const { data: valid, error: verifyError } = await admin.rpc("verify_workspace_restore_password", {
+    target_workspace: workspaceId,
+    candidate_password: password,
+  });
+  if (verifyError) throw verifyError;
+  if (!valid) throw new Error("invalid_restore_password");
+
+  if (snapshot?.format !== "aleppo-center-cash-restoration" || snapshot?.version !== 1 || snapshot?.workspace?.id !== workspaceId) {
+    throw new Error("invalid_backup");
+  }
+
+  const { error: restoreError } = await admin.rpc("restore_workspace_snapshot", {
+    target_workspace: workspaceId,
+    snapshot,
+  });
+  if (restoreError) throw restoreError;
+
+  return {
+    ok: true,
+    savedAt: snapshot.saved_at,
+    accounts: snapshot.accounts?.length ?? 0,
+    payments: snapshot.payments?.length ?? 0,
+  };
 }
 
 async function restore(workspaceId: string, userId: string, password: string) {
@@ -127,18 +182,7 @@ async function restore(workspaceId: string, userId: string, password: string) {
     throw new Error("invalid_backup");
   }
 
-  const { error: restoreError } = await admin.rpc("restore_workspace_snapshot", {
-    target_workspace: workspaceId,
-    snapshot,
-  });
-  if (restoreError) throw restoreError;
-
-  return {
-    ok: true,
-    savedAt: snapshot.saved_at,
-    accounts: snapshot.accounts?.length ?? 0,
-    payments: snapshot.payments?.length ?? 0,
-  };
+  return restoreSnapshot(workspaceId, userId, password, snapshot);
 }
 
 Deno.serve(async (request) => {
@@ -155,8 +199,10 @@ Deno.serve(async (request) => {
     if (!workspaceId) return json({ error: "workspace_required" }, 400);
 
     if (action === "backup") return json(await createBackup(workspaceId, user.id));
+    if (action === "export") return json(await exportSnapshot(workspaceId, user.id));
     if (action === "set_password") return json(await setRestorePassword(workspaceId, user.id, String(body.password ?? "")));
     if (action === "restore") return json(await restore(workspaceId, user.id, String(body.password ?? "")));
+    if (action === "restore_file") return json(await restoreSnapshot(workspaceId, user.id, String(body.password ?? ""), body.snapshot));
 
     return json({ error: "unknown_action" }, 400);
   } catch (error) {
