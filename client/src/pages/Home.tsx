@@ -40,6 +40,7 @@ import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
 import { deleteAccountFromCloud, deletePaymentFromCloud, deleteWorkspaceFromCloud, pullCloudAccounts, pushLocalAccounts, resetWorkspaceData, subscribeToWorkspace, verifyWorkspaceAccess, SyncConflictError, WorkspaceUnavailableError } from "@/lib/supabaseSync";
+import { createCloudBackup, restoreCloudBackup, setCloudRestorePassword } from "@/lib/backup";
 import ActivityView from "@/pages/Activity";
 
 type Currency = "SYP" | "USD";
@@ -124,6 +125,9 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [backupPassword, setBackupPassword] = useState("");
+  const [backupBusy, setBackupBusy] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountOwner, setNewAccountOwner] = useState("");
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
@@ -542,6 +546,61 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     }
   };
 
+  const saveCloudBackup = async () => {
+    if (!cloudWorkspace) return;
+    try {
+      const result = await createCloudBackup(cloudWorkspace.id);
+      toast.success("انحفظت آخر نسخة سحابية تلقائياً");
+      return result;
+    } catch (error) {
+      console.error("[AleppoCenterCash] automatic backup failed", error);
+      toast.error("الحفظ الأساسي تم، لكن النسخة الاحتياطية لم تتحدث");
+      return null;
+    }
+  };
+
+  const saveBackupPassword = async () => {
+    if (!cloudWorkspace) return;
+    if (backupPassword.length < 8) {
+      toast.error("كلمة مرور الاستعادة لازم تكون 8 أحرف على الأقل");
+      return;
+    }
+    setBackupBusy(true);
+    try {
+      await setCloudRestorePassword(cloudWorkspace.id, backupPassword);
+      setBackupPassword("");
+      toast.success("انحفظت كلمة مرور الاستعادة");
+    } catch (error) {
+      console.error("[AleppoCenterCash] restore password save failed", error);
+      toast.error("ما قدرنا نحفظ كلمة مرور الاستعادة");
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const restoreFromCloudBackup = async () => {
+    if (!cloudWorkspace) return;
+    if (backupPassword.length < 8) {
+      toast.error("اكتب كلمة مرور الاستعادة");
+      return;
+    }
+    if (!window.confirm("استعادة النسخة ستستبدل الحسابات والدفعات وسجل التعديلات بالحالة المحفوظة. متأكد؟")) return;
+    setBackupBusy(true);
+    try {
+      const result = await restoreCloudBackup(cloudWorkspace.id, backupPassword);
+      setBackupPassword("");
+      toast.success("تمت الاستعادة. رح نعيد تحميل البيانات الآن.");
+      console.info("[AleppoCenterCash] restore completed", result);
+      window.setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      console.error("[AleppoCenterCash] restore failed", error);
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(message.includes("invalid_restore_password") ? "كلمة مرور الاستعادة غير صحيحة" : "ما قدرنا نستعيد النسخة الاحتياطية");
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   const handleLogout = async () => {
     const { supabase } = await import("@/lib/supabase");
     if (supabase) {
@@ -588,6 +647,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     try {
       await syncAccounts(nextAccounts, deletions);
       setAccounts(nextAccounts);
+      void saveCloudBackup();
     } catch (error) {
       if (error instanceof WorkspaceUnavailableError) {
         await clearAllLocalData().catch(() => undefined);
@@ -774,6 +834,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const exportBackup = () => {
     downloadJson(`aleppo-center-cash-${new Date().toISOString().slice(0, 10)}.json`, { app: "Aleppo Center Cash", exportedAt: new Date().toISOString(), accounts });
     void recordAudit("export", "backup", "نسخة JSON");
+    void saveCloudBackup();
     toast.success("جهزنا ملف النسخة الاحتياطية");
   };
 
@@ -814,7 +875,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     recentPayments.forEach((payment, index) => { const y = 725 + index * 62; if (index % 2 === 0) { context.fillStyle = "#fbfcfb"; context.fillRect(70, y - 30, 1060, 62); } right(formatDate(payment.date), 1085, y, "400 15px Cairo, Arial, sans-serif"); right(payment.name, 820, y, "400 15px Cairo, Arial, sans-serif"); right(formatAmount(payment.amount, payment.currency), 455, y, "600 15px Cairo, Arial, sans-serif"); right(payment.type === "credit" ? "له" : "عليه", 180, y, "700 15px Cairo, Arial, sans-serif", payment.type === "credit" ? "#4d9b7b" : "#c27b4e"); });
     line(1050); right("تم إنشاؤه محلياً — Aleppo Center Cash", 600, 1090, "400 13px Cairo, Arial, sans-serif", "#8aa09a");
     const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png"); anchor.download = "aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + reportDate + ".png"; anchor.click();
-    void recordAudit("export", "backup", "تقرير PNG — " + account.name); toast.success("نزلنا تقرير الحساب كصورة PNG");
+    void recordAudit("export", "backup", "تقرير PNG — " + account.name); void saveCloudBackup(); toast.success("نزلنا تقرير الحساب كصورة PNG");
   };
 
   const exportPdf = async (accountId: number) => {
@@ -837,7 +898,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       + "<h3 style=\"margin:0 0 6px;font-size:13px;color:#173f47;\">آخر الدفعات (" + recentPayments.length + ")</h3><table style=\"width:100%;border-collapse:collapse;font-size:9px;\"><thead><tr style=\"background:#f5f6f3;\"><th style=\"padding:4px;text-align:right;color:#718883;\">تاريخ</th><th style=\"padding:4px;text-align:right;color:#718883;\">وصف</th><th style=\"padding:4px;text-align:right;color:#718883;\">مبلغ</th><th style=\"padding:4px;text-align:right;color:#718883;\">نوع</th></tr></thead><tbody>" + (rows || "<tr><td colspan=\"4\" style=\"padding:8px;text-align:center;color:#718883;\">لا توجد دفعات</td></tr>") + "</tbody></table>"
       + "<p style=\"margin:12px 0 0;padding-top:6px;border-top:1px solid #eef2ef;font-size:9px;color:#8aa09a;text-align:center;\">تم إنشاؤه محلياً</p>";
     document.body.appendChild(report);
-    try { const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" }); await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 600, autoPaging: "text" }); pdf.save("aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + dateStamp + ".pdf"); void recordAudit("export", "backup", "تقرير PDF — " + account.name); toast.success("نزلنا تقرير الحساب كملف PDF"); } catch { toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية"); } finally { report.remove(); }
+    void saveCloudBackup(); try { const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" }); await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 600, autoPaging: "text" }); pdf.save("aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + dateStamp + ".pdf"); void recordAudit("export", "backup", "تقرير PDF — " + account.name); toast.success("نزلنا تقرير الحساب كملف PDF"); } catch { toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية"); } finally { report.remove(); }
   };
   if (!isUnlocked) {
     return (
@@ -901,8 +962,12 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
                 <strong dir="ltr" className="mono">{cloudWorkspace?.id?.slice(0, 8) ?? "—"}{cloudWorkspace?.id ? "…" : ""}</strong>
                 <Copy size={14} />
               </button>
-              <button className="profile-menu-item" onClick={exportBackup} role="menuitem">
-                <span>💾 نسخة احتياطية</span>
+              <button className="profile-menu-item" onClick={() => { setShowBackupModal(true); setShowProfileMenu(false); }} role="menuitem">
+                <span>🛡️ النسخ والاستعادة</span>
+                <ShieldCheck size={14} />
+              </button>
+              <button className="profile-menu-item" onClick={() => void exportBackup()} role="menuitem">
+                <span>💾 تنزيل نسخة JSON</span>
                 <Download size={14} />
               </button>
               <button className="profile-menu-item" onClick={() => { setLocation("/credits"); }} role="menuitem">
@@ -948,6 +1013,14 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         </div>
       </section>
 
+      {showBackupModal && <Modal title="النسخ والاستعادة" onClose={() => { if (!backupBusy) { setShowBackupModal(false); setBackupPassword(""); } }}><div className="modal-form">
+        <div className="privacy-note"><ShieldCheck size={16} /> كل إضافة أو تعديل أو حذف ناجح يحدّث نسخة السحابة تلقائياً باسم مساحة العمل.</div>
+        <label>كلمة مرور الاستعادة<input type="password" value={backupPassword} onChange={(event) => setBackupPassword(event.target.value)} placeholder="8 أحرف أو أكثر" disabled={backupBusy} /></label>
+        <button className="primary-btn full" onClick={() => void saveBackupPassword()} disabled={backupBusy}>حفظ كلمة مرور الاستعادة <LockKeyhole size={16} /></button>
+        <button className="secondary-btn full" onClick={() => void saveCloudBackup()} disabled={backupBusy}>إنشاء نسخة الآن <ShieldCheck size={16} /></button>
+        <button className="danger-btn full" onClick={() => void restoreFromCloudBackup()} disabled={backupBusy}>استعادة آخر نسخة محفوظة <ArrowLeft size={16} /></button>
+        <small>هذه كلمة مرور خاصة بالاستعادة. لا نستخدم كلمة مرور تسجيل الدخول ولا نخزنها كنص.</small>
+      </div></Modal>}
       {showPaymentModal && <Modal title={editingPaymentId ? "تعديل الدفعة" : "دفعة جديدة"} onClose={() => { setShowPaymentModal(false); setEditingPaymentId(null); setPaymentAccountId(null); }}><div className="modal-form">
         {view === "dashboard" && !editingPaymentId && paymentAccountId !== null && (
           <label>
