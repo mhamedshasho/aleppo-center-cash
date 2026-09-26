@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Clock3, Filter, RefreshCw, UserRound, WalletCards, CreditCard, Trash2, Pencil, Plus, CalendarDays } from "lucide-react";
+import { Activity, RefreshCw, UserRound, WalletCards, CreditCard, Trash2, Pencil, Plus, CalendarDays } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type ActivityEntry = {
@@ -100,7 +100,7 @@ function getTarget(entry: ActivityEntry) {
 function ActivityView({ workspaceId, currentUserId }: Props) {
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const PAGE_SIZE = 100;
-  const [period, setPeriod] = useState<"all" | "today" | "hour">("all");
+  const [period, setPeriod] = useState<"all" | "today">("all");
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -121,7 +121,7 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
 
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    if (period === "today" || period === "hour") {
+    if (period === "today") {
       query = query.gte("created_at", todayStart);
     }
 
@@ -165,16 +165,6 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
 
   const filtered = entries;
 
-  const hourly = useMemo(() => {
-    const groups = new Map<string, ActivityEntry[]>();
-    for (const entry of filtered) {
-      const date = new Date(entry.created_at);
-      const key = `${date.toISOString().slice(0, 10)}-${String(date.getHours()).padStart(2, "0")}`;
-      groups.set(key, [...(groups.get(key) ?? []), entry]);
-    }
-    return Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
-
   const counts = useMemo(() => ({
     total: filtered.length,
     create: filtered.filter((item) => item.action === "create").length,
@@ -199,7 +189,6 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
         <div className="activity-tabs">
           <button className={period === "all" ? "active" : ""} onClick={() => setPeriod("all")}><Activity size={16} /> كل السجل</button>
           <button className={period === "today" ? "active" : ""} onClick={() => setPeriod("today")}><CalendarDays size={16} /> اليوم</button>
-          <button className={period === "hour" ? "active" : ""} onClick={() => setPeriod("hour")}><Filter size={16} /> التقرير الساعي</button>
         </div>
         <div className="activity-stats">
           <span><Activity size={14} /> {counts.total} حركة</span>
@@ -211,22 +200,6 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
 
       {loading ? (
         <div className="activity-empty">جاري تحميل سجل التعديلات من Supabase…</div>
-      ) : period === "hour" ? (
-        <div className="activity-hours">
-          {hourly.length === 0 && <div className="activity-empty">لا توجد تعديلات مسجلة في آخر 24 ساعة.</div>}
-          {hourly.map(([key, items]) => {
-            const sample = new Date(items[0].created_at);
-            return (
-              <div className="activity-hour-card" key={key}>
-                <div className="activity-hour-title">
-                  <strong>{sample.toLocaleDateString("ar-SY", { day: "numeric", month: "short" })}</strong>
-                  <span>{String(sample.getHours()).padStart(2, "0")}:00 — {items.length} حركة</span>
-                </div>
-                {items.map((entry) => <ActivityRow key={entry.id} entry={entry} currentUserId={currentUserId} />)}
-              </div>
-            );
-          })}
-        </div>
       ) : (
         <div className="activity-feed">
           {filtered.length === 0 && <div className="activity-empty">لا توجد حركات مسجلة في هذه الفترة.</div>}
