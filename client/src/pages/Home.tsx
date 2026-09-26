@@ -498,8 +498,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         return;
       }
 
-      if (syncInFlight.current || pendingSync.current) return;
-
       const generation = ++syncGeneration.current;
       void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
         if (generation !== syncGeneration.current || syncInFlight.current || pendingSync.current) return;
