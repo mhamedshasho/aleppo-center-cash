@@ -73,7 +73,7 @@ async function renderTemplateFile(file: File): Promise<TemplatePage[]> {
 
 export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" }) {
   const [query, setQuery] = useState("");
-  const [accountFilter, setAccountFilter] = useState("all");
+  const [accountFilter, setAccountFilter] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
   const [images, setImages] = useState<Record<number, string>>({});
   const [imageLabels, setImageLabels] = useState<Record<number, string>>({});
@@ -96,7 +96,8 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const stageRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo<Row[]>(() => accounts.flatMap((a) => a.payments.map((p) => ({ ...p, accountId: a.id, accountName: a.name }))).sort((a, b) => b.date.localeCompare(a.date)), [accounts]);
-  const accountRows = useMemo(() => accountFilter === "all" ? rows : rows.filter((r) => String(r.accountId) === accountFilter), [rows, accountFilter]);
+  const selectedAccount = useMemo(() => accounts.find((a) => String(a.id) === accountFilter) || null, [accounts, accountFilter]);
+  const accountRows = useMemo(() => accountFilter ? rows.filter((r) => String(r.accountId) === accountFilter) : [], [rows, accountFilter]);
   const filtered = useMemo(() => accountRows.filter((r) => (r.name + " " + r.accountName).toLowerCase().includes(query.toLowerCase())), [accountRows, query]);
   const chosen = rows.filter((r) => selected.includes(r.id));
   const totals = chosen.reduce((a, r) => ({ ...a, [r.currency]: (a[r.currency] || 0) + r.amount }), {} as Record<Currency, number>);
@@ -109,7 +110,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const chooseRow = (id: number) => { if (!selected.includes(id)) setSelected((s) => [...s, id]); setActiveId(id); };
   const chooseTarget = (id: number) => { if (selected.includes(id)) setActiveId(id); };
   const toggleAll = () => setSelected((s) => s.length === filtered.length ? s.filter((id) => !filtered.some((r) => r.id === id)) : Array.from(new Set([...s, ...filtered.map((r) => r.id)])));
-  const changeAccount = (value: string) => { setAccountFilter(value); setQuery(""); setSelected([]); setActiveId(null); };
+  const changeAccount = (value: string) => { setAccountFilter(value); setQuery(""); setSelected([]); setActiveId(null); setImages({}); setImageLabels({}); setPositions({}); setMeters({}); };
 
   const chooseTemplates = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -220,6 +221,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
     </header>
 
     <section className="invoice-toolbar surface-card">
+      <div className="invoice-field invoice-account-field"><label>حساب الفاتورة</label><select value={accountFilter} onChange={(e) => changeAccount(e.target.value)}><option value="">اختر الحساب أولاً</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
       <div className="invoice-field"><label>رقم الفاتورة</label><input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="مثلاً 28" /></div>
       <div className="invoice-field"><label>العميل</label><input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="اختياري" /></div>
       <div className="invoice-field"><label>التاريخ</label><input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
@@ -229,9 +231,9 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
 
     <div className="invoice-maker-grid">
       <section className="surface-card invoice-payments-panel">
-        <div className="section-head"><div><h2>الدفعات</h2><p>{chosen.length} دفعة مختارة من {filtered.length} ظاهرة</p></div><button className="text-btn" onClick={toggleAll}>{chosen.length === filtered.length && filtered.length ? "إلغاء تحديد الكل" : "تحديد الكل"}</button></div>
-        <div className="invoice-search"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث باسم القالب أو الحساب..." /></div>
-        <div className="invoice-table-wrap"><table className="invoice-table"><thead><tr><th><input type="checkbox" checked={Boolean(filtered.length) && filtered.every((r) => selected.includes(r.id))} onChange={toggleAll} /></th><th>اسم القالب</th><th>امتار</th><th>السعر</th><th>العملة</th><th>له/عليه</th><th>الصورة</th></tr></thead><tbody>{filtered.map((r) => <tr key={r.id} className={selected.includes(r.id) ? "selected" : ""} onClick={() => chooseRow(r.id)}><td><input type="checkbox" checked={selected.includes(r.id)} onChange={() => chooseRow(r.id)} onClick={(e) => e.stopPropagation()} /></td><td><strong>{r.name}</strong><small>{dateText(r.date)}</small></td><td><input className="invoice-meters" inputMode="decimal" value={meters[r.id] || ""} onChange={(e) => setMeters((x) => ({ ...x, [r.id]: e.target.value }))} onClick={(e) => e.stopPropagation()} placeholder="—" /></td><td>{r.amount.toLocaleString("en-US")}</td><td>{r.currency === "SYP" ? "ل.س" : "$"}</td><td><span className={"invoice-type " + r.type}>{r.type === "credit" ? "له" : "عليه"}</span></td><td>{images[r.id] ? <img className="invoice-row-thumb" src={images[r.id]} alt="قالب" /> : <span className="invoice-no-image">—</span>}</td></tr>)}</tbody></table>{!filtered.length && <div className="invoice-empty"><FileText size={25} /><strong>ما في دفعات</strong><span>أضف دفعات من الحسابات أولاً.</span></div>}</div>
+        <div className="section-head"><div><h2>الدفعات</h2><p>{selectedAccount ? (chosen.length + " دفعة مختارة من " + filtered.length + " دفعة للحساب " + selectedAccount.name) : "اختر الحساب أولاً لعرض دفعاته"}</p></div><button className="text-btn" onClick={toggleAll}>{chosen.length === filtered.length && filtered.length ? "إلغاء تحديد الكل" : "تحديد الكل"}</button></div>
+        <div className="invoice-search"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={selectedAccount ? "ابحث باسم القالب..." : "اختر الحساب أولاً"} disabled={!selectedAccount} /><Search size={16} className="invoice-search-account-icon" /></div>
+        <div className="invoice-table-wrap"><table className="invoice-table"><thead><tr><th><input type="checkbox" checked={Boolean(filtered.length) && filtered.every((r) => selected.includes(r.id))} onChange={toggleAll} /></th><th>اسم القالب</th><th>امتار</th><th>السعر</th><th>العملة</th><th>له/عليه</th><th>الصورة</th></tr></thead><tbody>{filtered.map((r) => <tr key={r.id} className={selected.includes(r.id) ? "selected" : ""} onClick={() => chooseRow(r.id)}><td><input type="checkbox" checked={selected.includes(r.id)} onChange={() => chooseRow(r.id)} onClick={(e) => e.stopPropagation()} /></td><td><strong>{r.name}</strong><small>{dateText(r.date)}</small></td><td><input className="invoice-meters" inputMode="decimal" value={meters[r.id] || ""} onChange={(e) => setMeters((x) => ({ ...x, [r.id]: e.target.value }))} onClick={(e) => e.stopPropagation()} placeholder="—" /></td><td>{r.amount.toLocaleString("en-US")}</td><td>{r.currency === "SYP" ? "ل.س" : "$"}</td><td><span className={"invoice-type " + r.type}>{r.type === "credit" ? "له" : "عليه"}</span></td><td>{images[r.id] ? <img className="invoice-row-thumb" src={images[r.id]} alt="قالب" /> : <span className="invoice-no-image">—</span>}</td></tr>)}</tbody></table>{!filtered.length && <div className="invoice-empty">{!selectedAccount ? <><Plus size={25} /><strong>اختر الحساب</strong><span>حدد الحساب من الأعلى لعرض دفعاته فقط.</span></> : <><FileText size={25} /><strong>ما في دفعات لهذا الحساب</strong><span>هذا الحساب لا يملك دفعات تطابق البحث.</span></>}</div>}</div>
       </section>
 
       <aside className="invoice-template-panel">
