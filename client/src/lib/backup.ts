@@ -43,6 +43,7 @@ const toBase64 = (bytes: Uint8Array) => {
 };
 
 const fromBase64 = (value: string) => {
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value) || value.length % 4 === 1) throw new Error("invalid_base64");
   const binary = atob(value);
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 };
@@ -123,25 +124,27 @@ export async function restoreEncryptedRestorationFile(
   } catch {
     throw new Error("invalid_restoration_file");
   }
-  if (
-    envelope.format !== "aleppo-center-cash-restoration-file" ||
-    envelope.version !== 1 ||
-    envelope.encrypted !== true ||
-    envelope.algorithm !== "AES-GCM" ||
-    envelope.kdf !== "PBKDF2-SHA-256" ||
-    typeof envelope.iterations !== "number" ||
-    !Number.isInteger(envelope.iterations) ||
-    envelope.iterations < MIN_PBKDF2_ITERATIONS ||
-    envelope.iterations > MAX_PBKDF2_ITERATIONS ||
-    typeof envelope.salt !== "string" ||
-    fromBase64(envelope.salt).length !== 16 ||
-    typeof envelope.iv !== "string" ||
-    fromBase64(envelope.iv).length !== 12 ||
-    typeof envelope.ciphertext !== "string" ||
-    envelope.ciphertext.length < 1 ||
-    typeof envelope.iv !== "string" ||
-    typeof envelope.ciphertext !== "string"
-  ) {
+  try {
+    if (
+      envelope.format !== "aleppo-center-cash-restoration-file" ||
+      envelope.version !== 1 ||
+      envelope.encrypted !== true ||
+      envelope.algorithm !== "AES-GCM" ||
+      envelope.kdf !== "PBKDF2-SHA-256" ||
+      typeof envelope.iterations !== "number" ||
+      !Number.isInteger(envelope.iterations) ||
+      envelope.iterations < MIN_PBKDF2_ITERATIONS ||
+      envelope.iterations > MAX_PBKDF2_ITERATIONS ||
+      typeof envelope.salt !== "string" ||
+      fromBase64(envelope.salt).length !== 16 ||
+      typeof envelope.iv !== "string" ||
+      fromBase64(envelope.iv).length !== 12 ||
+      typeof envelope.ciphertext !== "string" ||
+      envelope.ciphertext.length < 1
+    ) {
+      throw new Error("invalid_restoration_file");
+    }
+  } catch {
     throw new Error("invalid_restoration_file");
   }
 
