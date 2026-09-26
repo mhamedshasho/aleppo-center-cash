@@ -336,11 +336,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
           setAccounts(syncedAccounts);
 
-          for (const item of queuedItems) {
-            if (item.workspaceId === cloudWorkspace.id && item.userId === cloudUser.id) {
-
-            }
-          }
           for (const deletion of work.deletedAccountIds) deletedAccountIds.current.delete(deletion.id);
           for (const deletion of work.deletedPaymentIds) deletedPaymentIds.current.delete(deletion.id);
           setSyncState("synced");
