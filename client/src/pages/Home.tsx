@@ -754,7 +754,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     try {
       const result = await restoreEncryptedRestorationFile(cloudWorkspace.id, backupPassword, file);
       setBackupPassword("");
-      pushClientNotification("import", "backup", "تمت استعادة ملف JSON");
+      await recordAudit("import", "backup", "تمت استعادة ملف JSON");
+      await saveCloudBackup(false);
       toast.success("تمت استعادة ملف الاستعادة. رح نعيد تحميل البيانات الآن.");
       console.info("[AleppoCenterCash] file restore completed", result);
       window.setTimeout(() => window.location.reload(), 700);
@@ -803,7 +804,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     try {
       const result = await restoreCloudBackup(cloudWorkspace.id, backupPassword);
       setBackupPassword("");
-      pushClientNotification("import", "backup", "تمت استعادة النسخة السحابية");
+      await recordAudit("import", "backup", "تمت استعادة النسخة السحابية");
+      await saveCloudBackup(false);
       toast.success("تمت الاستعادة. رح نعيد تحميل البيانات الآن.");
       console.info("[AleppoCenterCash] restore completed", result);
       window.setTimeout(() => window.location.reload(), 700);
