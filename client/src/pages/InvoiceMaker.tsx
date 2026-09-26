@@ -73,6 +73,7 @@ async function renderTemplateFile(file: File): Promise<TemplatePage[]> {
 
 export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" }) {
   const [query, setQuery] = useState("");
+  const [accountFilter, setAccountFilter] = useState("all");
   const [selected, setSelected] = useState<number[]>([]);
   const [images, setImages] = useState<Record<number, string>>({});
   const [imageLabels, setImageLabels] = useState<Record<number, string>>({});
@@ -95,7 +96,8 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const stageRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo<Row[]>(() => accounts.flatMap((a) => a.payments.map((p) => ({ ...p, accountName: a.name }))).sort((a, b) => b.date.localeCompare(a.date)), [accounts]);
-  const filtered = useMemo(() => rows.filter((r) => (r.name + " " + r.accountName).toLowerCase().includes(query.toLowerCase())), [rows, query]);
+  const accountRows = useMemo(() => accountFilter === "all" ? rows : rows.filter((r) => String(accounts.find((a) => a.name === r.accountName)?.id ?? "") === accountFilter), [rows, accounts, accountFilter]);
+  const filtered = useMemo(() => accountRows.filter((r) => (r.name + " " + r.accountName).toLowerCase().includes(query.toLowerCase())), [accountRows, query]);
   const chosen = rows.filter((r) => selected.includes(r.id));
   const totals = chosen.reduce((a, r) => ({ ...a, [r.currency]: (a[r.currency] || 0) + r.amount }), {} as Record<Currency, number>);
   const activeRow = activeId === null ? null : rows.find((r) => r.id === activeId) || null;
@@ -104,8 +106,10 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const activePage = activeFile?.pages[pageIndex];
 
   const toggle = (id: number) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
-  const chooseRow = (id: number) => { setActiveId(id); if (!selected.includes(id)) setSelected((s) => [...s, id]); };
+  const chooseRow = (id: number) => { if (!selected.includes(id)) setSelected((s) => [...s, id]); setActiveId(id); };
+  const chooseTarget = (id: number) => { if (selected.includes(id)) setActiveId(id); };
   const toggleAll = () => setSelected((s) => s.length === filtered.length ? s.filter((id) => !filtered.some((r) => r.id === id)) : Array.from(new Set([...s, ...filtered.map((r) => r.id)])));
+  const changeAccount = (value: string) => { setAccountFilter(value); setQuery(""); setSelected([]); setActiveId(null); };
 
   const chooseTemplates = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -175,9 +179,9 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
           + '<div style="font-size:11px;color:#9aa9a5;margin-top:4px;">التاريخ: ' + esc(dateText(invoiceDate)) + '</div></div>'
           + (logo ? '<img src="' + logo + '" style="position:absolute;width:70px;height:70px;object-fit:contain;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:24px;border:1px solid #dfe7e2;border-radius:9px;overflow:hidden;font-size:10px;direction:rtl;">'
-          + '<colgroup><col style="width:16%"><col style="width:17%"><col style="width:19%"><col style="width:11%"><col style="width:13%"><col style="width:11%"><col style="width:13%"></colgroup>'
+          + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
           + '<thead><tr style="background:#173f47;color:#fff;font-weight:700;">'
-          + '<th style="padding:10px 7px;text-align:right;">الحساب</th><th style="padding:10px 7px;text-align:right;">اسم القالب</th><th style="padding:10px 7px;text-align:center;">صورة القالب</th><th style="padding:10px 7px;text-align:center;">امتار</th><th style="padding:10px 7px;text-align:center;">السعر</th><th style="padding:10px 7px;text-align:center;">النوع</th><th style="padding:10px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
+          + '<th style="padding:10px 7px;text-align:right;">اسم القالب</th><th style="padding:10px 7px;text-align:center;">صورة القالب</th><th style="padding:10px 7px;text-align:center;">امتار</th><th style="padding:10px 7px;text-align:center;">السعر</th><th style="padding:10px 7px;text-align:center;">له/عليه</th><th style="padding:10px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
           + batch.map((r, i) => {
             const p = positions[r.id] || { x: 50, y: 50 };
             const image = images[r.id] || "";
@@ -226,9 +230,9 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
 
     <div className="invoice-maker-grid">
       <section className="surface-card invoice-payments-panel">
-        <div className="section-head"><div><h2>الدفعات</h2><p>{chosen.length} مختارة من {rows.length}</p></div><button className="text-btn" onClick={toggleAll}>{chosen.length === filtered.length && filtered.length ? "إلغاء تحديد الكل" : "تحديد الكل"}</button></div>
+        <div className="section-head"><div><h2>الدفعات</h2><p>{chosen.length} دفعة مختارة من {filtered.length} ظاهرة</p></div><button className="text-btn" onClick={toggleAll}>{chosen.length === filtered.length && filtered.length ? "إلغاء تحديد الكل" : "تحديد الكل"}</button></div>
         <div className="invoice-search"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث باسم القالب أو الحساب..." /></div>
-        <div className="invoice-table-wrap"><table className="invoice-table"><thead><tr><th><input type="checkbox" checked={Boolean(filtered.length) && filtered.every((r) => selected.includes(r.id))} onChange={toggleAll} /></th><th>اسم القالب</th><th>الحساب</th><th>امتار</th><th>السعر</th><th>العملة</th><th>النوع</th><th>الصورة</th></tr></thead><tbody>{filtered.map((r) => <tr key={r.id} className={selected.includes(r.id) ? "selected" : ""} onClick={() => chooseRow(r.id)}><td><input type="checkbox" checked={selected.includes(r.id)} onChange={() => chooseRow(r.id)} onClick={(e) => e.stopPropagation()} /></td><td><strong>{r.name}</strong><small>{dateText(r.date)}</small></td><td>{r.accountName}</td><td><input className="invoice-meters" inputMode="decimal" value={meters[r.id] || ""} onChange={(e) => setMeters((x) => ({ ...x, [r.id]: e.target.value }))} onClick={(e) => e.stopPropagation()} placeholder="—" /></td><td>{r.amount.toLocaleString("en-US")}</td><td>{r.currency === "SYP" ? "ل.س" : "$"}</td><td><span className={"invoice-type " + r.type}>{r.type === "credit" ? "له" : "عليه"}</span></td><td>{images[r.id] ? <img className="invoice-row-thumb" src={images[r.id]} alt="قالب" /> : <span className="invoice-no-image">—</span>}</td></tr>)}</tbody></table>{!filtered.length && <div className="invoice-empty"><FileText size={25} /><strong>ما في دفعات</strong><span>أضف دفعات من الحسابات أولاً.</span></div>}</div>
+        <div className="invoice-table-wrap"><table className="invoice-table"><thead><tr><th><input type="checkbox" checked={Boolean(filtered.length) && filtered.every((r) => selected.includes(r.id))} onChange={toggleAll} /></th><th>اسم القالب</th><th>امتار</th><th>السعر</th><th>العملة</th><th>له/عليه</th><th>الصورة</th></tr></thead><tbody>{filtered.map((r) => <tr key={r.id} className={selected.includes(r.id) ? "selected" : ""} onClick={() => chooseRow(r.id)}><td><input type="checkbox" checked={selected.includes(r.id)} onChange={() => chooseRow(r.id)} onClick={(e) => e.stopPropagation()} /></td><td><strong>{r.name}</strong><small>{dateText(r.date)}</small></td><td><input className="invoice-meters" inputMode="decimal" value={meters[r.id] || ""} onChange={(e) => setMeters((x) => ({ ...x, [r.id]: e.target.value }))} onClick={(e) => e.stopPropagation()} placeholder="—" /></td><td>{r.amount.toLocaleString("en-US")}</td><td>{r.currency === "SYP" ? "ل.س" : "$"}</td><td><span className={"invoice-type " + r.type}>{r.type === "credit" ? "له" : "عليه"}</span></td><td>{images[r.id] ? <img className="invoice-row-thumb" src={images[r.id]} alt="قالب" /> : <span className="invoice-no-image">—</span>}</td></tr>)}</tbody></table>{!filtered.length && <div className="invoice-empty"><FileText size={25} /><strong>ما في دفعات</strong><span>أضف دفعات من الحسابات أولاً.</span></div>}</div>
       </section>
 
       <aside className="invoice-template-panel">
@@ -242,7 +246,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
             {activePage && <div className="template-preview"><img src={activePage.image} alt="معاينة القالب" /></div>}
             <button className="primary-btn full" onClick={applyTemplate} disabled={!activePage}><Check size={17} /> Apply — عيّن الصورة للدفعة المحددة</button>
           </>}
-          <div className="template-target"><label>اختيار الدفعة للصورة</label><select value={activeId ?? ""} onChange={(e) => { const id = Number(e.target.value); if (id) chooseRow(id); }}><option value="">اختر الدفعة</option>{filtered.map((r) => <option key={r.id} value={r.id}>{r.accountName} — {r.name} — {r.amount.toLocaleString("en-US")} {r.currency === "SYP" ? "ل.س" : "$"}</option>)}</select>{activeRow && <span className="template-target-current"><Check size={14} /> {activeRow.accountName} — {activeRow.name}</span>}</div>
+          <div className="template-target"><div className="template-target-label"><label>اختيار الدفعة لوضع الصورة</label><span>{chosen.length} دفعة مختارة</span></div><select value={activeId ?? ""} onChange={(e) => { const id = Number(e.target.value); if (id) chooseTarget(id); }}><option value="">اختر من الدفعات المختارة</option>{chosen.map((r) => <option key={r.id} value={r.id}>{r.name} — {r.amount.toLocaleString("en-US")} {r.currency === "SYP" ? "ل.س" : "$"} — {r.type === "credit" ? "له" : "عليه"}</option>)}</select>{activeRow && selected.includes(activeRow.id) && <span className="template-target-current"><Check size={14} /> يتم تعديل: {activeRow.name}</span>}{!chosen.length && <span className="template-target-empty">حدد دفعة من الجدول أولاً</span>}</div>
         </section>
 
         {activeRow && images[activeRow.id] && <section className="surface-card invoice-position-card">
@@ -263,9 +267,8 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
         <div className="invoice-preview-page">
           <div className="invoice-preview-top"><div><h1>فاتورة رقم {invoiceNumber || "—"}</h1>{customer && <p>العميل: {customer}</p>}<small>تاريخ الفاتورة: {dateText(invoiceDate)}</small></div>{logo && <img className="invoice-preview-logo" src={logo} alt="الشعار" />}</div>
           <div className="invoice-preview-table">
-            <div className="invoice-preview-head"><span>الحساب</span><span>اسم القالب</span><span>صورة القالب</span><span>امتار</span><span>السعر</span><span>النوع</span><span>التاريخ</span></div>
-            {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span>{r.accountName}</span><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}
-          </div>
+            <div className="invoice-preview-head"><span>اسم القالب</span><span>صورة القالب</span><span>امتار</span><span>السعر</span><span>له/عليه</span><span>التاريخ</span></div>
+            {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}          </div>
           <div className="invoice-preview-total"><span>الإجمالي</span><strong>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
         </div>
         <footer><button className="secondary-btn" onClick={() => setShowPreview(false)}>إغلاق</button><button className="primary-btn" disabled={busy || !chosen.length || !invoiceNumber.trim()} onClick={() => { setShowPreview(false); void exportPdf(); }}><Download size={16} /> اعتماد واستخراج PDF</button></footer>
