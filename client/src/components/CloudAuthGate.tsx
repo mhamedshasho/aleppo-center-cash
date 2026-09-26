@@ -219,7 +219,7 @@ export default function CloudAuthGate() {
             slug: workspaceRow.slug,
           } as WorkspaceState;
 
-          setLocation("/" + encodeURIComponent(workspaceRow.slug));
+          setLocation("/" + encodeURIComponent(workspaceRow.slug), { replace: true });
           return;
         }
 
