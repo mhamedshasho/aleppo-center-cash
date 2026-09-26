@@ -756,3 +756,8 @@ button:active { transform: scale(.975); }
 .dark .template-target { background:#101b1d; border-color:#304346; }
 .dark .template-target label { color:#9ab0ab; }
 .dark .template-target select { background:#152326; border-color:#304346; color:#d6e6e2; }
+
+.activity-pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:2px}
+.activity-pagination span{min-width:220px;text-align:center;color:#718883;font-size:12px;font-weight:700}
+.activity-pagination .secondary-btn{min-width:88px;justify-content:center}
+@media (max-width:640px){.activity-pagination{gap:8px;flex-wrap:wrap}.activity-pagination span{order:-1;width:100%;min-width:0}}
