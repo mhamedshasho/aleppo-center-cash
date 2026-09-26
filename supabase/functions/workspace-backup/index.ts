@@ -22,6 +22,13 @@ const safeName = (value: string) => value
   .replace(/^-|-$/g, "")
   .slice(0, 100) || "workspace";
 
+const MAX_SNAPSHOT_BYTES = 25 * 1024 * 1024;
+const MAX_MEMBERS = 100;
+const MAX_PROFILES = 100;
+const MAX_ACCOUNTS = 10000;
+const MAX_PAYMENTS = 100000;
+const MAX_AUDIT_ENTRIES = 100000;
+
 const backupPath = (workspaceId: string) => `${workspaceId}.json`;
 const legacyBackupPath = (workspaceName: string) => `${safeName(workspaceName)}.json`;
 
@@ -132,6 +139,22 @@ async function setRestorePassword(workspaceId: string, userId: string, password:
 
 async function restoreSnapshot(workspaceId: string, userId: string, password: string, snapshot: any) {
   await getWorkspace(workspaceId, userId);
+  const snapshotSize = new TextEncoder().encode(JSON.stringify(snapshot ?? null)).byteLength;
+  if (snapshotSize > MAX_SNAPSHOT_BYTES) throw new Error("backup_too_large");
+  if (
+    !Array.isArray(snapshot?.members) ||
+    !Array.isArray(snapshot?.profiles) ||
+    !Array.isArray(snapshot?.accounts) ||
+    !Array.isArray(snapshot?.payments) ||
+    !Array.isArray(snapshot?.audit_log) ||
+    snapshot.members.length > MAX_MEMBERS ||
+    snapshot.profiles.length > MAX_PROFILES ||
+    snapshot.accounts.length > MAX_ACCOUNTS ||
+    snapshot.payments.length > MAX_PAYMENTS ||
+    snapshot.audit_log.length > MAX_AUDIT_ENTRIES
+  ) {
+    throw new Error("invalid_backup");
+  }
   const { data: valid, error: verifyError } = await admin.rpc("verify_workspace_restore_password", {
     target_workspace: workspaceId,
     candidate_password: password,
@@ -176,8 +199,14 @@ async function restore(workspaceId: string, userId: string, password: string) {
     if (!legacy.error && legacy.data) file = legacy.data;
   }
   if (!file) throw new Error("backup_not_found");
+  if (file.size > MAX_SNAPSHOT_BYTES) throw new Error("backup_too_large");
 
-  const snapshot = JSON.parse(await file.text());
+  let snapshot: any;
+  try {
+    snapshot = JSON.parse(await file.text());
+  } catch {
+    throw new Error("invalid_backup");
+  }
   if (snapshot?.format !== "aleppo-center-cash-restoration" || snapshot?.version !== 1 || snapshot?.workspace?.id !== workspaceId) {
     throw new Error("invalid_backup");
   }
