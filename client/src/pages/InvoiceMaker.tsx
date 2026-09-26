@@ -179,14 +179,14 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
           + '<div>الحساب</div><div>اسم القالب</div><div style="text-align:center;">صورة القالب</div><div>السعر</div><div>النوع</div><div>التاريخ</div><div>امتار</div></div>'
           + batch.map((r, i) => {
             const p = positions[r.id] || { x: 50, y: 50 };
-            return '<div style="display:grid;grid-template-columns:1.15fr 1.25fr 1.35fr .85fr .75fr .8fr .65fr;min-height:88px;padding:7px 10px;align-items:center;border-top:1px solid #e7eeeb;background:' + (i % 2 ? "#fff" : "#fbfcfb") + ';font-size:10px;">'
+            return '<div style="display:grid;grid-template-columns:1.15fr 1.25fr 1.35fr .65fr .85fr .75fr .8fr;min-height:88px;padding:7px 10px;align-items:center;border-top:1px solid #e7eeeb;background:' + (i % 2 ? "#fff" : "#fbfcfb") + ';font-size:10px;">'
               + '<div style="font-weight:700;">' + esc(r.accountName) + '</div>'
               + '<div style="font-weight:700;">' + esc(r.name) + (imageLabels[r.id] ? '<div style="font-size:7px;color:#91a29e;margin-top:3px;">' + esc(imageLabels[r.id]) + '</div>' : "") + '</div>'
               + '<div style="height:72px;position:relative;overflow:hidden;"><div style="position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);width:92px;height:68px;display:flex;align-items:center;justify-content:center;"><img src="' + (images[r.id] || "") + '" style="max-width:92px;max-height:68px;object-fit:contain;" /></div></div>'
+              + '<div style="font-weight:800;">' + esc(meters[r.id] || "—") + '</div>'
               + '<div style="font-weight:800;">' + esc(money(r.amount, r.currency)) + '</div>'
               + '<div style="font-weight:800;color:' + (r.type === "credit" ? "#4d9b7b" : "#b66d52") + ';">' + (r.type === "credit" ? "له" : "عليه") + '</div>'
-              + '<div style="font-size:9px;color:#718883;">' + esc(dateText(r.date)) + '</div>'
-              + '<div style="font-weight:800;">' + esc(meters[r.id] || "—") + '</div></div>';
+              + '<div style="font-size:9px;color:#718883;">' + esc(dateText(r.date)) + '</div></div>';
           }).join("")
           + '</div><div style="display:flex;justify-content:space-between;margin-top:16px;padding:12px 15px;background:#f1f6f3;border:1px solid #dfe9e4;border-radius:9px;font-weight:800;">'
           + '<span>الإجمالي</span><span style="color:#2f896d;">' + esc([totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0") + '</span></div>'
