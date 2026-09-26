@@ -99,7 +99,7 @@ function getTarget(entry: ActivityEntry) {
 
 function ActivityView({ workspaceId, currentUserId }: Props) {
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
-  const [period, setPeriod] = useState<"live" | "today" | "hour">("live");
+  const [period, setPeriod] = useState<"all" | "today" | "hour">("all");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -143,7 +143,8 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     return entries.filter((entry) => {
       const createdAt = new Date(entry.created_at).getTime();
-      if (period === "live") return now.getTime() - createdAt <= 60 * 60 * 1000;
+      if (period === "all") return true;
+      if (period === "today") return createdAt >= todayStart;
       return createdAt >= todayStart;
     });
   }, [entries, period]);
@@ -180,7 +181,7 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
 
       <div className="activity-toolbar">
         <div className="activity-tabs">
-          <button className={period === "live" ? "active" : ""} onClick={() => setPeriod("live")}><Clock3 size={16} /> آخر ساعة</button>
+          <button className={period === "all" ? "active" : ""} onClick={() => setPeriod("all")}><Activity size={16} /> كل السجل</button>
           <button className={period === "today" ? "active" : ""} onClick={() => setPeriod("today")}><CalendarDays size={16} /> اليوم</button>
           <button className={period === "hour" ? "active" : ""} onClick={() => setPeriod("hour")}><Filter size={16} /> التقرير الساعي</button>
         </div>
@@ -212,7 +213,7 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
         </div>
       ) : (
         <div className="activity-feed">
-          {filtered.length === 0 && <div className="activity-empty">لا توجد تعديلات في هذه الفترة.</div>}
+          {filtered.length === 0 && <div className="activity-empty">لا توجد حركات مسجلة في هذه الفترة.</div>}
           {filtered.map((entry) => <ActivityRow key={entry.id} entry={entry} currentUserId={currentUserId} />)}
         </div>
       )}
