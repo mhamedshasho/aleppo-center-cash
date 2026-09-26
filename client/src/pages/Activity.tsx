@@ -99,27 +99,49 @@ function getTarget(entry: ActivityEntry) {
 
 function ActivityView({ workspaceId, currentUserId }: Props) {
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
+  const PAGE_SIZE = 100;
   const [period, setPeriod] = useState<"all" | "today" | "hour">("all");
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => {
     if (!supabase || !workspaceId) {
       setEntries([]);
+      setTotalCount(0);
       setLoading(false);
       return;
     }
     setRefreshing(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("audit_log")
-      .select("id,workspace_id,user_id,actor_email,action,entity,entity_id,summary,created_at")
-      .eq("workspace_id", workspaceId)
+      .select("id,workspace_id,user_id,actor_email,action,entity,entity_id,summary,created_at", { count: "exact" })
+      .eq("workspace_id", workspaceId);
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    if (period === "today" || period === "hour") {
+      query = query.gte("created_at", todayStart);
+    }
+
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data, count, error } = await query
       .order("created_at", { ascending: false })
-      .limit(500);
-    if (!error) setEntries((data ?? []) as ActivityEntry[]);
+      .range(from, to);
+
+    if (!error) {
+      setEntries((data ?? []) as ActivityEntry[]);
+      setTotalCount(count ?? 0);
+    }
     setRefreshing(false);
     setLoading(false);
   };
+
+  useEffect(() => {
+    setPage(0);
+  }, [period, workspaceId]);
 
   useEffect(() => {
     void load();
@@ -127,7 +149,10 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
     const channel = supabase
       .channel(`audit-live-${workspaceId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_log", filter: `workspace_id=eq.${workspaceId}` }, (payload) => {
-        setEntries((current) => [payload.new as ActivityEntry, ...current].slice(0, 500));
+        if (page === 0) {
+          setEntries((current) => [payload.new as ActivityEntry, ...current].slice(0, PAGE_SIZE));
+          setTotalCount((current) => current + 1);
+        }
       })
       .subscribe();
 
@@ -136,18 +161,9 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
       window.clearInterval(timer);
       void supabase?.removeChannel(channel);
     };
-  }, [workspaceId]);
+  }, [workspaceId, period, page]);
 
-  const filtered = useMemo(() => {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return entries.filter((entry) => {
-      const createdAt = new Date(entry.created_at).getTime();
-      if (period === "all") return true;
-      if (period === "today") return createdAt >= todayStart;
-      return createdAt >= todayStart;
-    });
-  }, [entries, period]);
+  const filtered = entries;
 
   const hourly = useMemo(() => {
     const groups = new Map<string, ActivityEntry[]>();
@@ -217,6 +233,24 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
           {filtered.map((entry) => <ActivityRow key={entry.id} entry={entry} currentUserId={currentUserId} />)}
         </div>
       )}
+
+      <div className="activity-pagination">
+        <button
+          className="secondary-btn"
+          disabled={page === 0 || refreshing}
+          onClick={() => setPage((current) => Math.max(0, current - 1))}
+        >
+          السابق
+        </button>
+        <span>صفحة {page + 1} من {Math.max(1, Math.ceil(totalCount / PAGE_SIZE))} · {totalCount.toLocaleString("ar-SY")} حركة</span>
+        <button
+          className="secondary-btn"
+          disabled={(page + 1) * PAGE_SIZE >= totalCount || refreshing}
+          onClick={() => setPage((current) => current + 1)}
+        >
+          التالي
+        </button>
+      </div>
     </section>
   );
 }
