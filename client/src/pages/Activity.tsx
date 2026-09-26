@@ -139,11 +139,12 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
   }, [workspaceId]);
 
   const filtered = useMemo(() => {
-    const now = Date.now();
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     return entries.filter((entry) => {
-      const age = now - new Date(entry.created_at).getTime();
-      if (period === "live") return age <= 60 * 60 * 1000;
-      return age <= 24 * 60 * 60 * 1000;
+      const createdAt = new Date(entry.created_at).getTime();
+      if (period === "live") return now.getTime() - createdAt <= 60 * 60 * 1000;
+      return createdAt >= todayStart;
     });
   }, [entries, period]);
 
