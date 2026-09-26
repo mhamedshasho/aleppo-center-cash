@@ -7,6 +7,8 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BarChart3,
+  BookOpen,
+  GitBranch,
   Bell,
   Check,
   ChevronDown,
@@ -47,10 +49,12 @@ import { createCloudBackup, createEncryptedRestorationFile, restoreCloudBackup, 
 import ActivityView from "@/pages/Activity";
 import InvoiceMaker from "@/pages/InvoiceMaker";
 import { useTheme } from "@/contexts/ThemeContext";
+import Manual from "@/pages/Manual";
+import Updates from "@/pages/Updates";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
-type View = "dashboard" | "accounts" | "account" | "activity" | "invoice";
+type View = "dashboard" | "accounts" | "account" | "activity" | "invoice" | "manual" | "updates";
 
 type Payment = {
   id: number;
@@ -134,6 +138,8 @@ const navItems: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "accounts", label: "الحسابات", icon: WalletCards },
   { id: "activity", label: "التعديلات", icon: Activity },
   { id: "invoice", label: "صانع الفواتير", icon: FileText },
+  { id: "manual", label: "دليل الاستخدام", icon: BookOpen },
+  { id: "updates", label: "التحديثات", icon: GitBranch },
 ];
 
 const formatAmount = (amount: number, currency: Currency) => {
@@ -1263,7 +1269,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       <section className="main-area">
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
-          <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : view === "activity" ? "التعديلات" : view === "invoice" ? "صانع الفواتير" : selectedAccount?.name}</strong></div>
+          <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : view === "activity" ? "التعديلات" : view === "invoice" ? "صانع الفواتير" : view === "manual" ? "دليل الاستخدام" : view === "updates" ? "التحديثات" : selectedAccount?.name}</strong></div>
           <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><div className="notification-wrapper">
             <button className="icon-btn" onClick={() => { const next = !showNotifications; setShowNotifications(next); if (next) markNotificationsRead(); }} aria-label="الإشعارات" aria-expanded={showNotifications} aria-haspopup="true">
               <Bell size={18} />
@@ -1305,6 +1311,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           {view === "accounts" && <AccountsView accounts={filteredAccounts} searchTerm={searchTerm} setSearchTerm={setSearchTerm} onOpenAccount={openAccount} onAddAccount={() => setShowAccountModal(true)} />}
           {view === "activity" && <ActivityView workspaceId={cloudWorkspace?.id} currentUserId={cloudUser?.id} />}
           {view === "invoice" && <InvoiceMaker accounts={accounts} onBack={() => setView("dashboard")} onToggleTheme={() => toggleTheme?.()} theme={theme} />}
+          {view === "manual" && <Manual onBack={() => setView("dashboard")} />}
+          {view === "updates" && <Updates onBack={() => setView("dashboard")} />}
           {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(selectedAccount.id); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
         </div>
       </section>
