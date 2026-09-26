@@ -599,17 +599,24 @@ button:active { transform: scale(.975); }
 .invoice-preview-top p { margin:6px 0 0; font-size:12px; color:#78908b; }
 .invoice-preview-top small { display:block; margin-top:4px; color:#9aa9a5; font-size:10px; }
 .invoice-preview-logo { position:absolute; width:68px; height:68px; object-fit:cover; border-radius:50%; right:0; top:0; }
-.invoice-preview-table { border:1px solid #dfe7e2; border-radius:9px; overflow:hidden; margin-top:20px; }
-.invoice-preview-head,.invoice-preview-row { display:grid; grid-template-columns:1.1fr 1.2fr 1.3fr 1fr .7fr .65fr; align-items:center; }
-.invoice-preview-head { background:#173f47; color:#fff; padding:10px; font-size:10px; font-weight:800; }
-.invoice-preview-row { min-height:78px; padding:7px 10px; border-top:1px solid #e7eeeb; font-size:10px; }
-.invoice-preview-row > span { min-width:0; }
-.invoice-preview-row b { display:block; }
-.invoice-preview-row small { display:block; margin-top:3px; color:#91a29e; font-size:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.preview-image-cell { position:relative; height:65px; overflow:hidden; }
-.preview-image-cell img { position:absolute; transform:translate(-50%,-50%); max-width:90px; max-height:62px; object-fit:contain; }
-.invoice-preview-total { display:flex; justify-content:space-between; margin-top:14px; padding:12px 14px; border:1px solid #dfe9e4; border-radius:9px; background:#f1f6f3; font-size:11px; font-weight:800; }
-.invoice-preview-total strong { color:#2f896d; }
+.invoice-preview-table { border:1px solid #dfe7e2; border-radius:10px; overflow:hidden; margin-top:20px; background:#fff; }
+.invoice-preview-head,.invoice-preview-row { display:grid; grid-template-columns:1.05fr 1.1fr 1.25fr .7fr .95fr .7fr .9fr; align-items:center; direction:rtl; }
+.invoice-preview-head { background:#173f47; color:#fff; padding:0; font-size:10px; font-weight:800; }
+.invoice-preview-head span,.invoice-preview-row > span { min-width:0; overflow:hidden; }
+.invoice-preview-head span { padding:11px 7px; text-align:center; }
+.invoice-preview-head span:nth-child(1),.invoice-preview-head span:nth-child(2) { text-align:right; }
+.invoice-preview-row { min-height:82px; padding:0; border-top:1px solid #e7eeeb; font-size:10px; background:#fff; }
+.invoice-preview-row:nth-child(odd) { background:#fbfcfb; }
+.invoice-preview-row > span { padding:7px; word-break:break-word; }
+.invoice-preview-row b { display:block; color:#18353a; }
+.invoice-preview-row small { display:block; margin-top:3px; color:#91a29e; font-size:7px; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.preview-image-cell { position:relative; height:72px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.preview-image-cell img { position:absolute; transform:translate(-50%,-50%); max-width:88px; max-height:64px; object-fit:contain; }
+.preview-image-cell em { color:#aab8b4; font-style:normal; }
+.preview-credit { color:#4d9b7b; font-weight:800; }
+.preview-debit { color:#b66d52; font-weight:800; }
+.invoice-preview-total { display:flex; justify-content:space-between; gap:16px; margin-top:14px; padding:12px 14px; border:1px solid #dfe9e4; border-radius:9px; background:#f1f6f3; font-size:11px; font-weight:800; }
+.invoice-preview-total strong { color:#2f896d; text-align:left; }
 .invoice-preview-modal > footer { display:flex; justify-content:flex-end; gap:9px; padding:14px 22px; background:#fff; border-top:1px solid #dfe7e3; }
 
 .dark .invoice-meters { background:#101b1d; border-color:#304346; color:#e5f0ed; }
@@ -621,14 +628,27 @@ button:active { transform: scale(.975); }
 .dark .invoice-preview-modal > header h2 { color:#e5f0ed; }
 .dark .invoice-preview-page { background:#fff; color:#18353a; }
 @media (max-width:720px) {
-  .invoice-preview-overlay { padding:8px; }
-  .invoice-preview-modal { max-height:98vh; border-radius:12px; }
-  .invoice-preview-page { width:calc(100% - 18px); margin:9px auto; padding:18px; min-width:650px; transform-origin:top center; }
+  .invoice-preview-overlay { padding:7px; align-items:stretch; }
+  .invoice-preview-modal { width:100%; max-height:98vh; border-radius:12px; }
+  .invoice-preview-page { width:100%; min-width:0; margin:0; padding:14px 10px 18px; box-shadow:none; overflow:visible; }
+  .invoice-preview-top { min-height:66px; padding:0 4px; }
+  .invoice-preview-top h1 { font-size:19px; }
+  .invoice-preview-top p { font-size:10px; }
+  .invoice-preview-top small { font-size:8px; }
+  .invoice-preview-logo { width:52px; height:52px; }
+  .invoice-preview-table { margin-top:14px; }
+  .invoice-preview-head { font-size:8px; }
+  .invoice-preview-head span { padding:8px 3px; }
+  .invoice-preview-row { min-height:66px; font-size:8px; }
+  .invoice-preview-row > span { padding:4px 3px; }
+  .invoice-preview-row small { font-size:6px; }
+  .preview-image-cell { height:58px; }
+  .preview-image-cell img { max-width:62px; max-height:50px; }
+  .invoice-preview-total { margin-top:10px; padding:10px; font-size:9px; }
   .invoice-preview-modal { overflow:auto; }
   .invoice-preview-modal > header { position:sticky; top:0; z-index:3; }
   .invoice-preview-modal > footer { position:sticky; bottom:0; z-index:3; }
 }
-
 .manual-page,.updates-page { min-height:calc(100vh - 81px); padding:30px clamp(18px,4vw,61px) 60px; }
 .manual-header,.updates-header { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:24px; }
 .manual-header h1,.updates-header h1 { margin:7px 0 5px; font-size:clamp(28px,4vw,42px); letter-spacing:-.045em; color:#18353a; }
