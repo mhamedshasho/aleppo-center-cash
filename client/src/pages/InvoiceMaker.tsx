@@ -9,7 +9,7 @@ type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
 type Payment = { id: number; name: string; amount: number; currency: Currency; type: PaymentType; date: string };
 type Account = { id: number; name: string; owner: string; payments: Payment[] };
-type Row = Payment & { accountName: string };
+type Row = Payment & { accountId: number; accountName: string };
 type TemplatePage = { label: string; image: string };
 type TemplateFile = { id: string; name: string; pages: TemplatePage[] };
 type Position = { x: number; y: number };
@@ -95,8 +95,8 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const logoRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
-  const rows = useMemo<Row[]>(() => accounts.flatMap((a) => a.payments.map((p) => ({ ...p, accountName: a.name }))).sort((a, b) => b.date.localeCompare(a.date)), [accounts]);
-  const accountRows = useMemo(() => accountFilter === "all" ? rows : rows.filter((r) => String(accounts.find((a) => a.name === r.accountName)?.id ?? "") === accountFilter), [rows, accounts, accountFilter]);
+  const rows = useMemo<Row[]>(() => accounts.flatMap((a) => a.payments.map((p) => ({ ...p, accountId: a.id, accountName: a.name }))).sort((a, b) => b.date.localeCompare(a.date)), [accounts]);
+  const accountRows = useMemo(() => accountFilter === "all" ? rows : rows.filter((r) => String(r.accountId) === accountFilter), [rows, accountFilter]);
   const filtered = useMemo(() => accountRows.filter((r) => (r.name + " " + r.accountName).toLowerCase().includes(query.toLowerCase())), [accountRows, query]);
   const chosen = rows.filter((r) => selected.includes(r.id));
   const totals = chosen.reduce((a, r) => ({ ...a, [r.currency]: (a[r.currency] || 0) + r.amount }), {} as Record<Currency, number>);
@@ -186,7 +186,6 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
             const p = positions[r.id] || { x: 50, y: 50 };
             const image = images[r.id] || "";
             return '<tr style="height:88px;background:' + (i % 2 ? "#fff" : "#fbfcfb") + ';">'
-              + '<td style="padding:7px;font-weight:700;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(r.accountName) + '</td>'
               + '<td style="padding:7px;font-weight:700;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(r.name) + (imageLabels[r.id] ? '<div style="font-size:7px;color:#91a29e;margin-top:3px;line-height:1.25;word-break:break-word;">' + esc(imageLabels[r.id]) + '</div>' : "") + '</td>'
               + '<td style="padding:4px;vertical-align:middle;text-align:center;border-top:1px solid #e7eeeb;"><div style="height:72px;position:relative;overflow:hidden;"><img src="' + image + '" style="position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);max-width:92px;max-height:68px;object-fit:contain;" /></div></td>'
               + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(meters[r.id] || "—") + '</td>'
