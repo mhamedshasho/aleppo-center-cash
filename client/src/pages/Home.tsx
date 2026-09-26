@@ -372,8 +372,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   useEffect(() => {
-
-      syncReadyRef.current = !cloudWorkspace || !cloudUser;
+    if (!cloudWorkspace || !cloudUser) {
+      syncReadyRef.current = true;
       initialCloudSyncRef.current = Promise.resolve();
       return;
     }
@@ -383,7 +383,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     let active = true;
 
     const initialSync = (async () => {
-      let connected = false;
       try {
         const remoteAccounts = await pullCloudAccounts(cloudWorkspace.id);
         if (!active || generation !== syncGeneration.current) return;
@@ -392,18 +391,11 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         setAccounts(remoteAccounts);
         setSyncState("synced");
         syncReadyRef.current = true;
-        connected = true;
-        setSyncReadyVersion((value) => value + 1);
       } catch (error) {
         if (!active || generation !== syncGeneration.current) return;
         console.error("[AleppoCenterCash] initial cloud pull failed", error);
         syncReadyRef.current = false;
         setSyncState("offline");
-      } finally {
-        if (active && generation === syncGeneration.current && !connected) {
-          syncReadyRef.current = false;
-          setSyncReadyVersion((value) => value + 1);
-        }
       }
     })();
 
@@ -412,7 +404,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     return () => {
       active = false;
     };
-
+  }, [cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
