@@ -46,13 +46,6 @@ const formatTime = (value: string) =>
     second: "2-digit",
   }).format(new Date(value));
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("ar-SY", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(new Date(value));
-
 const formatAmount = (value: unknown, currency?: string) => {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "—";
