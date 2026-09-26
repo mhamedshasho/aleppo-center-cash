@@ -628,3 +628,91 @@ button:active { transform: scale(.975); }
   .invoice-preview-modal > header { position:sticky; top:0; z-index:3; }
   .invoice-preview-modal > footer { position:sticky; bottom:0; z-index:3; }
 }
+
+.manual-page,.updates-page { min-height:calc(100vh - 81px); padding:30px clamp(18px,4vw,61px) 60px; }
+.manual-header,.updates-header { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:24px; }
+.manual-header h1,.updates-header h1 { margin:7px 0 5px; font-size:clamp(28px,4vw,42px); letter-spacing:-.045em; color:#18353a; }
+.manual-header p,.updates-header p { margin:0; color:#718883; font-size:13px; }
+.manual-hero-icon { width:64px; height:64px; display:grid; place-items:center; border-radius:18px; background:#e8f5ef; color:#2f896d; }
+.manual-layout { display:grid; grid-template-columns:230px minmax(0,1fr); gap:20px; align-items:start; }
+.manual-index { position:sticky; top:18px; padding:14px; display:grid; gap:4px; }
+.manual-index strong { padding:7px 9px 12px; color:#31585c; font-size:12px; }
+.manual-index a { display:flex; align-items:center; gap:9px; padding:10px; border-radius:9px; color:#66807c; font-size:11px; text-decoration:none; transition:.15s; }
+.manual-index a:hover { background:#eef7f3; color:#285f59; }
+.manual-index a span { width:23px; height:23px; display:grid; place-items:center; border-radius:7px; background:#f0f5f2; color:#7e9892; font-size:9px; font-weight:800; }
+.manual-content { display:grid; gap:18px; }
+.manual-section { padding:22px; scroll-margin-top:18px; }
+.manual-section-head { display:flex; align-items:flex-start; gap:13px; padding-bottom:17px; border-bottom:1px solid #e7eeeb; }
+.manual-section-head > span { flex:0 0 36px; height:36px; display:grid; place-items:center; border-radius:10px; background:#e8f5ef; color:#2f896d; font-size:10px; font-weight:900; }
+.manual-section-head h2 { margin:1px 0 4px; font-size:19px; color:#18353a; }
+.manual-section-head p { margin:0; color:#80938f; font-size:10px; }
+.manual-items { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 20px; }
+.manual-items article { display:flex; gap:10px; padding:16px 2px; border-bottom:1px solid #edf1ef; }
+.manual-items article > svg { flex:0 0 18px; color:#4a9a7c; margin-top:2px; }
+.manual-items h3 { margin:0 0 4px; color:#31565a; font-size:12px; }
+.manual-items p { margin:0; color:#718883; font-size:10px; line-height:1.75; }
+.manual-help { display:flex; align-items:flex-start; gap:11px; padding:18px; color:#5f7975; }
+.manual-help > svg { color:#4b9c7e; flex:0 0 21px; }
+.manual-help strong { color:#31575b; font-size:12px; }
+.manual-help p { margin:5px 0 0; font-size:10px; line-height:1.7; }
+
+.updates-actions { display:flex; align-items:center; gap:9px; }
+.updates-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; align-items:start; }
+.updates-releases,.updates-commits { padding:18px; }
+.release-card { display:grid; grid-template-columns:38px minmax(0,1fr) 24px; gap:11px; align-items:start; padding:14px 2px; border-top:1px solid #edf1ef; }
+.release-icon,.commit-icon { width:34px; height:34px; display:grid; place-items:center; border-radius:9px; background:#e8f5ef; color:#2f896d; }
+.release-title { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.release-title h3 { margin:0; color:#31565a; font-size:12px; }
+.release-title span { padding:3px 6px; border-radius:6px; background:#f0f5f2; color:#718883; font-size:8px; }
+.release-card p { margin:6px 0; color:#718883; font-size:10px; line-height:1.6; }
+.release-card small { display:flex; align-items:center; gap:4px; color:#91a19d; font-size:8px; }
+.release-card > a { color:#7d9590; }
+.commit-list { display:grid; }
+.commit-card { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; align-items:center; padding:12px 2px; border-top:1px solid #edf1ef; text-decoration:none; }
+.commit-card:hover { background:#f5f9f7; }
+.commit-card strong { display:block; color:#31565a; font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.commit-card small { display:flex; align-items:center; gap:6px; margin-top:4px; color:#91a19d; font-size:8px; }
+.commit-card code { color:#6d8983; font-size:8px; background:#f0f5f2; padding:4px 6px; border-radius:6px; }
+.updates-loading,.updates-error { min-height:260px; display:grid; place-items:center; align-content:center; gap:9px; color:#718883; }
+.updates-error strong { color:#a65f48; font-size:12px; }
+.updates-empty { min-height:170px; display:grid; place-items:center; align-content:center; gap:7px; color:#91a19d; font-size:10px; }
+.updates-empty strong { color:#506b6e; font-size:12px; }
+.updates-empty span { font-size:9px; }
+.updates-footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:16px; color:#8aa09a; font-size:9px; }
+.updates-footer > svg { color:#4b9c7e; }
+.updates-footer a { color:#477f71; text-decoration:none; }
+.spin { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.dark .manual-header h1,.dark .updates-header h1 { color:#e6f0ed; }
+.dark .manual-header p,.dark .updates-header p { color:#8fa6a2; }
+.dark .manual-hero-icon { background:#17352f; color:#8ed0ae; }
+.dark .manual-index a { color:#9bb2ae; }
+.dark .manual-index a:hover { background:#19332f; color:#cce4dc; }
+.dark .manual-index a span { background:#1d3033; color:#91aaa5; }
+.dark .manual-index strong,.dark .manual-section-head h2,.dark .manual-items h3,.dark .manual-help strong { color:#dcebe7; }
+.dark .manual-section-head,.dark .manual-items article,.dark .release-card,.dark .commit-card { border-color:#273b3e; }
+.dark .manual-section-head p,.dark .manual-items p,.dark .manual-help,.dark .release-card p { color:#91aaa5; }
+.dark .manual-section-head > span,.dark .release-icon,.dark .commit-icon { background:#17352f; color:#8ed0ae; }
+.dark .manual-help { background:#152326; }
+.dark .release-title h3,.dark .commit-card strong { color:#d2e2de; }
+.dark .release-title span,.dark .commit-card code { background:#1d3033; color:#9eb4b0; }
+.dark .commit-card:hover { background:#193033; }
+.dark .updates-footer { color:#819b95; }
+.dark .updates-footer a { color:#8fc2b0; }
+
+@media (max-width:900px) {
+  .manual-layout { grid-template-columns:1fr; }
+  .manual-index { position:static; display:flex; overflow:auto; gap:5px; }
+  .manual-index strong { display:none; }
+  .manual-index a { white-space:nowrap; }
+  .updates-grid { grid-template-columns:1fr; }
+}
+@media (max-width:650px) {
+  .manual-page,.updates-page { padding:22px 14px 40px; }
+  .manual-header,.updates-header { align-items:flex-start; flex-direction:column; }
+  .manual-items { grid-template-columns:1fr; }
+  .manual-section { padding:17px; }
+  .updates-actions { width:100%; justify-content:flex-end; }
+  .updates-footer { justify-content:flex-start; flex-wrap:wrap; }
+}
