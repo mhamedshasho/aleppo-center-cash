@@ -186,6 +186,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [backupPassword, setBackupPassword] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
+  const [mutationBusy, setMutationBusy] = useState(false);
+  const mutationBusyRef = useRef(false);
   const restorationFileInputRef = useRef<HTMLInputElement | null>(null);
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountOwner, setNewAccountOwner] = useState("");
@@ -322,13 +324,13 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const deletedAccounts = deletionOverrides?.deletedAccountIds ?? Array.from(deletedAccountIds.current, ([id, version]) => ({ id, version }));
     const deletedPayments = deletionOverrides?.deletedPaymentIds ?? Array.from(deletedPaymentIds.current, ([id, version]) => ({ id, version }));
 
+    if (syncInFlight.current) throw new Error("sync_busy");
+
     pendingSync.current = {
       accounts: candidate,
       deletedAccountIds: deletedAccounts,
       deletedPaymentIds: deletedPayments,
     };
-
-    if (syncInFlight.current) throw new Error("sync_busy");
 
     syncInFlight.current = true;
 
@@ -621,8 +623,19 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   }, [syncState, cloudWorkspace?.id, cloudUser?.id]);
 
   const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
+    if (entity !== "backup") return;
     pushClientNotification(action, entity, label);
-    await addAuditEntry({ action, entity, label });
+    if (!supabase || !cloudWorkspace || !cloudUser) return;
+    const { error } = await supabase.from("audit_log").insert({
+      workspace_id: cloudWorkspace.id,
+      user_id: cloudUser.id,
+      actor_email: cloudUser.email ?? null,
+      action,
+      entity,
+      entity_id: null,
+      summary: JSON.stringify({ name: label }),
+    });
+    if (error) console.error("[AleppoCenterCash] manual audit insert failed", error);
   };
 
   const openAccount = (id: number) => {
@@ -848,7 +861,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
     try {
       await syncAccounts(nextAccounts, deletions);
-      setAccounts(nextAccounts);
       void saveCloudBackup();
     } catch (error) {
       if (error instanceof WorkspaceUnavailableError) {
@@ -897,57 +909,76 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       toast.error("اكتب اسم الحساب وصاحب الحساب أولاً");
       return;
     }
-    if (editingAccountId) {
-      const nextAccounts = accounts.map((account) => account.id === editingAccountId ? { ...account, name: newAccountName.trim(), owner: newAccountOwner.trim() } : account);
-      try {
+    if (newAccountName.trim().length > 160) {
+      toast.error("اسم الحساب لازم يكون 160 محرف أو أقل");
+      return;
+    }
+    if (newAccountOwner.trim().length > 160) {
+      toast.error("اسم صاحب الحساب لازم يكون 160 محرف أو أقل");
+      return;
+    }
+    if (mutationBusyRef.current) return;
+
+    mutationBusyRef.current = true;
+    setMutationBusy(true);
+    try {
+      if (editingAccountId) {
+        const nextAccounts = accounts.map((account) => account.id === editingAccountId ? { ...account, name: newAccountName.trim(), owner: newAccountOwner.trim() } : account);
         await commitAccounts(nextAccounts);
-        void recordAudit("update", "account", newAccountName.trim());
         setEditingAccountId(null);
         setNewAccountName("");
         setNewAccountOwner("");
         setShowAccountModal(false);
         toast.success("تعدّل الحساب بنجاح");
-      } catch {
-        toast.error("ما قدرنا نحفظ تعديل الحساب بالسحابة");
+        return;
       }
-      return;
-    }
-    const next: Account = { id: Date.now(), remoteId: crypto.randomUUID(), version: 0, name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
-    try {
+
+      const next: Account = { id: Date.now(), remoteId: crypto.randomUUID(), version: 0, name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
       await commitAccounts([...accounts, next]);
-      void recordAudit("create", "account", next.name);
       setNewAccountName("");
       setNewAccountOwner("");
       setShowAccountModal(false);
       toast.success("انضاف الحساب بنجاح");
     } catch {
-      toast.error("ما قدرنا نحفظ الحساب بالسحابة");
+      toast.error(editingAccountId ? "ما قدرنا نحفظ تعديل الحساب بالسحابة" : "ما قدرنا نحفظ الحساب بالسحابة");
+    } finally {
+      mutationBusyRef.current = false;
+      setMutationBusy(false);
     }
   };
 
   const addPayment = async () => {
     const validationError = validatePaymentDraft(paymentDraft);
     if (validationError) { toast.error(validationError); return; }
+    if (paymentDraft.name.trim().length > 160) {
+      toast.error("اسم الدفعة لازم يكون 160 محرف أو أقل");
+      return;
+    }
+    if (mutationBusyRef.current) return;
+
     const targetAccountId = paymentAccountId ?? selectedAccountId;
     const targetAccount = accounts.find((account) => account.id === targetAccountId);
     if (!targetAccount) { toast.error("اختار حساب أولاً"); return; }
-    const existingPayment = editingPaymentId ? targetAccount.payments.find((item) => item.id === editingPaymentId) : undefined;
-    const payment: Payment = {
-      id: editingPaymentId ?? Date.now(),
-      remoteId: existingPayment?.remoteId ?? (editingPaymentId ? undefined : crypto.randomUUID()),
-      version: existingPayment?.version ?? (editingPaymentId ? undefined : 0),
-      name: paymentDraft.name.trim(),
-      amount: Number(paymentDraft.amount),
-      currency: paymentDraft.currency,
-      type: paymentDraft.type,
-      date: paymentDraft.date,
-    };
-    const nextAccounts = accounts.map((account) => account.id === targetAccountId
-      ? { ...account, payments: editingPaymentId ? account.payments.map((item) => item.id === editingPaymentId ? payment : item) : [payment, ...account.payments] }
-      : account);
+
+    mutationBusyRef.current = true;
+    setMutationBusy(true);
     try {
+      const existingPayment = editingPaymentId ? targetAccount.payments.find((item) => item.id === editingPaymentId) : undefined;
+      const payment: Payment = {
+        id: editingPaymentId ?? Date.now(),
+        remoteId: existingPayment?.remoteId ?? (editingPaymentId ? undefined : crypto.randomUUID()),
+        version: existingPayment?.version ?? (editingPaymentId ? undefined : 0),
+        name: paymentDraft.name.trim(),
+        amount: Number(paymentDraft.amount),
+        currency: paymentDraft.currency,
+        type: paymentDraft.type,
+        date: paymentDraft.date,
+      };
+      const nextAccounts = accounts.map((account) => account.id === targetAccountId
+        ? { ...account, payments: editingPaymentId ? account.payments.map((item) => item.id === editingPaymentId ? payment : item) : [payment, ...account.payments] }
+        : account);
+
       await commitAccounts(nextAccounts);
-      void recordAudit(editingPaymentId ? "update" : "create", "payment", payment.name);
       setEditingPaymentId(null);
       setPaymentAccountId(null);
       setPaymentDraft({ name: "", amount: "", currency: "SYP", type: "credit", date: new Date().toISOString().slice(0, 10) });
@@ -955,6 +986,9 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       toast.success(editingPaymentId ? "انحفظ تعديل الدفعة" : "انضافت الدفعة للحساب");
     } catch {
       toast.error("ما قدرنا نحفظ الدفعة بالسحابة");
+    } finally {
+      mutationBusyRef.current = false;
+      setMutationBusy(false);
     }
   };
 
@@ -980,7 +1014,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       }
 
       setAccounts(nextAccounts);
-      void recordAudit("delete", "payment", payment.name);
       void saveCloudBackup();
       toast.success("انحذفت الدفعة");
     } catch (error) {
@@ -1009,7 +1042,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       setAccounts(nextAccounts);
       setSelectedAccountId(nextAccounts[0]?.id ?? 0);
       setView("accounts");
-      void recordAudit("delete", "account", account.name);
       void saveCloudBackup();
       toast.success("انحذف الحساب وكل حركاته");
     } catch (error) {
@@ -1081,7 +1113,11 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     recentPayments.forEach((payment, index) => { const y = 725 + index * 62; if (index % 2 === 0) { context.fillStyle = "#fbfcfb"; context.fillRect(70, y - 30, 1060, 62); } right(formatDate(payment.date), 1085, y, "400 15px Cairo, Arial, sans-serif"); right(payment.name, 820, y, "400 15px Cairo, Arial, sans-serif"); right(formatAmount(payment.amount, payment.currency), 455, y, "600 15px Cairo, Arial, sans-serif"); right(payment.type === "credit" ? "له" : "عليه", 180, y, "700 15px Cairo, Arial, sans-serif", payment.type === "credit" ? "#4d9b7b" : "#c27b4e"); });
     line(1050); right("Aleppo Center Cash — تقرير من البيانات السحابية", 600, 1090, "400 13px Cairo, Arial, sans-serif", "#8aa09a");
     const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png"); anchor.download = "aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + reportDate + ".png"; anchor.click();
-    void recordAudit("export", "backup", "تقرير PNG — " + account.name); void saveCloudBackup(); toast.success("نزلنا تقرير الحساب كصورة PNG");
+    void (async () => {
+      await recordAudit("export", "backup", "تقرير PNG — " + account.name);
+      await saveCloudBackup(false);
+    })();
+    toast.success("نزلنا تقرير الحساب كصورة PNG");
   };
 
   const exportPdf = async (accountId: number) => {
@@ -1104,7 +1140,18 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       + "<h3 style=\"margin:0 0 6px;font-size:13px;color:#173f47;\">آخر الدفعات (" + recentPayments.length + ")</h3><table style=\"width:100%;border-collapse:collapse;font-size:9px;\"><thead><tr style=\"background:#f5f6f3;\"><th style=\"padding:4px;text-align:right;color:#718883;\">تاريخ</th><th style=\"padding:4px;text-align:right;color:#718883;\">وصف</th><th style=\"padding:4px;text-align:right;color:#718883;\">مبلغ</th><th style=\"padding:4px;text-align:right;color:#718883;\">نوع</th></tr></thead><tbody>" + (rows || "<tr><td colspan=\"4\" style=\"padding:8px;text-align:center;color:#718883;\">لا توجد دفعات</td></tr>") + "</tbody></table>"
       + "<p style=\"margin:12px 0 0;padding-top:6px;border-top:1px solid #eef2ef;font-size:9px;color:#8aa09a;text-align:center;\">Aleppo Center Cash — تقرير من البيانات السحابية</p>";
     document.body.appendChild(report);
-    void saveCloudBackup(); try { const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" }); await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 600, autoPaging: "text" }); pdf.save("aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + dateStamp + ".pdf"); void recordAudit("export", "backup", "تقرير PDF — " + account.name); toast.success("نزلنا تقرير الحساب كملف PDF"); } catch { toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية"); } finally { report.remove(); }
+    try {
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      await pdf.html(report, { x: 24, y: 24, width: 547, windowWidth: 600, autoPaging: "text" });
+      pdf.save("aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + dateStamp + ".pdf");
+      await recordAudit("export", "backup", "تقرير PDF — " + account.name);
+      await saveCloudBackup(false);
+      toast.success("نزلنا تقرير الحساب كملف PDF");
+    } catch {
+      toast.error("ما قدرنا نجهّز ملف PDF، جرّب مرة تانية");
+    } finally {
+      report.remove();
+    }
   };
   if (!isUnlocked) {
     return (
