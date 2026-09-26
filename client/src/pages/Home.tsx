@@ -39,7 +39,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { clearAllLocalData, readSyncQueue, removeSyncQueueItem } from "@/lib/localStore";
 import { jsPDF } from "jspdf";
 import { authenticateKey, hasAuthSession } from "@/lib/auth";
 import { validatePaymentDraft } from "@/lib/validation";
@@ -183,7 +182,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [isUnlocked, setIsUnlocked] = useState(() => Boolean(cloudUser) || hasAuthSession());
   const [keyValue, setKeyValue] = useState("");
   const [accounts, setAccounts] = useState<Account[]>(() => cloudWorkspace ? [] : initialAccounts);
-  const [storageReady, setStorageReady] = useState(false);
   const [view, setView] = useState<View>("dashboard");
   const [dashboardCurrency, setDashboardCurrency] = useState<Currency>("SYP");
   const [selectedAccountId, setSelectedAccountId] = useState(1);
@@ -206,9 +204,9 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
   const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [paymentDraft, setPaymentDraft] = useState({ name: "", amount: "", currency: "SYP" as Currency, type: "credit" as PaymentType, date: new Date().toISOString().slice(0, 10) });
-  const [syncState, setSyncState] = useState<"local" | "syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "offline");
+  const [syncState, setSyncState] = useState<"syncing" | "synced" | "offline" | "conflict">(cloudWorkspace ? "syncing" : "offline");
   const [, setLocation] = useLocation();
-  const [syncReadyVersion, setSyncReadyVersion] = useState(0);
+
   const syncInFlight = useRef(false);
   const pendingSync = useRef<{ accounts: Account[]; deletedAccountIds: { id: string; version?: number }[]; deletedPaymentIds: { id: string; version?: number }[] } | null>(null);
   const syncReadyRef = useRef(!cloudWorkspace || !cloudUser);
@@ -242,14 +240,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     setNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
   };
 
-  useEffect(() => {
-    let active = true;
-    void clearAllLocalData().catch(() => undefined).finally(() => {
-      if (active) setStorageReady(true);
-    });
-    return () => { active = false; };
-  }, []);
-
   const mergeServerMetadata = (candidate: Account[], pushed: Account[]) => {
     const pushedByAccountId = new Map(pushed.map((account) => [account.id, account]));
     return candidate.map((account) => {
@@ -266,60 +256,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         }),
       };
     });
-  };
-
-  const flushSyncQueue = async (): Promise<boolean> => {
-    if (!cloudWorkspace || !cloudUser || !syncReadyRef.current || syncInFlight.current) return true;
-
-    const queue = await readSyncQueue();
-    const matching = queue
-      .filter((item) => item.workspaceId === cloudWorkspace.id && item.userId === cloudUser.id)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    const latest = matching.at(-1);
-    if (!latest) return true;
-
-    const deletedAccountMap = new Map<string, number | undefined>();
-    const deletedPaymentMap = new Map<string, number | undefined>();
-
-    for (const item of matching) {
-      for (const deletion of item.deletedAccountIds ?? []) deletedAccountMap.set(deletion.id, deletion.version);
-      for (const deletion of item.deletedPaymentIds ?? []) deletedPaymentMap.set(deletion.id, deletion.version);
-    }
-
-    const deletedAccounts = Array.from(deletedAccountMap, ([id, version]) => ({ id, version }));
-    const deletedPayments = Array.from(deletedPaymentMap, ([id, version]) => ({ id, version }));
-
-    syncInFlight.current = true;
-    try {
-      const pushed = await pushLocalAccounts(
-        latest.workspaceId,
-        latest.userId,
-        latest.accounts,
-        deletedAccounts,
-        deletedPayments,
-      );
-
-      if (latest.accounts.length > 0 && pushed.length === 0) {
-        throw new Error("Queued sync returned an empty account list");
-      }
-
-      const syncedAccounts = mergeServerMetadata(latest.accounts, pushed);
-      latestSyncedFingerprint.current = JSON.stringify(syncedAccounts);
-      setAccounts(syncedAccounts);
-
-      for (const item of matching) await removeSyncQueueItem(item.id);
-      for (const deletion of deletedAccounts) deletedAccountIds.current.delete(deletion.id);
-      for (const deletion of deletedPayments) deletedPaymentIds.current.delete(deletion.id);
-      setSyncState("synced");
-      console.info("[AleppoCenterCash] queued sync flushed", { accounts: syncedAccounts.length });
-      return true;
-    } catch (error) {
-      console.error("[AleppoCenterCash] queued sync failed", error);
-      setSyncState(error instanceof SyncConflictError ? "conflict" : "offline");
-      return false;
-    } finally {
-      syncInFlight.current = false;
-    }
   };
 
   const syncAccounts = async (
@@ -399,10 +335,10 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           if (generation !== syncGeneration.current) continue;
 
           setAccounts(syncedAccounts);
-          const queuedItems = await readSyncQueue();
+
           for (const item of queuedItems) {
             if (item.workspaceId === cloudWorkspace.id && item.userId === cloudUser.id) {
-              await removeSyncQueueItem(item.id);
+
             }
           }
           for (const deletion of work.deletedAccountIds) deletedAccountIds.current.delete(deletion.id);
@@ -436,7 +372,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   useEffect(() => {
-    if (!storageReady || !cloudWorkspace || !cloudUser) {
+
       syncReadyRef.current = !cloudWorkspace || !cloudUser;
       initialCloudSyncRef.current = Promise.resolve();
       return;
@@ -476,7 +412,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     return () => {
       active = false;
     };
-  }, [storageReady, cloudWorkspace?.id, cloudUser?.id]);
+
 
   useEffect(() => {
     if (!cloudWorkspace || !cloudUser) return;
@@ -488,7 +424,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       } catch (error) {
         if (!active) return;
         if (error instanceof WorkspaceUnavailableError) {
-          await clearAllLocalData().catch(() => undefined);
+
           const { supabase } = await import("@/lib/supabase");
           await supabase?.auth.signOut().catch(() => undefined);
           toast.error("مساحة العمل لم تعد موجودة. رجعناك لصفحة الدخول.");
@@ -570,8 +506,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         return;
       }
 
-      const queueFlushed = await flushSyncQueue();
-      if (!queueFlushed || syncInFlight.current || pendingSync.current) return;
+      if (syncInFlight.current || pendingSync.current) return;
 
       const generation = ++syncGeneration.current;
       void pullCloudAccounts(cloudWorkspace.id).then((remoteAccounts) => {
@@ -595,8 +530,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   }, [cloudWorkspace?.id, cloudUser?.id]);
 
   useEffect(() => {
-    if (syncReadyVersion > 0) void flushSyncQueue();
-  }, [syncReadyVersion, cloudWorkspace?.id, cloudUser?.id]);
+
+
 
   useEffect(() => {
     if (!cloudWorkspace || !cloudUser || syncState !== "offline") return;
@@ -607,11 +542,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       cloudRecoveryInFlightRef.current = true;
       setSyncState("syncing");
       try {
-        const queueFlushed = await flushSyncQueue();
-        if (!active || !queueFlushed) {
-          if (active) setSyncState("offline");
-          return;
-        }
         const remoteAccounts = await pullCloudAccounts(cloudWorkspace.id);
         if (!active) return;
         latestSyncedFingerprint.current = JSON.stringify(remoteAccounts);
@@ -671,7 +601,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     if (!window.confirm("متأكد؟ رح تنحذف مساحة العمل نهائياً مع كل الحسابات والدفعات، وما في تراجع.")) return;
     try {
       await deleteWorkspaceFromCloud(cloudWorkspace.id);
-      await clearAllLocalData().catch(() => undefined);
+
       const { supabase } = await import("@/lib/supabase");
       await supabase?.auth.refreshSession();
       toast.success("انحذفت مساحة العمل نهائياً");
@@ -692,7 +622,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       const { error } = await supabase.rpc("delete_my_account");
       if (error) throw error;
 
-      await clearAllLocalData();
       localStorage.removeItem(`aleppo-center-workspace:${cloudUser?.id ?? ""}`);
       await supabase.auth.signOut().catch(() => undefined);
       window.location.replace("/");
@@ -878,7 +807,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
       void saveCloudBackup();
     } catch (error) {
       if (error instanceof WorkspaceUnavailableError) {
-        await clearAllLocalData().catch(() => undefined);
+
         const { supabase } = await import("@/lib/supabase");
         await supabase?.auth.signOut().catch(() => undefined);
         toast.error("مساحة العمل لم تعد موجودة. رجعناك لصفحة الدخول.");
