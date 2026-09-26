@@ -107,7 +107,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const activePage = activeFile?.pages[pageIndex];
 
   const toggle = (id: number) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
-  const chooseRow = (id: number) => { if (!selected.includes(id)) setSelected((s) => [...s, id]); setActiveId(id); };
+  const chooseRow = (id: number) => { setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]); setActiveId(id); };
   const chooseTarget = (id: number) => { if (selected.includes(id)) setActiveId(id); };
   const toggleAll = () => setSelected((s) => { const visibleSelected = filtered.filter((r) => s.includes(r.id)).length; return visibleSelected === filtered.length ? s.filter((id) => !filtered.some((r) => r.id === id)) : Array.from(new Set([...s, ...filtered.map((r) => r.id)])); });
   const changeAccount = (value: string) => { setAccountFilter(value); setQuery(""); setSelected([]); setActiveId(null); setImages({}); setImageLabels({}); setPositions({}); setMeters({}); };
