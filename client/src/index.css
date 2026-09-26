@@ -716,3 +716,11 @@ button:active { transform: scale(.975); }
   .updates-actions { width:100%; justify-content:flex-end; }
   .updates-footer { justify-content:flex-start; flex-wrap:wrap; }
 }
+
+.template-target { display:grid; gap:7px; margin-top:12px; padding:11px; border:1px solid #dfe8e4; border-radius:10px; background:#f8faf9; }
+.template-target label { font-size:9px; font-weight:800; color:#607b76; }
+.template-target select { width:100%; min-height:38px; border:1px solid #d9e5e0; border-radius:8px; background:#fff; color:#31565a; padding:0 9px; font:inherit; font-size:10px; }
+.template-target-current { display:flex; align-items:center; gap:5px; color:#3c896f; font-size:9px; }
+.dark .template-target { background:#101b1d; border-color:#304346; }
+.dark .template-target label { color:#9ab0ab; }
+.dark .template-target select { background:#152326; border-color:#304346; color:#d6e6e2; }
