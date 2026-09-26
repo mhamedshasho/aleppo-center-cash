@@ -29,6 +29,9 @@ type EncryptedRestorationFile = {
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
+const MAX_RESTORATION_FILE_BYTES = 25 * 1024 * 1024;
+const MIN_PBKDF2_ITERATIONS = 100_000;
+const MAX_PBKDF2_ITERATIONS = 500_000;
 
 const toBase64 = (bytes: Uint8Array) => {
   let binary = "";
@@ -112,8 +115,14 @@ export async function restoreEncryptedRestorationFile(
 ) {
   if (!supabase) throw new Error("Supabase غير مهيأ بعد");
   if (password.length < 8) throw new Error("restore_password_too_short");
+  if (file.size > MAX_RESTORATION_FILE_BYTES) throw new Error("restoration_file_too_large");
 
-  const envelope = JSON.parse(await file.text()) as Partial<EncryptedRestorationFile>;
+  let envelope: Partial<EncryptedRestorationFile>;
+  try {
+    envelope = JSON.parse(await file.text()) as Partial<EncryptedRestorationFile>;
+  } catch {
+    throw new Error("invalid_restoration_file");
+  }
   if (
     envelope.format !== "aleppo-center-cash-restoration-file" ||
     envelope.version !== 1 ||
@@ -121,7 +130,15 @@ export async function restoreEncryptedRestorationFile(
     envelope.algorithm !== "AES-GCM" ||
     envelope.kdf !== "PBKDF2-SHA-256" ||
     typeof envelope.iterations !== "number" ||
+    !Number.isInteger(envelope.iterations) ||
+    envelope.iterations < MIN_PBKDF2_ITERATIONS ||
+    envelope.iterations > MAX_PBKDF2_ITERATIONS ||
     typeof envelope.salt !== "string" ||
+    fromBase64(envelope.salt).length !== 16 ||
+    typeof envelope.iv !== "string" ||
+    fromBase64(envelope.iv).length !== 12 ||
+    typeof envelope.ciphertext !== "string" ||
+    envelope.ciphertext.length < 1 ||
     typeof envelope.iv !== "string" ||
     typeof envelope.ciphertext !== "string"
   ) {
