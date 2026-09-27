@@ -51,6 +51,7 @@ import InvoiceMaker from "@/pages/InvoiceMaker";
 import { useTheme } from "@/contexts/ThemeContext";
 import Manual from "@/pages/Manual";
 import Updates from "@/pages/Updates";
+import DesktopSidebar from "@/components/DesktopSidebar";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -1193,7 +1194,24 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   return (
     <main className="app-shell" dir="rtl">
-      <aside className={`sidebar ${showMobileNav ? "open" : ""}`}>
+      <DesktopSidebar
+        view={view}
+        accountsCount={accounts.length}
+        workspaceName={cloudWorkspace?.name}
+        workspaceId={cloudWorkspace?.id}
+        email={cloudUser?.email}
+        theme={theme}
+        onNavigate={(nextView) => setView(nextView)}
+        onToggleTheme={() => toggleTheme?.()}
+        onBackup={() => setShowBackupModal(true)}
+        onExportFile={() => void exportBackup()}
+        onCredits={() => setLocation("/credits")}
+        onCopyWorkspace={copyWorkspaceId}
+        onDeleteWorkspace={() => void resetEverything()}
+        onDeleteAccount={() => void deleteAccountData()}
+        onLogout={() => void handleLogout()}
+      />
+      <aside className={`sidebar mobile-sidebar ${showMobileNav ? "open" : ""}`}>
         <div className="sidebar-top">
           <div className="brand-lockup">
             <div className="brand-mark"><Landmark size={22} strokeWidth={1.8} /></div>
