@@ -834,3 +834,176 @@ html.dark .key-input-wrap input { color: #e4f0ed; }
 /* إشعارات فوق كل عناصر الواجهة بدون كسر التخطيط */
 [data-sonner-toaster] { position: fixed !important; z-index: 2147483000 !important; pointer-events: none !important; }
 [data-sonner-toast] { pointer-events: auto !important; overflow: hidden !important; }
+
+
+/* طبقة الإشعارات العليا */
+html body [data-sonner-toaster] {
+  position: fixed !important;
+  inset: 76px 14px auto auto !important;
+  z-index: 2147483647 !important;
+  isolation: isolate !important;
+  pointer-events: none !important;
+  width: min(390px, calc(100vw - 28px)) !important;
+}
+
+html body [data-sonner-toast] {
+  position: relative !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  transform: translateZ(0) !important;
+  will-change: transform, opacity !important;
+  border: 1px solid rgba(83, 145, 125, .18) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 18px 45px rgba(18, 48, 49, .20), 0 3px 10px rgba(18, 48, 49, .08) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+html.dark body [data-sonner-toast] {
+  border-color: rgba(130, 191, 169, .20) !important;
+  box-shadow: 0 20px 55px rgba(0,0,0,.48), 0 3px 12px rgba(0,0,0,.28) !important;
+}
+
+html.device-phone body [data-sonner-toaster] {
+  inset: 70px 10px auto 10px !important;
+  width: auto !important;
+}
+
+html.device-phone body [data-sonner-toast] {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* تحسين بصري عام */
+.app-shell {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(78, 151, 124, .055), transparent 28%),
+    #f5f6f3;
+}
+
+.content-wrap {
+  position: relative;
+}
+
+.surface-card,
+.stat-card,
+.card,
+.invoice-toolbar,
+.invoice-payments-panel,
+.invoice-template-card,
+.invoice-summary-card {
+  border: 1px solid rgba(31, 77, 78, .10);
+  box-shadow: 0 8px 26px rgba(24, 53, 58, .045);
+  transition: transform .16s var(--ease-out), box-shadow .16s ease, border-color .16s ease;
+}
+
+.surface-card:hover,
+.stat-card:hover,
+.card:hover {
+  border-color: rgba(65, 142, 117, .20);
+  box-shadow: 0 13px 32px rgba(24, 53, 58, .075);
+}
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -20px -35px auto;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(87, 166, 135, .055);
+  pointer-events: none;
+}
+
+.page-heading h1 {
+  letter-spacing: -.055em;
+}
+
+.topbar {
+  box-shadow: 0 1px 0 rgba(25, 62, 63, .025), 0 8px 24px rgba(25, 62, 63, .025);
+}
+
+.icon-btn {
+  transition: transform .14s var(--ease-out), background .14s ease, color .14s ease, box-shadow .14s ease;
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(32, 75, 76, .08);
+}
+
+.primary-btn,
+.secondary-btn {
+  transition: transform .14s var(--ease-out), background .14s ease, color .14s ease, box-shadow .14s ease;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+  transform: translateY(-1px);
+}
+
+.hero-summary {
+  box-shadow: 0 22px 45px rgba(27, 77, 79, .13);
+}
+
+@media (min-width: 1101px) {
+  .content-wrap {
+    padding-top: 42px;
+    padding-bottom: 64px;
+  }
+}
+
+@media (max-width: 767px) {
+  .content-wrap {
+    padding-top: 20px;
+  }
+
+  .surface-card,
+  .stat-card,
+  .card,
+  .invoice-toolbar,
+  .invoice-payments-panel,
+  .invoice-template-card,
+  .invoice-summary-card {
+    box-shadow: 0 5px 18px rgba(24, 53, 58, .055);
+  }
+}
+
+html.dark .app-shell {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(76, 154, 124, .075), transparent 28%),
+    #0a1214;
+}
+
+html.dark .surface-card,
+html.dark .stat-card,
+html.dark .card,
+html.dark .invoice-toolbar,
+html.dark .invoice-payments-panel,
+html.dark .invoice-template-card,
+html.dark .invoice-summary-card {
+  border-color: #293c3f;
+  box-shadow: 0 12px 32px rgba(0,0,0,.20);
+}
+
+html.dark .surface-card:hover,
+html.dark .stat-card:hover,
+html.dark .card:hover {
+  border-color: #3d615c;
+  box-shadow: 0 16px 38px rgba(0,0,0,.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surface-card,
+  .stat-card,
+  .card,
+  .icon-btn,
+  .primary-btn,
+  .secondary-btn {
+    transition: none !important;
+  }
+}
