@@ -665,8 +665,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   const resetEverything = async () => {
-    if (!cloudWorkspace || !cloudWorkspace) {
-      toast.error("حذف مساحة العمل متاح لأعضاء مساحة العمل");
+    if (!cloudWorkspace || cloudWorkspace.role !== "owner") {
+      toast.error("حذف مساحة العمل متاح لمالك المساحة فقط");
       return;
     }
     if (!window.confirm("متأكد؟ رح تنحذف مساحة العمل نهائياً مع كل الحسابات والدفعات، وما في تراجع.")) return;
@@ -1008,6 +1008,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   };
 
   const deletePayment = async (paymentId: number) => {
+    if (mutationBusyRef.current) return;
     const payment = selectedAccount?.payments.find((item) => item.id === paymentId);
     if (!payment || !window.confirm(`متأكد بدك تحذف «${payment.name}»؟\\nالحذف نهائي وما في تراجع.`)) return;
 
@@ -1017,6 +1018,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         : account,
     );
 
+    mutationBusyRef.current = true;
+    setMutationBusy(true);
     try {
       if (cloudWorkspace && cloudUser) {
         if (!payment.remoteId) {
@@ -1034,15 +1037,21 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     } catch (error) {
       console.error("[AleppoCenterCash] delete payment failed", error);
       toast.error(error instanceof Error ? error.message : "ما قدرنا نحذف الدفعة");
+    } finally {
+      mutationBusyRef.current = false;
+      setMutationBusy(false);
     }
   };
 
   const deleteAccount = async (accountId: number) => {
+    if (mutationBusyRef.current) return;
     const account = accounts.find((item) => item.id === accountId);
     if (!account || !window.confirm(`متأكد بدك تحذف حساب «${account.name}» وكل دفعاته؟\\nالحذف نهائي وما في تراجع.`)) return;
 
     const nextAccounts = accounts.filter((item) => item.id !== accountId);
 
+    mutationBusyRef.current = true;
+    setMutationBusy(true);
     try {
       if (cloudWorkspace && cloudUser) {
         if (!account.remoteId) {
@@ -1062,6 +1071,9 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     } catch (error) {
       console.error("[AleppoCenterCash] delete account failed", error);
       toast.error(error instanceof Error ? error.message : "ما قدرنا نحذف الحساب من السحابة");
+    } finally {
+      mutationBusyRef.current = false;
+      setMutationBusy(false);
     }
   };
 
