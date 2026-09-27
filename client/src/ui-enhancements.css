@@ -1,0 +1,320 @@
+/* تحسينات الواجهة والأداء */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 1101px) {
+  .content-wrap {
+    width: min(100%, 1480px);
+    padding-inline: clamp(30px, 3.5vw, 64px);
+  }
+
+  .topbar {
+    padding-inline: clamp(30px, 3.5vw, 64px);
+  }
+
+  .page-heading h1 {
+    font-size: clamp(31px, 2.25vw, 38px);
+  }
+
+  .hero-summary {
+    min-height: 224px;
+    padding-inline: clamp(34px, 3.5vw, 58px);
+  }
+}
+
+@media (min-width: 1500px) {
+  .main-area {
+    width: calc(100% - 276px);
+    margin-inline-start: 276px;
+  }
+
+  .sidebar {
+    width: 276px;
+  }
+
+  .content-wrap,
+  .topbar {
+    padding-inline: clamp(42px, 4vw, 82px);
+  }
+}
+
+@media (max-width: 767px) {
+  .content-wrap {
+    padding-top: 28px;
+  }
+
+  .topbar {
+    height: 68px;
+    padding-inline: 14px;
+  }
+
+  .page-heading h1 {
+    font-size: 26px;
+  }
+
+  .hero-summary {
+    border-radius: 17px;
+  }
+}
+
+/* إشعارات ثابتة وخفيفة */
+[data-sonner-toaster] {
+  z-index: 5000 !important;
+  pointer-events: none !important;
+}
+
+[data-sonner-toast] {
+  pointer-events: auto !important;
+  max-width: min(390px, calc(100vw - 24px)) !important;
+  margin-inline: 12px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 38px rgba(16, 38, 40, .14) !important;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+@media (max-width: 767px) {
+  [data-sonner-toaster] {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  [data-sonner-toast] {
+    width: min(100% - 24px, 420px) !important;
+    margin-inline: auto !important;
+  }
+}
+
+.dark [data-sonner-toast] {
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .38) !important;
+}
+
+/* انتقالات خفيفة بدون تحميل زائد */
+.page-enter,
+.login-card,
+.notification-panel,
+.profile-menu {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation-duration: .24s;
+  }
+
+  .notification-panel,
+  .profile-menu {
+    animation-duration: .14s;
+  }
+
+  button,
+  a,
+  .icon-btn,
+  .main-nav button,
+  .notification-item,
+  .manual-index a,
+  .commit-card,
+  .template-file-chip {
+    transition-duration: .12s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* الوضع الداكن */
+.dark html,
+.dark body {
+  background: #0d1719;
+}
+
+.dark .app-shell {
+  background: #0d1719;
+  color: #e5f0ed;
+}
+
+.dark .topbar {
+  background: rgba(13, 23, 25, .86);
+  border-color: #263a3d;
+}
+
+.dark .breadcrumb {
+  color: #819995;
+}
+
+.dark .breadcrumb strong {
+  color: #c8dbd6;
+}
+
+.dark .breadcrumb-separator {
+  color: #496063;
+}
+
+.dark .icon-btn {
+  color: #9bb1ad;
+}
+
+.dark .icon-btn:hover {
+  background: #193034;
+  color: #cce4dc;
+}
+
+.dark .icon-btn.bordered {
+  border-color: #304346;
+}
+
+.dark .notification-dot {
+  border-color: #0d1719;
+}
+
+.dark .notification-panel {
+  background: #142225;
+  border-color: #304346;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .42);
+}
+
+.dark .notification-panel-head {
+  border-color: #273b3e;
+}
+
+.dark .notification-panel-head strong {
+  color: #dcebe7;
+}
+
+.dark .notification-panel-head span {
+  color: #829a95;
+}
+
+.dark .notification-item {
+  background: #142225;
+  color: #c4d5d1;
+  border-color: #24383b;
+}
+
+.dark .notification-item:hover {
+  background: #193033;
+}
+
+.dark .notification-item.unread {
+  background: #17352f;
+}
+
+.dark .notification-copy strong {
+  color: #d7e7e3;
+}
+
+.dark .notification-copy span {
+  color: #91aaa5;
+}
+
+.dark .notification-copy small {
+  color: #708783;
+}
+
+.dark .notification-footer {
+  background: #101d1f;
+  border-color: #273b3e;
+}
+
+.dark .notification-empty strong {
+  color: #b7cec8;
+}
+
+.dark .notification-empty span {
+  color: #809893;
+}
+
+.dark .saved-state {
+  color: #8ca6a0;
+}
+
+.dark .content-wrap {
+  color: #e5f0ed;
+}
+
+.dark .page-heading p {
+  color: #8fa6a2;
+}
+
+.dark .page-heading h1 {
+  color: #e4efec;
+}
+
+.dark .heading-count {
+  background: #17352f;
+  color: #91d0af;
+}
+
+.dark .hero-summary {
+  box-shadow: 0 20px 45px rgba(0, 0, 0, .24);
+}
+
+.dark .card,
+.dark [class*="bg-white"] {
+  border-color: #293d40;
+}
+
+.dark .primary-btn {
+  box-shadow: 0 9px 24px rgba(0, 0, 0, .22);
+}
+
+/* تحسينات الهاتف */
+@media (max-width: 767px) {
+  .sidebar {
+    width: min(310px, 88vw);
+  }
+
+  .main-area {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+
+  .mobile-menu {
+    transform: translateZ(0);
+  }
+
+  .topbar-actions {
+    gap: 7px;
+  }
+
+  .saved-state {
+    display: none;
+  }
+
+  .content-wrap {
+    width: 100%;
+    padding-inline: 14px;
+  }
+}
