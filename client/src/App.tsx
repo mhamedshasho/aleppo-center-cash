@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -7,7 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import CloudAuthGate from "./components/CloudAuthGate";
 import Home from "./pages/Home";
 import Credits from "./pages/Credits";
-
+import "./ui-enhancements.css";
 
 function Router() {
   return (
@@ -16,26 +17,42 @@ function Router() {
       <Route path={"/credits"} component={Credits} />
       <Route path={"/:workspaceSlug"} component={CloudAuthGate} />
       <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const updateDeviceClass = () => {
+      const isPhone =
+        window.innerWidth < 768 ||
+        window.matchMedia("(pointer: coarse)").matches;
+
+      root.classList.toggle("device-phone", isPhone);
+      root.classList.toggle("device-pc", !isPhone);
+    };
+
+    updateDeviceClass();
+    window.addEventListener("resize", updateDeviceClass, { passive: true });
+
+    return () => window.removeEventListener("resize", updateDeviceClass);
+  }, []);
+
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        switchable
-      >
+      <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
-          <Toaster />
+          <Toaster
+            position="top-right"
+            duration={3200}
+            visibleToasts={3}
+            closeButton
+            expand={false}
+            richColors={false}
+          />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
