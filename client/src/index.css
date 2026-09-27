@@ -1317,3 +1317,47 @@ html body [data-sonner-toaster] { z-index:2147483647!important; }
     z-index: 100 !important;
   }
 }
+
+
+/* إصلاح آمن لقائمة الهاتف في الوضع الأفقي أيضاً */
+html.device-phone .sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: 0 !important;
+  width: min(330px, 78vw) !important;
+  height: 100dvh !important;
+  transform: translate3d(110%, 0, 0) !important;
+  z-index: 12002 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+}
+html.device-phone .sidebar.open {
+  transform: translate3d(0, 0, 0) !important;
+}
+html.device-phone .mobile-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  z-index: 12001 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(2, 13, 15, .58) !important;
+  pointer-events: auto !important;
+}
+html.device-phone .main-area {
+  position: relative !important;
+  z-index: 1 !important;
+  min-width: 0 !important;
+}
+/* عندما تكون القائمة مفتوحة على الهاتف، يتحرك المحتوى بدلاً من أن تختفي تحته */
+html.device-phone .sidebar.open ~ .main-area,
+html.device-phone .sidebar.open + .main-area {
+  width: calc(100% - min(330px, 78vw)) !important;
+  margin-right: min(330px, 78vw) !important;
+  margin-left: 0 !important;
+  pointer-events: none !important;
+}
