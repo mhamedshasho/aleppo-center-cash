@@ -1179,3 +1179,55 @@ html.dark .activity-row.action-create .activity-icon { background: #19372c; colo
   outline: 2px solid #79c2a4;
   outline-offset: 2px;
 }
+
+/* إصلاح نهائي للقائمة الجانبية على الهاتف */
+@media (max-width: 820px) {
+  html.device-phone body { overflow-x: hidden; }
+  html.device-phone .sidebar { width:min(318px,86vw)!important; left:auto!important; right:0!important; transform:translateX(110%)!important; z-index:12000!important; box-shadow:-20px 0 55px rgba(0,0,0,.28)!important; border-left:1px solid rgba(151,207,187,.14); }
+  html.device-phone .sidebar.open { transform:translateX(0)!important; }
+  html.device-phone .mobile-overlay { display:block!important; position:fixed!important; inset:0!important; z-index:11900!important; background:rgba(3,16,18,.60)!important; backdrop-filter:blur(2px); }
+  html.device-phone .main-area { position:relative; z-index:1; }
+  html.device-phone .sidebar.open ~ .main-area { pointer-events:none!important; user-select:none!important; }
+  html.device-phone .sidebar.open .close-mobile { width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,.08); }
+}
+/* الحسابات — الوضع الداكن الكامل */
+html.dark .toolbar { background:#101b1d!important; border-color:#2b4144!important; box-shadow:0 10px 30px rgba(0,0,0,.22)!important; }
+html.dark .search-box { background:#0b1517!important; border-color:#30464a!important; color:#dcebe7!important; }
+html.dark .search-box svg { color:#7f9d96!important; }
+html.dark .search-box input { background:transparent!important; border:0!important; color:#e5f1ee!important; }
+html.dark .search-box input::placeholder { color:#607a75!important; }
+html.dark .filter-btn { background:#152326!important; border-color:#30464a!important; color:#b9cbc6!important; }
+html.dark .filter-btn:hover { background:#1b3033!important; color:#e1efeb!important; }
+html.dark .account-card { background:#111f22!important; border-color:#2b4144!important; color:#e0ece9!important; box-shadow:0 12px 30px rgba(0,0,0,.22)!important; }
+html.dark .account-card:hover { background:#15272a!important; border-color:#41655f!important; box-shadow:0 16px 36px rgba(0,0,0,.30)!important; }
+html.dark .account-card-copy h3 { color:#e5f1ee!important; }
+html.dark .account-card-copy p { color:#91aaa5!important; }
+html.dark .account-card-copy p svg,html.dark .muted-icon { color:#78938d!important; }
+html.dark .account-card-footer { border-color:#2b4144!important; }
+html.dark .account-card-footer span { color:#819b95!important; }
+html.dark .account-card-footer strong { color:#bfe0d3!important; }
+html.dark .card-arrow { background:#18342f!important; color:#8fc8ad!important; }
+html.dark .empty-search { background:#111f22!important; border-color:#36504e!important; color:#dcebe7!important; }
+html.dark .empty-search h3 { color:#e5f1ee!important; }
+html.dark .empty-search p,html.dark .empty-search-kicker { color:#91aaa5!important; }
+html.dark .empty-search-icon { background:#18352f!important; border-color:#10201f!important; color:#8ed0ae!important; }
+/* شريط التنقل على الكمبيوتر */
+@media (min-width:821px) {
+  html.device-pc .sidebar { position:fixed!important; right:0!important; left:auto!important; z-index:12000!important; }
+  html.device-pc .main-area { margin-inline-start:0!important; margin-inline-end:252px!important; width:calc(100% - 252px)!important; }
+  html.device-pc .topbar { z-index:10000!important; }
+}
+@media (min-width:1500px) { html.device-pc .main-area { margin-inline-end:276px!important; width:calc(100% - 276px)!important; } }
+/* البحث والترتيب على الهاتف */
+@media (max-width:560px) {
+  html.device-phone .toolbar { display:grid!important; grid-template-columns:1fr!important; gap:9px!important; padding:9px!important; margin-bottom:18px!important; }
+  html.device-phone .search-box,html.device-phone .filter-btn { width:100%!important; max-width:none!important; min-height:46px!important; }
+}
+/* Dark Mode للتقارير والصفحات الداخلية */
+html.dark .activity-toolbar,html.dark .activity-row,html.dark .manual-section,html.dark .manual-index,html.dark .updates-releases,html.dark .updates-commits { background:#111f22!important; border-color:#2b4144!important; color:#dcebe7!important; }
+html.dark .activity-toolbar button,html.dark .activity-tabs button { color:#9ab1ac!important; }
+html.dark .activity-tabs button.active { color:#c9e7db!important; background:#193a35!important; }
+html.dark .activity-row strong,html.dark .manual-section h2,html.dark .manual-items h3,html.dark .updates-releases h3,html.dark .updates-commits h3 { color:#e3efec!important; }
+html.dark .activity-row span,html.dark .activity-row small,html.dark .manual-section p,html.dark .manual-items p,html.dark .updates-releases p,html.dark .updates-commits p { color:#8fa8a2!important; }
+html body .modal-backdrop { z-index:30000!important; }
+html body [data-sonner-toaster] { z-index:2147483647!important; }
