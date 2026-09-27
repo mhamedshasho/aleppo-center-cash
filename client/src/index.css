@@ -757,3 +757,80 @@ button:active { transform: scale(.975); }
 .activity-pagination span{min-width:220px;text-align:center;color:#718883;font-size:12px;font-weight:700}
 .activity-pagination .secondary-btn{min-width:88px;justify-content:center}
 @media (max-width:640px){.activity-pagination{gap:8px;flex-wrap:wrap}.activity-pagination span{order:-1;width:100%;min-width:0}}
+
+/* واجهة متجاوبة فعلية */
+html.device-pc .app-shell { min-width: 1080px; }
+html.device-pc .content-wrap { width: min(100% - 48px, 1480px); }
+html.device-pc .main-area { min-height: 100vh; }
+
+html.device-phone .app-shell { min-width: 0; width: 100%; }
+html.device-phone .main-area { width: 100%; margin-inline-start: 0; }
+html.device-phone .content-wrap { width: 100%; padding: 24px 14px 42px; }
+html.device-phone .topbar { height: 64px; padding: 0 12px; }
+html.device-phone .topbar-actions { gap: 6px; }
+html.device-phone .topbar .saved-state { display: none; }
+html.device-phone .page-heading { align-items: flex-start; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+html.device-phone .page-heading h1 { font-size: 27px; }
+html.device-phone .hero-summary { grid-template-columns: 1fr; gap: 20px; min-height: 0; padding: 24px 20px; border-radius: 18px; }
+html.device-phone .summary-breakdown { justify-self: stretch; min-width: 0; }
+html.device-phone .summary-orbit { display: none; }
+html.device-phone .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+html.device-phone .stat-card { min-height: 118px; padding: 15px 13px; }
+html.device-phone .notification-panel { position: fixed; top: 70px; right: 12px; left: 12px; width: auto; max-height: calc(100vh - 84px); }
+html.device-phone .notification-list { max-height: calc(100vh - 170px); }
+
+@media (min-width: 1101px) {
+  .main-area { width: calc(100% - 252px); }
+  .content-wrap { padding-inline: 34px; }
+}
+@media (min-width: 1500px) {
+  .sidebar { width: 276px; }
+  .main-area { width: calc(100% - 276px); margin-inline-start: 276px; }
+  .content-wrap { width: min(100% - 72px, 1560px); padding-inline: 42px; }
+}
+
+/* الوضع الداكن الحقيقي */
+html.dark,
+html.dark body { background: #0a1214; color: #e7f2ef; }
+html.dark .app-shell { background: #0a1214; color: #e7f2ef; }
+html.dark .topbar { background: rgba(10,18,20,.92); border-color: #26383b; }
+html.dark .surface-card,
+html.dark .stat-card,
+html.dark .card,
+html.dark .invoice-toolbar,
+html.dark .invoice-payments-panel,
+html.dark .invoice-template-card,
+html.dark .invoice-summary-card { background: #121f22; border-color: #293c3f; color: #dceae7; }
+html.dark .surface-card h2,
+html.dark .surface-card h3,
+html.dark .stat-card strong,
+html.dark .section-head h2,
+html.dark .page-heading h1 { color: #edf7f4; }
+html.dark .surface-card p,
+html.dark .stat-card span,
+html.dark .section-head p,
+html.dark .page-heading p { color: #91aaa5; }
+html.dark .content-wrap { color: #dceae7; }
+html.dark input,
+html.dark select,
+html.dark textarea { background: #0e191b; border-color: #304448; color: #e4f0ed; }
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: #607875; }
+html.dark .notification-panel { background: #121f22; border-color: #304448; }
+html.dark .notification-item { background: #121f22; border-color: #25393c; color: #d7e6e2; }
+html.dark .notification-item:hover { background: #183034; }
+html.dark .notification-item.unread { background: #15352f; }
+html.dark .invoice-preview-modal { background: #0f1b1d; border-color: #304448; }
+html.dark .invoice-preview-modal > header,
+html.dark .invoice-preview-modal > footer { background: #142326; border-color: #304448; }
+html.dark .login-shell { background: #0a1214; color: #e7f2ef; }
+html.dark .login-card { background: rgba(18,31,34,.96); border-color: #2b4144; box-shadow: 0 28px 90px rgba(0,0,0,.42); }
+html.dark .login-card h1 { color: #edf7f4; }
+html.dark .login-copy,
+html.dark .field-label { color: #91aaa5; }
+html.dark .key-input-wrap { background: #0e191b; border-color: #304448; }
+html.dark .key-input-wrap input { color: #e4f0ed; }
+
+/* إشعارات فوق كل عناصر الواجهة بدون كسر التخطيط */
+[data-sonner-toaster] { position: fixed !important; z-index: 2147483000 !important; pointer-events: none !important; }
+[data-sonner-toast] { pointer-events: auto !important; overflow: hidden !important; }
