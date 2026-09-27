@@ -1264,8 +1264,6 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           )}
         </div>
       </aside>
-      {showMobileNav && <button className="mobile-overlay" onClick={() => setShowMobileNav(false)} aria-label="إغلاق القائمة" />}
-
       <section className="main-area">
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
@@ -1316,6 +1314,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(selectedAccount.id); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
         </div>
       </section>
+      {showMobileNav && <button className="mobile-overlay" onClick={() => setShowMobileNav(false)} aria-label="إغلاق القائمة" />}
 
       {showBackupModal && <Modal title="النسخ والاستعادة" onClose={() => { if (!backupBusy) { setShowBackupModal(false); setBackupPassword(""); } }}><div className="modal-form">
         <div className="privacy-note"><ShieldCheck size={16} /> النسخة السحابية خاصة بمساحة العمل، وملف JSON يُحفظ مشفراً بكلمة مرور الاستعادة.</div>
