@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Check, ChevronLeft, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Building2, Check, ChevronLeft, Loader2, Plus, Trash2, UserPlus, X } from "lucide-react";
 
 export type WorkspaceOption = {
   id: string;
@@ -13,15 +13,28 @@ type Props = {
   workspaces: WorkspaceOption[];
   onSwitch: (workspace: WorkspaceOption) => void;
   onCreate: (name: string) => Promise<void>;
+  onJoin: (workspaceId: string) => Promise<void>;
   onDelete: () => Promise<void>;
   onClose: () => void;
 };
 
-export default function WorkspaceManager({ currentWorkspaceId, workspaces, onSwitch, onCreate, onDelete, onClose }: Props) {
+export default function WorkspaceManager({ currentWorkspaceId, workspaces, onSwitch, onCreate, onJoin, onDelete, onClose }: Props) {
   const [name, setName] = useState("");
+  const [workspaceId, setWorkspaceId] = useState("");
   const [busyAction, setBusyAction] = useState<"create" | "delete" | string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const canCreate = workspaces.length < 2;
+  const join = async () => {
+    const clean = workspaceId.trim();
+    if (!clean || !canCreate || busyAction) return;
+    setBusyAction("join");
+    try {
+      await onJoin(clean);
+      setWorkspaceId("");
+    } finally {
+      setBusyAction(null);
+    }
+  };
   const current = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
   const create = async () => {
     const clean = name.trim();
@@ -70,13 +83,23 @@ export default function WorkspaceManager({ currentWorkspaceId, workspaces, onSwi
           })}
         </div>
         {canCreate ? (
-          <div className="workspace-create">
+          <>
+          <div className="workspace-create workspace-join">
+            <div className="workspace-create-label"><UserPlus size={16} /><strong>الانضمام إلى مساحة موجودة</strong><span>استخدم Workspace ID</span></div>
+            <div className="workspace-create-row">
+              <input value={workspaceId} onChange={(event) => setWorkspaceId(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void join(); }} placeholder="الصق Workspace ID هون" dir="ltr" disabled={Boolean(busyAction)} />
+              <button className="secondary-btn" onClick={() => void join()} disabled={!workspaceId.trim() || Boolean(busyAction)}>{busyAction === "join" ? <Loader2 size={16} className="spin" /> : <UserPlus size={16} />} انضمام</button>
+            </div>
+          </div>
+          <div className="workspace-create workspace-create-new">
+
             <div className="workspace-create-label"><Plus size={16} /><strong>إنشاء مساحة جديدة</strong><span>متبقي مساحة واحدة</span></div>
             <div className="workspace-create-row">
               <input value={name} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void create(); }} placeholder="مثلاً: فرع حلب الثاني" maxLength={120} disabled={Boolean(busyAction)} />
               <button className="primary-btn" onClick={() => void create()} disabled={!name.trim() || Boolean(busyAction)}>{busyAction === "create" ? <Loader2 size={16} className="spin" /> : <Plus size={16} />} إنشاء</button>
             </div>
           </div>
+          </>
         ) : (
           <div className="workspace-limit-reached"><Check size={16} /><span>وصلت للحد الأقصى: لا يمكن إنشاء أكثر من مساحتين.</span></div>
         )}
