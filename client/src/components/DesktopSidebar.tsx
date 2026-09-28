@@ -39,7 +39,7 @@ type Props = {
   workspaceName?: string | null;
   workspaceId?: string | null;
   email?: string | null;
-  theme: "light" | "dark";
+  theme: "light" | "dark" | "gold";
   onNavigate: (view: View) => void;
   onToggleTheme: () => void;
   onBackup: () => void;
@@ -118,7 +118,7 @@ export default function DesktopSidebar({
       </div>
 
       <div className="desktop-quick-actions">
-        <button onClick={onToggleTheme} title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}>
+        <button onClick={onToggleTheme} title={theme === "dark" ? "الوضع الفاتح" : theme === "gold" ? "الوضع الذهبي" : "الوضع الداكن"}>
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
         <button onClick={onBackup} title="النسخ والاستعادة"><ShieldCheck size={16} /></button>
