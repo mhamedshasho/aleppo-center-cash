@@ -723,3 +723,1133 @@ html.dark .manual-help{background:linear-gradient(135deg,rgba(75,131,196,.11),rg
     user-select: none !important;
   }
 }
+
+
+/* Gold Theme */
+html.gold {
+  --primary: #6f5315;
+  --primary-foreground: #fffaf0;
+  --background: #fbf8ef;
+  --foreground: #3f321b;
+  --card: #fffdf7;
+  --card-foreground: #3f321b;
+  --popover: #fffdf7;
+  --popover-foreground: #3f321b;
+  --secondary: #f3ead0;
+  --secondary-foreground: #6b5219;
+  --muted: #f5efdf;
+  --muted-foreground: #8b7b57;
+  --accent: #f4e7bc;
+  --accent-foreground: #5f4610;
+  --border: #e6d7ad;
+  --input: #e1d2a7;
+  --ring: #c99a2e;
+}
+
+html.gold,
+html.gold body {
+  background: #fbf8ef;
+  color: #3f321b;
+}
+
+html.gold .app-shell {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(201,154,46,.11), transparent 28%),
+    radial-gradient(circle at 10% 100%, rgba(168,128,35,.055), transparent 30%),
+    #fbf8ef;
+  color: #3f321b;
+}
+
+html.gold .sidebar,
+html.gold .desktop-sidebar {
+  background: linear-gradient(180deg, #4a3914 0%, #2f240f 100%) !important;
+  border-color: rgba(230,198,119,.28) !important;
+  box-shadow: 0 22px 60px rgba(80,57,13,.20) !important;
+}
+
+html.gold .brand-mark,
+html.gold .desktop-brand .brand-mark {
+  background: linear-gradient(135deg, #e4bd59, #a97b17) !important;
+  color: #fff9e8 !important;
+  box-shadow: 0 8px 20px rgba(201,154,46,.22);
+}
+
+html.gold .brand-lockup span,
+html.gold .desktop-brand span,
+html.gold .nav-group-label,
+html.gold .desktop-nav-label {
+  color: #c9b477 !important;
+}
+
+html.gold .workspace-switcher,
+html.gold .desktop-workspace {
+  background: rgba(255,236,171,.08) !important;
+  border-color: rgba(230,198,119,.18) !important;
+}
+
+html.gold .workspace-avatar,
+html.gold .desktop-workspace .workspace-avatar {
+  background: #f0d889 !important;
+  color: #5b4514 !important;
+}
+
+html.gold .main-nav button,
+html.gold .desktop-nav button {
+  color: #d2c49d !important;
+}
+
+html.gold .main-nav button:hover,
+html.gold .desktop-nav button:hover {
+  color: #fff8df !important;
+  background: rgba(255,238,178,.09) !important;
+}
+
+html.gold .main-nav button.active,
+html.gold .desktop-nav button.active {
+  color: #fff8df !important;
+  background: linear-gradient(90deg, rgba(201,154,46,.26), rgba(201,154,46,.10)) !important;
+  box-shadow: inset 3px 0 0 #e1b94d, 0 7px 20px rgba(0,0,0,.10);
+}
+
+html.gold .main-nav button.active svg,
+html.gold .main-nav button svg,
+html.gold .desktop-nav button.active svg {
+  color: #e2bc55 !important;
+}
+
+html.gold .main-nav button b,
+html.gold .desktop-nav button b {
+  color: #f7dfa0 !important;
+  background: rgba(201,154,46,.20) !important;
+}
+
+html.gold .local-card,
+html.gold .desktop-cloud-status {
+  background: rgba(201,154,46,.10) !important;
+  border-color: rgba(225,188,83,.24) !important;
+  color: #f4e5b7 !important;
+}
+
+html.gold .local-card-icon,
+html.gold .desktop-cloud-status svg {
+  color: #e1b84f !important;
+}
+
+html.gold .local-card strong,
+html.gold .desktop-cloud-status strong {
+  color: #f5e6bb !important;
+}
+
+html.gold .local-card span,
+html.gold .desktop-cloud-status span,
+html.gold .check-icon {
+  color: #c7b47f !important;
+}
+
+html.gold .sidebar-profile,
+html.gold .desktop-profile {
+  color: #f0e5c5 !important;
+}
+
+html.gold .sidebar-profile span,
+html.gold .desktop-profile-copy span {
+  color: #bcae85 !important;
+}
+
+html.gold .profile-avatar,
+html.gold .top-avatar {
+  background: #ead7a1 !important;
+  color: #654d18 !important;
+}
+
+html.gold .desktop-quick-actions button,
+html.gold .desktop-danger-actions button {
+  color: #d7c795 !important;
+}
+
+html.gold .desktop-quick-actions button:hover,
+html.gold .desktop-danger-actions button:hover {
+  color: #fff2c5 !important;
+  background: rgba(226,188,79,.10) !important;
+}
+
+html.gold .main-area {
+  color: #3f321b;
+}
+
+html.gold .topbar {
+  background: rgba(255,252,242,.90) !important;
+  border-color: #e7d9b5 !important;
+  box-shadow: 0 8px 30px rgba(111,83,21,.055) !important;
+}
+
+html.gold .breadcrumb {
+  color: #a09170 !important;
+}
+
+html.gold .breadcrumb strong {
+  color: #604a19 !important;
+}
+
+html.gold .breadcrumb-separator {
+  color: #c9b98f !important;
+}
+
+html.gold .icon-btn {
+  color: #8b7646 !important;
+}
+
+html.gold .icon-btn:hover {
+  color: #654c16 !important;
+  background: #f3ead0 !important;
+  box-shadow: 0 5px 14px rgba(111,83,21,.10);
+}
+
+html.gold .icon-btn.bordered {
+  border-color: #dfcf9f !important;
+}
+
+html.gold .mobile-menu {
+  color: #725717 !important;
+  background: #f0e4c2 !important;
+}
+
+html.gold .page-heading h1,
+html.gold .section-head h2,
+html.gold .surface-card h2,
+html.gold .surface-card h3 {
+  color: #4c3914 !important;
+}
+
+html.gold .page-heading p,
+html.gold .section-head p {
+  color: #8d7d5b !important;
+}
+
+html.gold .eyebrow {
+  color: #a37a18 !important;
+}
+
+html.gold .page-heading h1 span:not(.heading-count) {
+  color: #c39324 !important;
+}
+
+html.gold .heading-count {
+  color: #8c6815 !important;
+  background: #f3e6bf !important;
+}
+
+html.gold .hero-summary {
+  color: #fff9e8 !important;
+  background: linear-gradient(112deg, #4d3a12 0%, #7a5c18 52%, #b18420 100%) !important;
+  box-shadow: 0 22px 45px rgba(111,83,21,.19) !important;
+}
+
+html.gold .hero-summary::before {
+  border-color: rgba(255,235,170,.16) !important;
+  box-shadow: 0 0 0 35px rgba(255,235,170,.035), 0 0 0 72px rgba(255,235,170,.025) !important;
+}
+
+html.gold .summary-kicker,
+html.gold .summary-meta,
+html.gold .summary-breakdown span {
+  color: #e3cd91 !important;
+}
+
+html.gold .big-total,
+html.gold .summary-breakdown strong {
+  color: #fff9e8 !important;
+}
+
+html.gold .orbit-ring {
+  border-color: rgba(255,231,159,.25) !important;
+}
+
+html.gold .orbit-core {
+  color: #f3d77d !important;
+  border-color: rgba(255,225,137,.48) !important;
+  background: rgba(255,218,111,.12) !important;
+  box-shadow: 0 0 32px rgba(229,181,54,.22) !important;
+}
+
+html.gold .orbit-core span {
+  color: #d7bd76 !important;
+}
+
+html.gold .currency-switch {
+  border-color: rgba(255,229,149,.28) !important;
+  background: rgba(48,33,7,.28) !important;
+}
+
+html.gold .currency-switch button {
+  color: #ddc987 !important;
+}
+
+html.gold .currency-switch button.active {
+  color: #654a12 !important;
+  background: #f5df9f !important;
+}
+
+html.gold .stat-card,
+html.gold .surface-card,
+html.gold .card,
+html.gold .invoice-toolbar,
+html.gold .invoice-payments-panel,
+html.gold .invoice-template-card,
+html.gold .invoice-summary-card {
+  background: #fffdf7 !important;
+  border-color: #e7dcc0 !important;
+  box-shadow: 0 9px 28px rgba(91,67,20,.055) !important;
+}
+
+html.gold .surface-card:hover,
+html.gold .stat-card:hover,
+html.gold .card:hover {
+  border-color: #d6bb70 !important;
+  box-shadow: 0 15px 34px rgba(91,67,20,.11) !important;
+}
+
+html.gold .stat-icon.mint,
+html.gold .export-icon.mint,
+html.gold .payment-type.credit,
+html.gold .notification-icon.account {
+  color: #9a7317 !important;
+  background: #f5e9c6 !important;
+}
+
+html.gold .stat-icon.blue,
+html.gold .export-icon.blue,
+html.gold .notification-icon.payment {
+  color: #75602d !important;
+  background: #eee5cf !important;
+}
+
+html.gold .stat-icon.violet,
+html.gold .export-icon.violet,
+html.gold .notification-icon.activity {
+  color: #80642b !important;
+  background: #eee5cf !important;
+}
+
+html.gold .stat-icon.amber {
+  color: #a97616 !important;
+  background: #f5e4bd !important;
+}
+
+html.gold .stat-card > span,
+html.gold .stat-card small,
+html.gold .mini-account span,
+html.gold .account-card-footer span {
+  color: #9a8a68 !important;
+}
+
+html.gold .stat-card strong,
+html.gold .account-card-copy h3,
+html.gold .mini-account strong {
+  color: #4f3b15 !important;
+}
+
+html.gold .text-btn,
+html.gold .back-btn,
+html.gold .export-action {
+  color: #a27818 !important;
+}
+
+html.gold .text-btn:hover,
+html.gold .back-btn:hover {
+  color: #704f0c !important;
+}
+
+html.gold .round-icon-btn,
+html.gold .card-arrow {
+  color: #9b7317 !important;
+  background: #f5e8c4 !important;
+}
+
+html.gold .payment-row,
+html.gold .mini-account,
+html.gold .account-card-footer {
+  border-color: #eee5d1 !important;
+}
+
+html.gold .payment-copy strong {
+  color: #55431f !important;
+}
+
+html.gold .payment-copy span,
+html.gold .payment-copy span i {
+  color: #aa9a78 !important;
+}
+
+html.gold .payment-amount.credit {
+  color: #a27616 !important;
+}
+
+html.gold .payment-amount.debit {
+  color: #b66d52 !important;
+}
+
+html.gold .account-card {
+  background: #fffdf7 !important;
+  border-color: #e5d9b8 !important;
+}
+
+html.gold .account-card:hover {
+  border-color: #d4b867 !important;
+  box-shadow: 0 16px 34px rgba(111,83,21,.11) !important;
+}
+
+html.gold .account-avatar.mint,
+html.gold .account-avatar.violet,
+html.gold .account-avatar.amber,
+html.gold .account-avatar.blue {
+  color: #795a12 !important;
+  background: #f1e2b8 !important;
+}
+
+html.gold .account-card-copy p,
+html.gold .detail-title p {
+  color: #9a8b6c !important;
+}
+
+html.gold .search-box,
+html.gold .filter-btn,
+html.gold .secondary-btn {
+  color: #7e6b42 !important;
+  background: #fffdf7 !important;
+  border-color: #e1d5b4 !important;
+}
+
+html.gold .search-box:focus-within,
+html.gold .invoice-field input:focus,
+html.gold .invoice-field select:focus,
+html.gold .modal-form input:focus,
+html.gold .modal-form select:focus {
+  border-color: #c99a2e !important;
+  box-shadow: 0 0 0 4px rgba(201,154,46,.13) !important;
+}
+
+html.gold .filter-btn:hover,
+html.gold .secondary-btn:hover {
+  color: #795a12 !important;
+  border-color: #d2b866 !important;
+  background: #fbf4df !important;
+}
+
+html.gold .empty-search {
+  color: #9b7a26 !important;
+  background: #fffdf7 !important;
+  border-color: #dccb9e !important;
+}
+
+html.gold .empty-search h3 {
+  color: #584318 !important;
+}
+
+html.gold .empty-search p,
+html.gold .empty-search-kicker {
+  color: #9c8b67 !important;
+}
+
+html.gold .empty-search-icon {
+  color: #a67c18 !important;
+  background: #f2e4bd !important;
+  border-color: #fff9e8 !important;
+  box-shadow: 0 8px 22px rgba(201,154,46,.15) !important;
+}
+
+html.gold .currency-card {
+  background: linear-gradient(120deg, #624a14, #a97d1b) !important;
+  box-shadow: 0 12px 26px rgba(111,83,21,.17) !important;
+}
+
+html.gold .currency-card.usd-card {
+  color: #5b4618 !important;
+  background: linear-gradient(120deg, #f4e9c7, #ead7a5) !important;
+}
+
+html.gold .currency-card::after {
+  border-color: rgba(255,232,163,.24) !important;
+  box-shadow: 0 0 0 21px rgba(255,232,163,.055) !important;
+}
+
+html.gold .currency-card.usd-card::after {
+  border-color: rgba(160,119,25,.15) !important;
+  box-shadow: 0 0 0 21px rgba(160,119,25,.045) !important;
+}
+
+html.gold .currency-card-head {
+  color: rgba(255,245,215,.82) !important;
+}
+
+html.gold .usd-card .currency-card-head {
+  color: #8d733a !important;
+}
+
+html.gold .currency-badge {
+  color: #6a4e0d !important;
+  background: #f7e6ac !important;
+}
+
+html.gold .usd-card .currency-badge {
+  color: #80621e !important;
+  background: rgba(255,250,230,.72) !important;
+}
+
+html.gold .currency-lines span {
+  color: rgba(255,243,209,.80) !important;
+}
+
+html.gold .currency-lines strong {
+  color: #fff9e8 !important;
+}
+
+html.gold .usd-card .currency-lines span {
+  color: #947b45 !important;
+}
+
+html.gold .usd-card .currency-lines strong {
+  color: #5e491b !important;
+}
+
+html.gold .toolbar,
+html.gold .activity-toolbar {
+  background: rgba(255,253,247,.92) !important;
+  border-color: #e5d9ba !important;
+  box-shadow: 0 9px 28px rgba(91,67,20,.06) !important;
+}
+
+html.gold .activity-tabs button {
+  color: #917e59 !important;
+}
+
+html.gold .activity-tabs button.active {
+  color: #7b5a13 !important;
+  background: #f2e4bc !important;
+}
+
+html.gold .activity-row {
+  background: #fffdf7 !important;
+  border-color: #e5d9ba !important;
+  box-shadow: 0 7px 22px rgba(91,67,20,.045) !important;
+}
+
+html.gold .activity-row:hover {
+  border-color: #d4b867 !important;
+  background: #fffaf0 !important;
+}
+
+html.gold .activity-icon,
+html.gold .activity-row.action-create .activity-icon,
+html.gold .activity-row.action-update .activity-icon {
+  color: #9b741b !important;
+  background: #f3e6c0 !important;
+}
+
+html.gold .activity-main strong,
+html.gold .activity-main span {
+  color: #55431f !important;
+}
+
+html.gold .activity-meta,
+html.gold .activity-entity-icon {
+  color: #9c8c6c !important;
+}
+
+html.gold .manual-header h1,
+html.gold .updates-header h1,
+html.gold .manual-section-head h2,
+html.gold .manual-items h3,
+html.gold .release-title h3,
+html.gold .commit-card strong {
+  color: #503d17 !important;
+}
+
+html.gold .manual-header p,
+html.gold .updates-header p,
+html.gold .manual-section-head p,
+html.gold .manual-items p,
+html.gold .release-card p {
+  color: #8e7e5d !important;
+}
+
+html.gold .manual-hero-icon,
+html.gold .manual-section-head > span,
+html.gold .release-icon,
+html.gold .commit-icon {
+  background: #f1e3bd !important;
+  color: #a07717 !important;
+}
+
+html.gold .manual-index a {
+  color: #887651 !important;
+}
+
+html.gold .manual-index a:hover {
+  color: #76540f !important;
+  background: #f5ead0 !important;
+}
+
+html.gold .manual-index a span {
+  background: #f3ead2 !important;
+  color: #947e50 !important;
+}
+
+html.gold .manual-section-head {
+  border-color: #e8dec7 !important;
+}
+
+html.gold .manual-items article,
+html.gold .release-card,
+html.gold .commit-card {
+  border-color: #eee5d2 !important;
+}
+
+html.gold .manual-items article > svg,
+html.gold .manual-help > svg {
+  color: #a07818 !important;
+}
+
+html.gold .manual-help {
+  color: #806f4e !important;
+  background: #fff7e4 !important;
+}
+
+html.gold .manual-help strong {
+  color: #59451b !important;
+}
+
+html.gold .manual-toggle-all:hover:not(:disabled) {
+  background: #f5ead0 !important;
+  border-color: #d3b664 !important;
+}
+
+html.gold .updates-footer,
+html.gold .updates-footer a {
+  color: #957d52 !important;
+}
+
+html.gold .invoice-maker,
+html.gold .manual-page,
+html.gold .updates-page,
+html.gold .activity-page {
+  color: #4c3a17;
+}
+
+html.gold .invoice-maker-head p,
+html.gold .invoice-field label,
+html.gold .template-page-picker label {
+  color: #8e7e5d !important;
+}
+
+html.gold .invoice-field input,
+html.gold .invoice-field select,
+html.gold .invoice-search,
+html.gold .template-page-picker select,
+html.gold .invoice-meters,
+html.gold .template-target select {
+  background: #fffdf7 !important;
+  border-color: #dfd1ae !important;
+  color: #4f3c18 !important;
+}
+
+html.gold .invoice-table th {
+  background: #f1e5c4 !important;
+  color: #7d642d !important;
+}
+
+html.gold .invoice-table td {
+  border-color: #eee5d2 !important;
+  color: #6f5d3b !important;
+}
+
+html.gold .invoice-table td strong {
+  color: #4f3c18 !important;
+}
+
+html.gold .invoice-table tbody tr:hover,
+html.gold .invoice-table tbody tr.selected {
+  background: #faf1d7 !important;
+}
+
+html.gold .invoice-type.credit {
+  color: #9a741b !important;
+  background: #f4e7c0 !important;
+}
+
+html.gold .template-dropzone,
+html.gold .template-preview,
+html.gold .template-target,
+html.gold .invoice-image-stage {
+  background: #fbf6e8 !important;
+  border-color: #dccb9e !important;
+}
+
+html.gold .template-dropzone:hover {
+  border-color: #c89a2b !important;
+  background: #f8efd4 !important;
+}
+
+html.gold .template-dropzone strong,
+html.gold .template-target strong,
+html.gold .invoice-summary-row strong {
+  color: #59451b !important;
+}
+
+html.gold .template-dropzone span,
+html.gold .template-target-empty {
+  color: #9a8a68 !important;
+}
+
+html.gold .template-file-chip {
+  background: #fbf6e8 !important;
+  border-color: #dfd1ae !important;
+  color: #715b2b !important;
+}
+
+html.gold .template-file-chip.active {
+  background: #f4e7c0 !important;
+  border-color: #cfa544 !important;
+  color: #70510f !important;
+}
+
+html.gold .template-target-label span {
+  background: #f2e2b9 !important;
+  color: #8b6615 !important;
+}
+
+html.gold .template-target-current {
+  color: #a17718 !important;
+}
+
+html.gold .invoice-summary-row {
+  border-color: #eee4ce !important;
+  color: #8a7958 !important;
+}
+
+html.gold .invoice-preview-overlay {
+  background: rgba(58,42,8,.62) !important;
+}
+
+html.gold .invoice-preview-modal {
+  background: #f8f1dd !important;
+  border-color: #decda1 !important;
+}
+
+html.gold .invoice-preview-modal > header,
+html.gold .invoice-preview-modal > footer {
+  background: #fffdf7 !important;
+  border-color: #e3d6b7 !important;
+}
+
+html.gold .invoice-preview-top h1 {
+  color: #76570f !important;
+}
+
+html.gold .invoice-preview-table {
+  border-color: #dfd1ae !important;
+}
+
+html.gold .invoice-preview-head {
+  background: #806019 !important;
+}
+
+html.gold .invoice-preview-row {
+  border-color: #eee5d2 !important;
+}
+
+html.gold .invoice-preview-row:nth-child(odd) {
+  background: #fffaf0 !important;
+}
+
+html.gold .invoice-preview-total {
+  background: #f3e6c0 !important;
+  border-color: #ddcb9b !important;
+}
+
+html.gold .invoice-preview-total strong,
+html.gold .preview-credit {
+  color: #9a7418 !important;
+}
+
+html.gold .settings-section {
+  background: #fffdf7 !important;
+  border-color: #e5d9ba !important;
+}
+
+html.gold .settings-section-head h2 {
+  color: #4e3b17 !important;
+}
+
+html.gold .settings-section-head p,
+html.gold .settings-row-copy span,
+html.gold .settings-info span {
+  color: #958564 !important;
+}
+
+html.gold .settings-section-icon,
+html.gold .settings-row-icon {
+  color: #a17818 !important;
+  background: #f3e6c0 !important;
+}
+
+html.gold .settings-action:hover {
+  background: #fff8e6 !important;
+}
+
+html.gold .settings-theme-option {
+  color: #806f4d !important;
+  background: #fbf6e9 !important;
+  border-color: #e1d3b1 !important;
+}
+
+html.gold .settings-theme-option.active {
+  color: #6f510e !important;
+  background: #f2e2b5 !important;
+  border-color: #c99a2e !important;
+  box-shadow: 0 8px 20px rgba(201,154,46,.14) !important;
+}
+
+html.gold .settings-theme-option.gold-option {
+  color: #8f6814 !important;
+}
+
+html.gold .settings-switch.on {
+  background: #c99a2e !important;
+}
+
+html.gold .settings-badge {
+  color: #79570f !important;
+  background: #f2e2b5 !important;
+}
+
+html.gold .settings-info strong {
+  color: #56431b !important;
+}
+
+html.gold .settings-ok {
+  color: #8b6a18 !important;
+}
+
+html.gold .settings-muted {
+  color: #a08f6b !important;
+}
+
+html.gold .settings-copy {
+  color: #8b6817 !important;
+  background: #f6ecd3 !important;
+  border-color: #e1d3b1 !important;
+}
+
+html.gold .settings-danger-section {
+  border-color: #e2c7b9 !important;
+}
+
+html.gold .notification-panel {
+  background: #fffdf7 !important;
+  border-color: #e2d5b5 !important;
+  box-shadow: 0 22px 60px rgba(91,67,20,.16) !important;
+}
+
+html.gold .notification-panel-head,
+html.gold .notification-item,
+html.gold .notification-footer {
+  border-color: #eee5d2 !important;
+}
+
+html.gold .notification-panel-head strong,
+html.gold .notification-copy strong {
+  color: #58451c !important;
+}
+
+html.gold .notification-panel-head span,
+html.gold .notification-copy span,
+html.gold .notification-copy small {
+  color: #998a6b !important;
+}
+
+html.gold .notification-panel-head > button,
+html.gold .notification-footer {
+  color: #9a7317 !important;
+}
+
+html.gold .notification-item {
+  background: #fffdf7 !important;
+}
+
+html.gold .notification-item:hover,
+html.gold .notification-item.unread {
+  background: #fbf3dc !important;
+}
+
+html.gold .notification-item > i,
+html.gold .notification-dot {
+  background: #c99a2e !important;
+}
+
+html.gold .notification-dot {
+  border-color: #fbf8ef !important;
+}
+
+html.gold .profile-menu {
+  background: rgba(67,50,14,.97) !important;
+  border-color: rgba(231,204,133,.26) !important;
+}
+
+html.gold .profile-menu-item {
+  color: #f5e9c9 !important;
+}
+
+html.gold .profile-menu-item span {
+  color: #cbbb91 !important;
+}
+
+html.gold .profile-menu-item strong {
+  color: #fff6dc !important;
+}
+
+html.gold .profile-menu-item:hover:not(:disabled) {
+  background: rgba(237,205,115,.10) !important;
+}
+
+html.gold .login-shell {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(216,177,70,.20), transparent 30%),
+    radial-gradient(circle at 85% 90%, rgba(169,126,27,.12), transparent 34%),
+    #fbf8ef !important;
+  color: #493916 !important;
+}
+
+html.gold .login-shell::before {
+  background-image: radial-gradient(#c9a342 1px, transparent 1px) !important;
+}
+
+html.gold .login-card {
+  background: rgba(255,253,247,.93) !important;
+  border-color: rgba(213,184,105,.35) !important;
+  box-shadow: 0 24px 80px rgba(111,83,21,.14) !important;
+}
+
+html.gold .login-card h1 {
+  color: #4e3b17 !important;
+}
+
+html.gold .login-card h1 em {
+  color: #b3831d !important;
+}
+
+html.gold .login-copy,
+html.gold .field-label {
+  color: #8f7d59 !important;
+}
+
+html.gold .key-input-wrap {
+  background: #fffaf0 !important;
+  border-color: #dfd1ae !important;
+  color: #a07818 !important;
+}
+
+html.gold .key-input-wrap:focus-within {
+  border-color: #c99a2e !important;
+  box-shadow: 0 0 0 4px rgba(201,154,46,.13) !important;
+}
+
+html.gold .primary-btn {
+  color: #fffaf0 !important;
+  background: linear-gradient(135deg, #9b741b, #6e5110) !important;
+  box-shadow: 0 10px 24px rgba(111,83,21,.18) !important;
+}
+
+html.gold .primary-btn:hover {
+  background: linear-gradient(135deg, #b48720, #7b5a12) !important;
+  box-shadow: 0 13px 30px rgba(111,83,21,.24) !important;
+}
+
+html.gold .privacy-note,
+html.gold .login-footer {
+  color: #9b8965 !important;
+}
+
+html.gold .privacy-note svg {
+  color: #b4861e !important;
+}
+
+html.gold .backup-hero {
+  color: #5b4618 !important;
+  background: linear-gradient(110deg, #f2e5c0, #fbf5e2) !important;
+  border-color: #dfcea0 !important;
+}
+
+html.gold .backup-hero-icon,
+html.gold .backup-status {
+  color: #9a7318 !important;
+  background: rgba(255,255,255,.68) !important;
+}
+
+html.gold .backup-hero p {
+  color: #958461 !important;
+}
+
+html.gold .danger-btn {
+  color: #a45f4e !important;
+  background: #fff4ef !important;
+  border-color: #efd1c6 !important;
+}
+
+html.gold .modal-backdrop {
+  background: rgba(58,43,12,.46) !important;
+}
+
+html.gold .modal-card {
+  background: #fffdf7 !important;
+  border: 1px solid #e4d5b0;
+  box-shadow: 0 24px 65px rgba(82,60,14,.20) !important;
+}
+
+html.gold .modal-head h2 {
+  color: #58431a !important;
+}
+
+html.gold .modal-form input,
+html.gold .modal-form select {
+  color: #4f3c18 !important;
+  background: #fffaf0 !important;
+  border-color: #dfd1ae !important;
+}
+
+html.gold .type-picker button {
+  color: #8d7c5c !important;
+  background: #fbf7ea !important;
+  border-color: #e3d7bb !important;
+}
+
+html.gold .type-picker button.selected.credit {
+  color: #9a7418 !important;
+  background: #f3e5bb !important;
+  border-color: #d3b360 !important;
+}
+
+html.gold .type-picker button.selected.debit {
+  color: #b66d52 !important;
+}
+
+html.gold .mobile-overlay {
+  background: rgba(44,31,5,.60) !important;
+}
+
+html.gold .saved-state {
+  color: #8e7d59 !important;
+}
+
+html.gold .saved-dot {
+  background: #c99a2e !important;
+  box-shadow: 0 0 0 4px rgba(201,154,46,.13) !important;
+}
+
+html.gold .topbar-actions .notification-wrapper {
+  color: #7f6734;
+}
+
+html.gold .danger-btn:hover {
+  background: #a45f4e !important;
+  border-color: #a45f4e !important;
+}
+
+html.gold [data-sonner-toast] {
+  border-color: rgba(201,154,46,.28) !important;
+  box-shadow: 0 18px 45px rgba(91,67,20,.18), 0 3px 10px rgba(91,67,20,.08) !important;
+}
+
+html.gold .audit-dot {
+  background: #c99a2e !important;
+  box-shadow: 0 0 0 4px #f2e4bc !important;
+}
+
+html.gold .payment-filters {
+  background: #f3ead2 !important;
+}
+
+html.gold .payment-filters button.active,
+html.gold .payment-filters button:hover {
+  color: #8b6716 !important;
+  background: #fffdf7 !important;
+}
+
+html.gold .payment-count {
+  color: #8a6818 !important;
+  background: #f3e6c1 !important;
+}
+
+html.gold .invoice-type.debit,
+html.gold .preview-debit {
+  color: #b66d52 !important;
+}
+
+html.gold .release-title span,
+html.gold .commit-card code {
+  background: #f3ead2 !important;
+  color: #8c774d !important;
+}
+
+html.gold .empty-state {
+  color: #a37a1a !important;
+}
+
+html.gold .empty-state span {
+  color: #78633a !important;
+}
+
+html.gold .empty-state small {
+  color: #a49577 !important;
+}
+
+html.gold .credits-shell {
+  background: #fbf8ef !important;
+}
+
+html.gold .credits-card {
+  background: #fffdf7 !important;
+  border: 1px solid #e5d9ba !important;
+  box-shadow: 0 20px 60px rgba(91,67,20,.10) !important;
+}
+
+html.gold .credits-brand {
+  background: linear-gradient(135deg, #9b741b, #6e5110) !important;
+}
+
+html.gold .credits-header h1,
+html.gold .credits-name {
+  color: #513d17 !important;
+}
+
+html.gold .credits-role,
+html.gold .credits-sparkle {
+  color: #a27818 !important;
+}
+
+html.gold .credits-item.leader {
+  background: linear-gradient(135deg, #f4e9c9, #ead9ad) !important;
+  border-color: #d8c28a !important;
+}
+
+html.gold .credits-item:hover {
+  background: #fbf3dc !important;
+}
+
+html.gold .credits-footer {
+  border-color: #eadfc8 !important;
+}
+
+html.gold .currency-card .credit-dot {
+  background: #e4c257 !important;
+}
+
+html.gold .currency-card .debit-dot {
+  background: #d89a55 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.gold * {
+    transition-duration: .001ms !important;
+  }
+}
