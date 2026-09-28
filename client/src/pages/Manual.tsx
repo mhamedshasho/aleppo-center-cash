@@ -70,7 +70,8 @@ export default function Manual({ onBack }: { onBack: () => void }) {
   })).filter((section) => section.items.length > 0), [normalizedQuery]);
 
   const resultCount = filteredSections.reduce((sum, section) => sum + section.items.length, 0);
-  const allExpanded = filteredSections.length > 0 && filteredSections.every((section) => !collapsed.has(section.title));
+  const visibleCollapsed = normalizedQuery ? new Set<string>() : collapsed;
+  const allExpanded = filteredSections.length > 0 && filteredSections.every((section) => !visibleCollapsed.has(section.title));
 
   const toggleSection = (title: string) => {
     setCollapsed((current) => {
@@ -87,7 +88,7 @@ export default function Manual({ onBack }: { onBack: () => void }) {
   return <main className="manual-page page-enter" dir="rtl">
     <header className="manual-header">
       <div>
-        <button className="text-btn" onClick={onBack}><ChevronLeft size={16} /> رجوع</button>
+        <button type="button" className="text-btn" onClick={onBack}><ChevronLeft size={16} /> رجوع</button>
         <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> USER MANUAL</div>
         <h1>دليل استخدام البرنامج</h1>
         <p>كل ما تحتاجه للبدء، ثم إدارة الحسابات والفواتير والنسخ والاستعادة.</p>
@@ -97,7 +98,7 @@ export default function Manual({ onBack }: { onBack: () => void }) {
     <div className="manual-toolbar surface-card">
       <div className="manual-search">
         <Search size={17} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث داخل دليل الاستخدام..." aria-label="البحث داخل دليل الاستخدام" />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث داخل دليل الاستخدام..." aria-label="البحث داخل دليل الاستخدام" autoComplete="off" spellCheck={false} />
         {query && <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث"><X size={15} /></button>}
       </div>
       <span className="manual-result-count">{query ? `${resultCount} نتيجة` : `${sections.reduce((n, s) => n + s.items.length, 0)} معلومة`}</span>
@@ -109,11 +110,11 @@ export default function Manual({ onBack }: { onBack: () => void }) {
         {filteredSections.map((section, i) => <a href={"#manual-" + i} key={section.title}><span>{String(i + 1).padStart(2, "0")}</span>{section.title}</a>)}
       </aside>
       <div className="manual-content">
-        {filteredSections.map((section, i) => <section className={"manual-section surface-card " + (collapsed.has(section.title) ? "is-collapsed" : "")} id={"manual-" + i} key={section.title}>
+        {filteredSections.map((section, i) => <section className={"manual-section surface-card " + (visibleCollapsed.has(section.title) ? "is-collapsed" : "")} id={"manual-" + i} key={section.title}>
           <button type="button" className="manual-section-head" onClick={() => toggleSection(section.title)} aria-expanded={!collapsed.has(section.title)} aria-controls={"manual-content-" + i}><span>{String(i + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2><p>{i === 0 ? "ابدأ من هون إذا أول مرة تستخدم البرنامج." : i === 1 ? "إدارة الحسابات والحركات اليومية." : i === 2 ? "تجهيز الفاتورة واختيار القوالب والصور." : i === 3 ? "حماية بياناتك والرجوع إلى نسخة سابقة." : "خيارات إضافية تساعدك في الاستخدام اليومي."}</p></div><ChevronDown className="manual-section-chevron" size={18} /></button>
           <div className="manual-items" id={"manual-content-" + i}>{section.items.map(([title, text], itemIndex) => <article style={{ animationDelay: `${Math.min(itemIndex * 35, 210)}ms` }} key={title}><CheckCircle2 size={18} /><div><h3>{title}</h3><p>{text}</p></div></article>)}</div>
         </section>)}
-        <section className="manual-help surface-card"><HelpCircle size={21} /><div><strong>إذا واجهتك مشكلة</strong><p>راجع قسم التحديثات أولاً للتأكد من أنك تستخدم أحدث نسخة، ثم جرّب تحديث الصفحة. إذا استمرت المشكلة، سجّل الخطوات التي سببتها.</p></div></section>
+        <section className="manual-help surface-card"><HelpCircle size={21} /><div><strong>إذا واجهتك مشكلة</strong><p>تأكد من اتصال البرنامج بالسحابة، ثم جرّب تحديث الصفحة. إذا استمرت المشكلة، سجّل الخطوات التي سببتها وراجع الحساب أو الحركة المرتبطة بها.</p></div></section>
       </div>
     </div>
     {query && filteredSections.length === 0 && <div className="manual-empty surface-card"><Search size={20} /><strong>لا توجد نتائج</strong><span>جرّب كلمة أخرى مثل: فاتورة، حساب، نسخة، أو عملة.</span></div>}
