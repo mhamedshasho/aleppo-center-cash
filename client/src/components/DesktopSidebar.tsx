@@ -15,6 +15,7 @@ import {
   Moon,
   MoreHorizontal,
   ShieldCheck,
+  Sparkles,
   Sun,
   Trash2,
   WalletCards,
@@ -119,7 +120,7 @@ export default function DesktopSidebar({
 
       <div className="desktop-quick-actions">
         <button onClick={onToggleTheme} title={theme === "dark" ? "الوضع الفاتح" : theme === "gold" ? "الوضع الذهبي" : "الوضع الداكن"}>
-          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          {theme === "dark" ? <Sun size={16} /> : theme === "gold" ? <Sparkles size={16} /> : <Moon size={16} />}
         </button>
         <button onClick={onBackup} title="النسخ والاستعادة"><ShieldCheck size={16} /></button>
         <button onClick={onCopyWorkspace} title="نسخ Workspace ID"><Copy size={16} /></button>
