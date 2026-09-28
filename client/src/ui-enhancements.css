@@ -2083,3 +2083,343 @@ html.gold .currency-card .debit-dot {
     grid-template-columns: 1fr;
   }
 }
+
+.workspace-manager-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483644;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(27, 35, 31, .48);
+  backdrop-filter: blur(9px);
+  animation: workspace-manager-fade .18s ease both;
+}
+.workspace-manager {
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100dvh - 40px));
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid #dce8e1;
+  border-radius: 24px;
+  background: #fffdf9;
+  box-shadow: 0 28px 90px rgba(28, 45, 38, .22);
+  animation: workspace-manager-rise .22s ease both;
+}
+.workspace-manager-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.workspace-manager-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.workspace-manager-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 13px;
+  color: #8e6818;
+  background: linear-gradient(135deg, #f4e5b9, #ead29a);
+  box-shadow: 0 8px 22px rgba(180, 137, 31, .16);
+}
+.workspace-manager-title > div:last-child > span {
+  display: block;
+  color: #a4864c;
+  font: 800 8px 'Manrope';
+  letter-spacing: .14em;
+}
+.workspace-manager-title h2 {
+  margin: 3px 0 0;
+  color: #493916;
+  font-size: 18px;
+  font-weight: 900;
+}
+.workspace-manager-title p {
+  margin: 5px 0 0;
+  color: #948568;
+  font-size: 10px;
+}
+.workspace-limit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding: 10px 12px;
+  border: 1px solid #eadfca;
+  border-radius: 12px;
+  color: #8c7a58;
+  background: #fbf7ec;
+  font-size: 10px;
+}
+.workspace-limit strong {
+  color: #9b741b;
+  font-size: 11px;
+}
+.workspace-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+}
+.workspace-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #e5dcc8;
+  border-radius: 15px;
+  color: inherit;
+  background: #fffdf9;
+  text-align: right;
+  transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.workspace-option:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #d2b866;
+  background: #fffaf0;
+  box-shadow: 0 9px 24px rgba(91, 67, 20, .08);
+}
+.workspace-option.active {
+  border-color: #c99a2e;
+  background: linear-gradient(100deg, #fff9e9, #f8efd6);
+  box-shadow: 0 9px 24px rgba(201, 154, 46, .11);
+}
+.workspace-option-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  color: #805d12;
+  background: #f2e3bb;
+}
+.workspace-option-copy {
+  min-width: 0;
+  flex: 1;
+}
+.workspace-option-copy strong,
+.workspace-option-copy span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-option-copy strong {
+  color: #4e3b17;
+  font-size: 11px;
+}
+.workspace-option-copy span {
+  margin-top: 3px;
+  color: #9b8a69;
+  font: 700 8px 'Manrope';
+}
+.workspace-role {
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: 8px;
+  font-weight: 800;
+}
+.workspace-role.owner {
+  color: #79570f;
+  background: #f2e2b5;
+}
+.workspace-role.member {
+  color: #6f684f;
+  background: #eee9dc;
+}
+.workspace-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #927019;
+  font-size: 8px;
+  font-weight: 900;
+}
+.workspace-create {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px dashed #d8c99f;
+  border-radius: 16px;
+  background: #fffaf0;
+}
+.workspace-create-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #86651a;
+}
+.workspace-create-label strong {
+  font-size: 10px;
+}
+.workspace-create-label span {
+  margin-inline-start: auto;
+  color: #aa9871;
+  font-size: 8px;
+}
+.workspace-create-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.workspace-create-row input {
+  min-width: 0;
+  flex: 1;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid #dfd1ae;
+  border-radius: 10px;
+  outline: none;
+  color: #4f3c18;
+  background: #fffdf7;
+  font-size: 10px;
+}
+.workspace-create-row input:focus {
+  border-color: #c99a2e;
+  box-shadow: 0 0 0 4px rgba(201,154,46,.12);
+}
+.workspace-create-row .primary-btn {
+  min-width: 82px;
+}
+.workspace-limit-reached {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 13px;
+  color: #86671f;
+  background: #f6ecd3;
+  font-size: 9px;
+}
+.workspace-delete-zone {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eee5d2;
+}
+.workspace-delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #a45f4e;
+  background: transparent;
+  border: 0;
+  font-size: 9px;
+  font-weight: 800;
+}
+.workspace-delete-button:hover {
+  color: #8f4738;
+}
+.workspace-delete-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e9cfc5;
+  border-radius: 14px;
+  background: #fff6f2;
+}
+.workspace-delete-confirm > div:first-child {
+  min-width: 0;
+}
+.workspace-delete-confirm strong,
+.workspace-delete-confirm span {
+  display: block;
+}
+.workspace-delete-confirm strong {
+  color: #8e493d;
+  font-size: 10px;
+}
+.workspace-delete-confirm span {
+  margin-top: 3px;
+  color: #aa8177;
+  font-size: 8px;
+}
+.workspace-delete-confirm > div:last-child {
+  display: flex;
+  gap: 7px;
+  flex: none;
+}
+.settings-workspace-manager-button {
+  margin-inline-start: 7px;
+}
+@keyframes workspace-manager-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes workspace-manager-rise {
+  from { opacity: 0; transform: translateY(9px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+html.gold .workspace-manager-backdrop {
+  background: rgba(47, 35, 9, .54);
+}
+html.gold .workspace-manager {
+  border-color: #d9c58e;
+  background: #fffdf7;
+  box-shadow: 0 28px 90px rgba(82, 60, 14, .24);
+}
+html.gold .workspace-limit {
+  border-color: #e2d4ae;
+  background: #fbf5e5;
+}
+html.gold .workspace-option {
+  border-color: #e5d9ba;
+  background: #fffdf7;
+}
+html.gold .workspace-option.active {
+  border-color: #c99a2e;
+  background: linear-gradient(100deg, #fff9e9, #f8efd6);
+}
+html.gold .workspace-create {
+  border-color: #d8c38b;
+  background: #fff9e9;
+}
+html.gold .workspace-limit-reached {
+  background: #f5e8c5;
+}
+@media (max-width: 620px) {
+  .workspace-manager-backdrop {
+    padding: 10px;
+    place-items: end center;
+  }
+  .workspace-manager {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    padding: 17px;
+    border-radius: 21px;
+  }
+  .workspace-create-row {
+    flex-direction: column;
+  }
+  .workspace-create-row .primary-btn {
+    width: 100%;
+  }
+  .workspace-delete-confirm {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .workspace-delete-confirm > div:last-child {
+    width: 100%;
+  }
+  .workspace-delete-confirm > div:last-child button {
+    flex: 1;
+  }
+  .settings-workspace-manager-button {
+    margin-inline-start: 0;
+    margin-top: 7px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-manager-backdrop,
+  .workspace-manager {
+    animation: none !important;
+  }
+}
