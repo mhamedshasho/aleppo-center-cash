@@ -173,6 +173,8 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
       const pdf = new jsPDF({ unit: "mm", format: "a4" });
       for (let start = 0; start < chosen.length; start += 10) {
         const batch = chosen.slice(start, start + 10);
+        const batchTotals = batch.reduce((sum, row) => ({ ...sum, [row.currency]: (sum[row.currency] || 0) + row.amount }), {} as Record<Currency, number>);
+        const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
         host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;position:relative;">'
           + '<div style="height:7px;background:#173f47;border-radius:4px;"></div>'
           + '<div style="text-align:center;margin:18px 70px 0;"><div style="font-size:25px;font-weight:800;color:#173f47;">فاتورة رقم ' + esc(invoiceNumber) + '</div>'
@@ -195,7 +197,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
               + '<td style="padding:7px;font-size:9px;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:16px;padding:12px 15px;background:#f1f6f3;border:1px solid #dfe9e4;border-radius:9px;font-weight:800;">'
-          + '<span>الإجمالي</span><span style="color:#2f896d;text-align:left;">' + esc([totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0") + '</span></div>'
+          + '<span>الإجمالي</span><span style="color:#2f896d;text-align:left;">' + esc(batchTotalText) + '</span></div>'
           + '<div style="position:absolute;bottom:15px;left:0;right:0;text-align:center;font-size:9px;color:#9aa9a5;">Aleppo Center Cash</div></div>';
         const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", logging: false });
         if (start > 0) pdf.addPage();
