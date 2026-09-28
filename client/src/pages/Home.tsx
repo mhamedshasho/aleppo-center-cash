@@ -1152,8 +1152,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const exportPdf = async (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    const reportAccent = theme === "gold" ? "#b8891f" : reportAccent;
-    const reportAccentSoft = theme === "gold" ? "#f5ead0" : reportAccentSoft;
+    const reportAccent = theme === "gold" ? "#b8891f" : "#173f47";
+    const reportAccentSoft = theme === "gold" ? "#f5ead0" : "#f5f6f3";
     if (!account) { toast.error("الحساب غير موجود"); return; }
     const dateStamp = new Date().toISOString().slice(0, 10);
     const recentPayments = [...account.payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
