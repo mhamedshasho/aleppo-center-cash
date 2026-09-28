@@ -7,7 +7,7 @@
 ## آخر إصدار
 
 - الحالة: Production / READY
-- آخر Commit: `64f3672434200d7f104922f3fae6cd15fbbbad83`
+- آخر Commit: `f5fe2c1b128ca62fd6f5614eb21e51481de63f09`
 - رابط الإنتاج: https://aleppo-center-cash.vercel.app/
 
 ## الإصلاحات الأخيرة
@@ -62,6 +62,24 @@
 
 **Commit:** `be736805351008450c137e6cf302e6d212c67cb8`
 
+### 5. Gold Theme شامل — ADDED
+
+تمت إضافة ثيم ذهبي كامل يمكن اختياره من الإعدادات، ويغطي الواجهة الأساسية والصفحات الداخلية والقوائم والإشعارات والنوافذ والفواتير وتصدير تقارير PDF/PNG.
+
+**يشمل:**
+- Dashboard والحسابات وتفاصيل الحساب.
+- Desktop Sidebar وMobile Drawer.
+- Settings واختيار فاتح/داكن/ذهبي.
+- Activity وManual وUpdates.
+- Invoice Maker والمعاينة والتصدير.
+- Login وCredits وDialogs وNotifications.
+- حفظ اختيار الثيم عبر إعدادات الثيم الحالية.
+- الحفاظ على ألوان الحالات المهمة مثل الحذف والأخطاء بشكل دلالي.
+
+**Production Commit:** `f5fe2c1b128ca62fd6f5614eb21e51481de63f09`
+
+**Vercel:** READY — production deployment `dpl_A23dkLcscNihemXs5hMJWjv5agpC`
+
 ## أخطاء اكتُشفت أثناء الاختبار
 
 ### Mobile navigation consistency
@@ -82,8 +100,9 @@
 6. اختبار فتح وإغلاق القوائم والـDialogs.
 7. اختبار الوضع الداكن عند تأثر الواجهة.
 8. التأكد من عدم تأثير إصلاح Responsive على تخطيط الكمبيوتر.
-9. التحقق من Vercel Deployment حتى تصبح الحالة `READY`.
-10. إعادة تجربة السيناريو الذي كشف الخطأ بعد النشر.
+9. اختبار الثيم الجديد على الواجهات العامة والداخلية والتصدير.
+10. التأكد من Vercel Deployment حتى تصبح الحالة `READY`.
+11. إعادة تجربة السيناريو الذي كشف الخطأ بعد النشر.
 
 ## حالة الأخطاء الموثقة
 
