@@ -10,6 +10,7 @@ import {
   BookOpen,
   GitBranch,
   Bell,
+  Building2,
   Check,
   ChevronDown,
   Copy,
@@ -1349,7 +1350,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
           {view === "invoice" && <InvoiceMaker accounts={accounts} onBack={() => setView("dashboard")} onToggleTheme={() => toggleTheme?.()} theme={theme} />}
           {view === "manual" && <Manual onBack={() => setView("dashboard")} />}
           {view === "updates" && <Updates onBack={() => setView("dashboard")} />}
-          {view === "settings" && <SettingsView theme={theme} onToggleTheme={() => toggleTheme?.()} setTheme={setTheme} onOpenWorkspaceManager={() => setShowWorkspaceManager(true)} workspaceName={cloudWorkspace?.name} workspaceId={cloudWorkspace?.id} workspaceRole={cloudWorkspace?.role} email={cloudUser?.email} syncState={syncState} unreadNotifications={unreadNotificationCount} onMarkNotificationsRead={markNotificationsRead} onBackup={() => setShowBackupModal(true)} onExportFile={() => void downloadRestorationFile()} onCopyWorkspace={copyWorkspaceId} onOpenWorkspaceManager={() => setShowWorkspaceManager(true)} onLogout={() => void handleLogout()} />}
+          {view === "settings" && <SettingsView theme={theme} onToggleTheme={() => toggleTheme?.()} setTheme={setTheme} workspaceName={cloudWorkspace?.name} workspaceId={cloudWorkspace?.id} workspaceRole={cloudWorkspace?.role} email={cloudUser?.email} syncState={syncState} unreadNotifications={unreadNotificationCount} onMarkNotificationsRead={markNotificationsRead} onBackup={() => setShowBackupModal(true)} onExportFile={() => void downloadRestorationFile()} onCopyWorkspace={copyWorkspaceId} onOpenWorkspaceManager={() => setShowWorkspaceManager(true)} onLogout={() => void handleLogout()} />}
           {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(selectedAccount.id); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
         </div>
       </section>
