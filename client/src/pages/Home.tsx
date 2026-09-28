@@ -53,6 +53,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import Manual from "@/pages/Manual";
 import Updates from "@/pages/Updates";
 import DesktopSidebar from "@/components/DesktopSidebar";
+import WorkspaceManager, { type WorkspaceOption } from "@/components/WorkspaceManager";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -181,7 +182,7 @@ function calculateTotals(accounts: Account[]) {
   );
 }
 
-export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: string; email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null } = {}) {
+export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = [], onSwitchWorkspace, onCreateWorkspace, onDeleteWorkspace }: { cloudUser?: { id: string; email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null; availableWorkspaces?: WorkspaceOption[]; onSwitchWorkspace?: (workspace: WorkspaceOption) => Promise<void>; onCreateWorkspace?: (name: string) => Promise<void>; onDeleteWorkspace?: () => Promise<void> } = {}) {
   const { theme, setTheme, toggleTheme } = useTheme();
   const [isUnlocked, setIsUnlocked] = useState(() => Boolean(cloudUser) || hasAuthSession());
   const [keyValue, setKeyValue] = useState("");
@@ -195,6 +196,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
   const [paymentAccountId, setPaymentAccountId] = useState<number | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [showWorkspaceManager, setShowWorkspaceManager] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -1224,6 +1226,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
         onExportFile={() => void exportBackup()}
         onCredits={() => setLocation("/credits")}
         onCopyWorkspace={copyWorkspaceId}
+        onOpenWorkspaceManager={() => setShowWorkspaceManager(true)}
         onDeleteWorkspace={() => void resetEverything()}
         onDeleteAccount={() => void deleteAccountData()}
         onLogout={() => void handleLogout()}
@@ -1236,7 +1239,7 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           </div>
           <button className="close-mobile" onClick={() => setShowMobileNav(false)} aria-label="إغلاق القائمة"><X size={20} /></button>
         </div>
-        <button className="workspace-switcher" title="انسخ Workspace ID للشريك" onClick={() => { if (cloudWorkspace?.id) { void navigator.clipboard?.writeText(cloudWorkspace.id); toast.success("اننسخ Workspace ID — ابعته للشريك"); } }}><div className="workspace-avatar">AC</div><div><span>المساحة الحالية</span><strong>{cloudWorkspace?.name ?? "مركز حلب"}</strong><small className="workspace-id" dir="ltr">{cloudWorkspace?.id ?? "محلي"}</small></div><ChevronDown size={15} /></button>
+        <button className="workspace-switcher" title="إدارة مساحات العمل" onClick={() => { setShowWorkspaceManager(true); setShowMobileNav(false); }}><div className="workspace-avatar">AC</div><div><span>المساحة الحالية</span><strong>{cloudWorkspace?.name ?? "مركز حلب"}</strong><small className="workspace-id" dir="ltr">{cloudWorkspace?.id ?? "محلي"}</small></div><ChevronDown size={15} /></button>
         <div className="nav-group-label">التنقّل</div>
         <nav className="main-nav">
           {navItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id || (id === "accounts" && view === "account") ? "active" : ""} onClick={() => { setView(id); setShowMobileNav(false); }}><Icon size={18} /><span>{label}</span>{id === "accounts" && <b>{accounts.length}</b>}</button>)}
@@ -1346,10 +1349,33 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
           {view === "invoice" && <InvoiceMaker accounts={accounts} onBack={() => setView("dashboard")} onToggleTheme={() => toggleTheme?.()} theme={theme} />}
           {view === "manual" && <Manual onBack={() => setView("dashboard")} />}
           {view === "updates" && <Updates onBack={() => setView("dashboard")} />}
-          {view === "settings" && <SettingsView theme={theme} onToggleTheme={() => toggleTheme?.()} setTheme={setTheme} workspaceName={cloudWorkspace?.name} workspaceId={cloudWorkspace?.id} workspaceRole={cloudWorkspace?.role} email={cloudUser?.email} syncState={syncState} unreadNotifications={unreadNotificationCount} onMarkNotificationsRead={markNotificationsRead} onBackup={() => setShowBackupModal(true)} onExportFile={() => void downloadRestorationFile()} onCopyWorkspace={copyWorkspaceId} onLogout={() => void handleLogout()} />}
+          {view === "settings" && <SettingsView theme={theme} onToggleTheme={() => toggleTheme?.()} setTheme={setTheme} onOpenWorkspaceManager={() => setShowWorkspaceManager(true)} workspaceName={cloudWorkspace?.name} workspaceId={cloudWorkspace?.id} workspaceRole={cloudWorkspace?.role} email={cloudUser?.email} syncState={syncState} unreadNotifications={unreadNotificationCount} onMarkNotificationsRead={markNotificationsRead} onBackup={() => setShowBackupModal(true)} onExportFile={() => void downloadRestorationFile()} onCopyWorkspace={copyWorkspaceId} onOpenWorkspaceManager={() => setShowWorkspaceManager(true)} onLogout={() => void handleLogout()} />}
           {view === "account" && selectedAccount && <AccountDetail account={selectedAccount} onBack={() => setView("accounts")} onEditAccount={() => openAccountEditor(selectedAccount)} onDeleteAccount={() => deleteAccount(selectedAccount.id)} onAddPayment={() => { setEditingPaymentId(null); setPaymentAccountId(selectedAccount.id); setShowPaymentModal(true); }} onEditPayment={openPaymentEditor} onDeletePayment={deletePayment} onExportPdf={() => void exportPdf(selectedAccount.id)} onExportPng={() => exportPng(selectedAccount.id)} />}
         </div>
       </section>
+
+      {showWorkspaceManager && cloudWorkspace && (
+        <WorkspaceManager
+          currentWorkspaceId={cloudWorkspace.id}
+          workspaces={availableWorkspaces}
+          onClose={() => setShowWorkspaceManager(false)}
+          onSwitch={async (workspace) => {
+            setShowWorkspaceManager(false);
+            setShowMobileNav(false);
+            if (onSwitchWorkspace) await onSwitchWorkspace(workspace);
+          }}
+          onCreate={async (name) => {
+            if (!onCreateWorkspace) return;
+            setShowWorkspaceManager(false);
+            await onCreateWorkspace(name);
+          }}
+          onDelete={async () => {
+            setShowWorkspaceManager(false);
+            if (onDeleteWorkspace) await onDeleteWorkspace();
+            else await resetEverything();
+          }}
+        />
+      )}
       {showMobileNav && <button className="mobile-overlay" onClick={() => setShowMobileNav(false)} aria-label="إغلاق القائمة" />}
 
       {showBackupModal && <Modal title="النسخ والاستعادة" onClose={() => { if (!backupBusy) { setShowBackupModal(false); setBackupPassword(""); } }}><div className="modal-form">
