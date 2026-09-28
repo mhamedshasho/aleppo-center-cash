@@ -374,6 +374,25 @@ export default function CloudAuthGate() {
       onJoinWorkspace={async (targetId) => {
         await joinWorkspace(targetId);
       }}
+      onDeleteWorkspace={async () => {
+        if (!supabase || !workspace) return;
+        setBusy(true);
+        try {
+          const { error } = await supabase.rpc("delete_my_workspace", { target_workspace: workspace.id });
+          if (error) throw error;
+          await supabase.auth.refreshSession();
+          toast.success("انحذفت مساحة العمل نهائياً");
+          setWorkspace(null);
+          setPendingWorkspace(null);
+          setLocation("/");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          toast.error(message.includes("not_workspace_owner") ? "حذف مساحة العمل متاح لمالك المساحة فقط." : message || "ما قدرنا نحذف مساحة العمل.");
+          throw error;
+        } finally {
+          setBusy(false);
+        }
+      }}
       onCreateWorkspace={async (name) => {
         setWorkspaceName(name);
         await (async () => {
