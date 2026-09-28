@@ -36,6 +36,7 @@ import {
   X,
   Moon,
   Sun,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -55,7 +56,7 @@ import DesktopSidebar from "@/components/DesktopSidebar";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
-type View = "dashboard" | "accounts" | "account" | "activity" | "invoice" | "manual" | "updates";
+type View = "dashboard" | "accounts" | "account" | "activity" | "invoice" | "manual" | "updates" | "settings";
 
 type Payment = {
   id: number;
@@ -141,6 +142,7 @@ const navItems: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "invoice", label: "صانع الفواتير", icon: FileText },
   { id: "manual", label: "دليل الاستخدام", icon: BookOpen },
   { id: "updates", label: "التحديثات", icon: GitBranch },
+  { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 
 const formatAmount = (amount: number, currency: Currency) => {
