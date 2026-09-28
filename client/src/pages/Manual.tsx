@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BookOpen, CheckCircle2, ChevronLeft, HelpCircle, Search, X } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronDown, ChevronLeft, HelpCircle, Search, X } from "lucide-react";
 
 const sections = [
   {
@@ -58,6 +58,7 @@ const sections = [
 
 export default function Manual({ onBack }: { onBack: () => void }) {
   const [query, setQuery] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const normalizedQuery = query.trim().toLocaleLowerCase("ar");
 
   const filteredSections = useMemo(() => sections.map((section) => ({
@@ -69,6 +70,19 @@ export default function Manual({ onBack }: { onBack: () => void }) {
   })).filter((section) => section.items.length > 0), [normalizedQuery]);
 
   const resultCount = filteredSections.reduce((sum, section) => sum + section.items.length, 0);
+  const allExpanded = filteredSections.length > 0 && filteredSections.every((section) => !collapsed.has(section.title));
+
+  const toggleSection = (title: string) => {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(title)) next.delete(title); else next.add(title);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setCollapsed(allExpanded ? new Set(filteredSections.map((section) => section.title)) : new Set());
+  };
 
   return <main className="manual-page page-enter" dir="rtl">
     <header className="manual-header">
@@ -87,6 +101,7 @@ export default function Manual({ onBack }: { onBack: () => void }) {
         {query && <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث"><X size={15} /></button>}
       </div>
       <span className="manual-result-count">{query ? `${resultCount} نتيجة` : `${sections.reduce((n, s) => n + s.items.length, 0)} معلومة`}</span>
+      <button type="button" className="manual-toggle-all" onClick={toggleAll} disabled={!filteredSections.length}><ChevronDown size={15} className={allExpanded ? "is-open" : ""} />{allExpanded ? "طي الكل" : "فتح الكل"}</button>
     </div>
     <div className="manual-layout">
       <aside className="manual-index surface-card">
@@ -94,9 +109,9 @@ export default function Manual({ onBack }: { onBack: () => void }) {
         {filteredSections.map((section, i) => <a href={"#manual-" + i} key={section.title}><span>{String(i + 1).padStart(2, "0")}</span>{section.title}</a>)}
       </aside>
       <div className="manual-content">
-        {filteredSections.map((section, i) => <section className="manual-section surface-card" id={"manual-" + i} key={section.title}>
-          <div className="manual-section-head"><span>{String(i + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2><p>{i === 0 ? "ابدأ من هون إذا أول مرة تستخدم البرنامج." : i === 1 ? "إدارة الحسابات والحركات اليومية." : i === 2 ? "تجهيز الفاتورة واختيار القوالب والصور." : i === 3 ? "حماية بياناتك والرجوع إلى نسخة سابقة." : "خيارات إضافية تساعدك في الاستخدام اليومي."}</p></div></div>
-          <div className="manual-items">{section.items.map(([title, text], itemIndex) => <article style={{ animationDelay: `${Math.min(itemIndex * 35, 210)}ms` }} key={title}><CheckCircle2 size={18} /><div><h3>{title}</h3><p>{text}</p></div></article>)}</div>
+        {filteredSections.map((section, i) => <section className={"manual-section surface-card " + (collapsed.has(section.title) ? "is-collapsed" : "")} id={"manual-" + i} key={section.title}>
+          <button type="button" className="manual-section-head" onClick={() => toggleSection(section.title)} aria-expanded={!collapsed.has(section.title)} aria-controls={"manual-content-" + i}><span>{String(i + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2><p>{i === 0 ? "ابدأ من هون إذا أول مرة تستخدم البرنامج." : i === 1 ? "إدارة الحسابات والحركات اليومية." : i === 2 ? "تجهيز الفاتورة واختيار القوالب والصور." : i === 3 ? "حماية بياناتك والرجوع إلى نسخة سابقة." : "خيارات إضافية تساعدك في الاستخدام اليومي."}</p></div><ChevronDown className="manual-section-chevron" size={18} /></button>
+          <div className="manual-items" id={"manual-content-" + i}>{section.items.map(([title, text], itemIndex) => <article style={{ animationDelay: `${Math.min(itemIndex * 35, 210)}ms` }} key={title}><CheckCircle2 size={18} /><div><h3>{title}</h3><p>{text}</p></div></article>)}</div>
         </section>)}
         <section className="manual-help surface-card"><HelpCircle size={21} /><div><strong>إذا واجهتك مشكلة</strong><p>راجع قسم التحديثات أولاً للتأكد من أنك تستخدم أحدث نسخة، ثم جرّب تحديث الصفحة. إذا استمرت المشكلة، سجّل الخطوات التي سببتها.</p></div></section>
       </div>
