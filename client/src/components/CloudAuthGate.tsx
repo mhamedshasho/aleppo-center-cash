@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Building2, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
+import type { WorkspaceOption } from "@/components/WorkspaceManager";
 import { toast } from "sonner";
 import Home from "@/pages/Home";
 import { isValidEmail, normalizeEmail } from "@/lib/validation";
@@ -53,6 +54,7 @@ function getAuthErrorMessage(error: unknown, mode: Mode) {
 export default function CloudAuthGate() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSupabaseSession>>>(null);
   const [workspace, setWorkspace] = useState<WorkspaceState>(null);
+  const [availableWorkspaces, setAvailableWorkspaces] = useState<WorkspaceOption[]>([]);
   const [pendingWorkspace, setPendingWorkspace] = useState<WorkspaceState>(null);
   const [workspacePassword, setWorkspacePassword] = useState("");
   const workspaceUnlockInProgressRef = useRef(false);
@@ -124,112 +126,77 @@ export default function CloudAuthGate() {
     setWorkspace(null);
     setPendingWorkspace(null);
     setWorkspacePassword("");
+    setAvailableWorkspaces([]);
     setWorkspaceLoading(true);
 
     const loadWorkspace = async () => {
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        if (routeSlug) {
-          const { data: workspaceRow, error: workspaceError } = await client
-            .from("workspaces")
-            .select("id, name, slug")
-            .eq("slug", routeSlug)
-            .maybeSingle();
+        const { data: memberships, error: membershipsError } = await client
+          .from("workspace_members")
+          .select("workspace_id, role, joined_at, workspaces(name, slug)")
+          .eq("user_id", session.user.id)
+          .eq("active", true)
+          .order("joined_at", { ascending: true })
+          .limit(2);
 
-          if (!active) return;
+        if (!active) return;
 
-          if (workspaceError) {
-            if (attempt < 2) {
-              await new Promise((resolve) => window.setTimeout(resolve, 400));
-              continue;
-            }
-            setWorkspace(null);
-            setWorkspaceLoading(false);
-            toast.error("تعذر فتح مساحة العمل من الرابط.");
-            return;
+        if (membershipsError) {
+          if (attempt < 2) {
+            await new Promise((resolve) => window.setTimeout(resolve, 400));
+            continue;
           }
+          setWorkspace(null);
+          setAvailableWorkspaces([]);
+          setWorkspaceLoading(false);
+          toast.error("تعذر تحميل مساحات العمل.");
+          return;
+        }
 
-          if (!workspaceRow) {
-            setWorkspace(null);
-            setWorkspaceLoading(false);
-            toast.error("مساحة العمل غير موجودة.");
-            return;
-          }
-
-          const { data: membership, error: membershipError } = await client
-            .from("workspace_members")
-            .select("workspace_id, role")
-            .eq("user_id", session.user.id)
-            .eq("active", true)
-            .eq("workspace_id", workspaceRow.id)
-            .maybeSingle();
-
-          if (!active) return;
-
-          if (membershipError) {
-            if (attempt < 2) {
-              await new Promise((resolve) => window.setTimeout(resolve, 400));
-              continue;
-            }
-            setWorkspace(null);
-            setWorkspaceLoading(false);
-            toast.error("تعذر التحقق من صلاحية مساحة العمل.");
-            return;
-          }
-
-          if (!membership) {
-            setWorkspace(null);
-            setWorkspaceLoading(false);
-            toast.error("هذا الحساب لا يملك صلاحية الدخول إلى مساحة العمل.");
-            return;
-          }
-
-          setPendingWorkspace({
-            id: workspaceRow.id,
-            name: workspaceRow.name,
+        const options = (memberships ?? []).flatMap((row) => {
+          const workspaceRow = Array.isArray(row.workspaces) ? row.workspaces[0] : row.workspaces;
+          if (!workspaceRow?.slug) return [];
+          return [{
+            id: row.workspace_id,
+            name: workspaceRow.name ?? "مركز حلب",
             slug: workspaceRow.slug,
-            role: membership.role,
-          });
+            role: row.role,
+          } as WorkspaceOption];
+        });
+
+        setAvailableWorkspaces(options);
+
+        if (routeSlug) {
+          const selected = options.find((item) => item.slug.toUpperCase() === routeSlug);
+          if (!selected) {
+            setWorkspace(null);
+            setWorkspaceLoading(false);
+            toast.error("مساحة العمل غير موجودة أو لا تملك صلاحية الدخول إليها.");
+            return;
+          }
+
+          setPendingWorkspace(selected);
           setWorkspaceLoading(false);
           return;
         }
 
-        const { data, error } = await client
-          .from("workspace_members")
-          .select("workspace_id, role, workspaces(name, slug)")
-          .eq("user_id", session.user.id)
-          .eq("active", true)
-          .order("joined_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (!active) return;
-
-        if (!error) {
-          const workspaceRow = Array.isArray(data?.workspaces) ? data?.workspaces[0] : data?.workspaces;
-          if (!data || !workspaceRow?.slug) {
-            setWorkspace(null);
-            setWorkspaceLoading(false);
-            return;
-          }
-
-          const nextWorkspace = {
-            id: data.workspace_id,
-            role: data.role,
-            name: workspaceRow.name ?? "مركز حلب",
-            slug: workspaceRow.slug,
-          } as WorkspaceState;
-
-          setLocation("/" + encodeURIComponent(workspaceRow.slug), { replace: true });
+        const first = options[0];
+        if (!first) {
+          setWorkspace(null);
+          setPendingWorkspace(null);
+          setWorkspaceLoading(false);
           return;
         }
 
-        if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, 400));
+        setLocation("/" + encodeURIComponent(first.slug), { replace: true });
+        return;
       }
 
       if (active) {
         setWorkspace(null);
+        setAvailableWorkspaces([]);
         setWorkspaceLoading(false);
-        toast.error("تعذر التحقق من مساحة العمل. لم نفتح بيانات محلية قديمة.");
+        toast.error("تعذر التحقق من مساحات العمل. لم نفتح بيانات محلية قديمة.");
       }
     };
 
@@ -321,7 +288,8 @@ export default function CloudAuthGate() {
       setLocation("/" + encodeURIComponent(createdWorkspace.slug));
       toast.success("انعملت مساحة المحل — الرابط الخاص فيها صار جاهز");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر إنشاء مساحة العمل");
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(message.includes("workspace_limit_reached") ? "وصلت للحد الأقصى: لا يمكن أن تملك أكثر من مساحتين." : message || "تعذر إنشاء مساحة العمل");
     } finally {
       setBusy(false);
     }
@@ -382,7 +350,8 @@ export default function CloudAuthGate() {
       setLocation("/" + encodeURIComponent(joinedWorkspace.slug));
       toast.success("انضمّيت لمساحة المحل");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر الانضمام. تأكد من Workspace ID");
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(message.includes("workspace_limit_reached") ? "وصلت للحد الأقصى: لا يمكن أن تملك أكثر من مساحتين." : message.includes("workspace_full") ? "هذه المساحة ممتلئة." : message || "تعذر الانضمام. تأكد من Workspace ID");
     } finally {
       setBusy(false);
     }
@@ -390,7 +359,59 @@ export default function CloudAuthGate() {
 
   if (loading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نجهّز الدخول…</div>;
   if (!isSupabaseConfigured || !supabase) return <main className="cloud-loading"><strong>Cloud Only</strong><span>الاتصال بـ Supabase غير مهيأ. الوضع المحلي غير متاح.</span></main>;
-  if (session && workspace) return <Home cloudUser={session.user} cloudWorkspace={workspace} />;
+  if (session && workspace) return (
+    <Home
+      cloudUser={session.user}
+      cloudWorkspace={workspace}
+      availableWorkspaces={availableWorkspaces}
+      onSwitchWorkspace={async (target) => {
+        setWorkspacePassword("");
+        setPendingWorkspace(target);
+        setWorkspace(null);
+        setLocation("/" + encodeURIComponent(target.slug));
+      }}
+      onCreateWorkspace={async (name) => {
+        setWorkspaceName(name);
+        await (async () => {
+          if (!supabase || !session) return;
+          setBusy(true);
+          try {
+            const { data, error } = await supabase.rpc("create_workspace", {
+              workspace_name: name.trim(),
+              display_name: displayName.trim(),
+            });
+            if (error) throw error;
+            const { data: membership, error: membershipError } = await supabase
+              .from("workspace_members")
+              .select("workspace_id, role, workspaces(name, slug)")
+              .eq("user_id", session.user.id)
+              .eq("active", true)
+              .eq("workspace_id", data)
+              .maybeSingle();
+            if (membershipError) throw membershipError;
+            if (!membership) throw new Error("تم إنشاء مساحة العمل لكن تعذر تأكيد العضوية السحابية.");
+            const workspaceRow = Array.isArray(membership.workspaces) ? membership.workspaces[0] : membership.workspaces;
+            const createdWorkspace = {
+              id: membership.workspace_id,
+              name: workspaceRow?.name ?? name.trim(),
+              slug: workspaceRow?.slug ?? name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+              role: membership.role,
+            } as WorkspaceState;
+            setPendingWorkspace(createdWorkspace);
+            setWorkspace(null);
+            setLocation("/" + encodeURIComponent(createdWorkspace.slug));
+            toast.success("انعملت مساحة العمل الجديدة");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            toast.error(message.includes("workspace_limit_reached") ? "وصلت للحد الأقصى: لا يمكن أن تملك أكثر من مساحتين." : message || "تعذر إنشاء مساحة العمل");
+            throw error;
+          } finally {
+            setBusy(false);
+          }
+        })();
+      }}
+    />
+  );
   if (session && workspaceLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نتحقق من مساحة المحل…</div>;
 
   if (session && pendingWorkspace) {
