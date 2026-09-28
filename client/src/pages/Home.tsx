@@ -1106,8 +1106,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const exportPng = (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    const reportAccent = theme === "gold" ? "#b8891f" : "' + reportAccent + '";
-    const reportAccentSoft = theme === "gold" ? "#f5ead0" : "' + reportAccentSoft + '";
+    const reportAccent = theme === "gold" ? "#b8891f" : reportAccent;
+    const reportAccentSoft = theme === "gold" ? "#f5ead0" : reportAccentSoft;
     if (!account) { toast.error("الحساب غير موجود"); return; }
     const reportDate = new Date().toISOString().slice(0, 10);
     const recentPayments = [...account.payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
@@ -1124,21 +1124,21 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
     const right = (text: string, x: number, y: number, font: string, color = "#18353a") => { context.font = font; context.fillStyle = color; context.textAlign = "right"; context.direction = "rtl"; context.fillText(text, x, y); };
     const line = (y: number) => { context.strokeStyle = "#dfe9e4"; context.lineWidth = 2; context.beginPath(); context.moveTo(70, y); context.lineTo(1130, y); context.stroke(); };
     context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "' + reportAccent + '"; context.fillRect(0, 0, canvas.width, 12);
-    right("Aleppo Center Cash", 1130, 65, "700 28px Cairo, Arial, sans-serif", "' + reportAccent + '");
+    context.fillStyle = reportAccent; context.fillRect(0, 0, canvas.width, 12);
+    right("Aleppo Center Cash", 1130, 65, "700 28px Cairo, Arial, sans-serif", reportAccent);
     right("تقرير حساب", 1130, 100, "600 20px Cairo, Arial, sans-serif", "#718883");
     line(125);
     right("الحساب: " + account.name, 1130, 165, "700 22px Cairo, Arial, sans-serif");
     right("صاحب الحساب: " + account.owner, 1130, 200, "400 18px Cairo, Arial, sans-serif", "#718883");
     right("التاريخ: " + new Intl.DateTimeFormat("ar-SY").format(new Date()), 1130, 235, "400 18px Cairo, Arial, sans-serif", "#718883");
     line(265);
-    right("الإجماليات", 1130, 305, "700 21px Cairo, Arial, sans-serif", "' + reportAccent + '");
+    right("الإجماليات", 1130, 305, "700 21px Cairo, Arial, sans-serif", reportAccent);
     const totalRows = [["ل.س — له", formatAmount(totalsByCurrency[0].credit, "SYP")], ["ل.س — عليه", formatAmount(totalsByCurrency[0].debit, "SYP")], ["ل.س — الرصيد", formatAmount(totalsByCurrency[0].balance, "SYP")], ["$ — له", formatAmount(totalsByCurrency[1].credit, "USD")], ["$ — عليه", formatAmount(totalsByCurrency[1].debit, "USD")], ["$ — الرصيد", formatAmount(totalsByCurrency[1].balance, "USD")]];
-    context.fillStyle = "' + reportAccentSoft + '"; context.fillRect(70, 330, 1060, 215);
-    totalRows.forEach(([label, value], index) => { const y = 365 + index * 32; const balance = index === 2 || index === 5; right(label, 1085, y, "400 17px Cairo, Arial, sans-serif", balance ? "' + reportAccent + '" : "#718883"); right(value, 620, y, balance ? "700 17px Cairo, Arial, sans-serif" : "600 17px Cairo, Arial, sans-serif", balance ? "#2f896d" : "#294c51"); });
+    context.fillStyle = reportAccentSoft; context.fillRect(70, 330, 1060, 215);
+    totalRows.forEach(([label, value], index) => { const y = 365 + index * 32; const balance = index === 2 || index === 5; right(label, 1085, y, "400 17px Cairo, Arial, sans-serif", balance ? reportAccent : "#718883"); right(value, 620, y, balance ? "700 17px Cairo, Arial, sans-serif" : "600 17px Cairo, Arial, sans-serif", balance ? "#2f896d" : "#294c51"); });
     line(575);
-    right("آخر الدفعات (" + recentPayments.length + ")", 1130, 620, "700 21px Cairo, Arial, sans-serif", "' + reportAccent + '");
-    context.fillStyle = "' + reportAccentSoft + '"; context.fillRect(70, 645, 1060, 44);
+    right("آخر الدفعات (" + recentPayments.length + ")", 1130, 620, "700 21px Cairo, Arial, sans-serif", reportAccent);
+    context.fillStyle = reportAccentSoft; context.fillRect(70, 645, 1060, 44);
     right("تاريخ", 1085, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("وصف", 820, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("مبلغ", 455, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("نوع", 180, 673, "700 15px Cairo, Arial, sans-serif", "#718883");
     recentPayments.forEach((payment, index) => { const y = 725 + index * 62; if (index % 2 === 0) { context.fillStyle = "#fbfcfb"; context.fillRect(70, y - 30, 1060, 62); } right(formatDate(payment.date), 1085, y, "400 15px Cairo, Arial, sans-serif"); right(payment.name, 820, y, "400 15px Cairo, Arial, sans-serif"); right(formatAmount(payment.amount, payment.currency), 455, y, "600 15px Cairo, Arial, sans-serif"); right(payment.type === "credit" ? "له" : "عليه", 180, y, "700 15px Cairo, Arial, sans-serif", payment.type === "credit" ? "#4d9b7b" : "#c27b4e"); });
     line(1050); right("Aleppo Center Cash — تقرير من البيانات السحابية", 600, 1090, "400 13px Cairo, Arial, sans-serif", "#8aa09a");
@@ -1152,8 +1152,8 @@ export default function Home({ cloudUser, cloudWorkspace }: { cloudUser?: { id: 
 
   const exportPdf = async (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    const reportAccent = theme === "gold" ? "#b8891f" : "' + reportAccent + '";
-    const reportAccentSoft = theme === "gold" ? "#f5ead0" : "' + reportAccentSoft + '";
+    const reportAccent = theme === "gold" ? "#b8891f" : reportAccent;
+    const reportAccentSoft = theme === "gold" ? "#f5ead0" : reportAccentSoft;
     if (!account) { toast.error("الحساب غير موجود"); return; }
     const dateStamp = new Date().toISOString().slice(0, 10);
     const recentPayments = [...account.payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
