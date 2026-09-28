@@ -43,6 +43,7 @@ type Props = {
   theme: "light" | "dark" | "gold";
   onNavigate: (view: View) => void;
   onToggleTheme: () => void;
+  onOpenWorkspaceManager: () => void;
   onBackup: () => void;
   onExportFile: () => void;
   onCredits: () => void;
@@ -76,7 +77,7 @@ export default function DesktopSidebar({
         <div><strong>Aleppo Center</strong><span>CASH BOOK</span></div>
       </div>
 
-      <button className="desktop-workspace" onClick={onCopyWorkspace} title="نسخ Workspace ID">
+      <button className="desktop-workspace" onClick={onOpenWorkspaceManager} title="إدارة مساحات العمل">
         <div className="workspace-avatar">AC</div>
         <div className="desktop-workspace-copy">
           <span>المساحة الحالية</span>
