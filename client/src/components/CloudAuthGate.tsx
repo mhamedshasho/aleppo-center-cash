@@ -318,11 +318,12 @@ export default function CloudAuthGate() {
     }
   };
 
-  const joinWorkspace = async () => {
-    if (!supabase || !workspaceId.trim()) return;
+  const joinWorkspace = async (requestedWorkspaceId?: string) => {
+    const targetId = (requestedWorkspaceId ?? workspaceId).trim();
+    if (!supabase || !targetId || !session) return;
     setBusy(true);
     try {
-      const { data, error } = await supabase.rpc("join_workspace", { target_workspace: workspaceId.trim() });
+      const { data, error } = await supabase.rpc("join_workspace", { target_workspace: targetId });
       if (error) throw error;
 
       const { data: membership, error: membershipError } = await supabase
@@ -330,7 +331,7 @@ export default function CloudAuthGate() {
         .select("workspace_id, role, workspaces(name, slug)")
         .eq("user_id", session?.user.id ?? "")
         .eq("active", true)
-        .eq("workspace_id", workspaceId.trim())
+        .eq("workspace_id", targetId)
         .maybeSingle();
 
       if (membershipError) throw membershipError;
@@ -340,7 +341,7 @@ export default function CloudAuthGate() {
       const joinedWorkspace = {
         id: membership.workspace_id,
         name: workspaceRow?.name ?? data?.name ?? "مركز حلب",
-        slug: workspaceRow?.slug ?? workspaceId.trim().toUpperCase(),
+        slug: workspaceRow?.slug ?? targetId.toUpperCase(),
         role: membership.role,
       } as WorkspaceState;
 
@@ -369,6 +370,9 @@ export default function CloudAuthGate() {
         setPendingWorkspace(target);
         setWorkspace(null);
         setLocation("/" + encodeURIComponent(target.slug));
+      }}
+      onJoinWorkspace={async (targetId) => {
+        await joinWorkspace(targetId);
       }}
       onCreateWorkspace={async (name) => {
         setWorkspaceName(name);
