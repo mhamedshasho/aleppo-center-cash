@@ -80,6 +80,25 @@
 
 **Vercel:** READY — production deployment `dpl_A23dkLcscNihemXs5hMJWjv5agpC`
 
+### 6. Workspace Manager + حد أقصى لمساحتين — ADDED
+
+تمت إضافة إدارة كاملة لمساحات العمل:
+
+- اختيار Workspace من الشريط الجانبي على الكمبيوتر والهاتف.
+- عرض كل مساحات المستخدم النشطة حتى حد مساحتين.
+- إنشاء Workspace جديد من المدير.
+- حذف Workspace الحالية للمالك فقط مع تأكيد واضح.
+- بعد حذف المساحة، يعود النظام تلقائياً لاختيار المساحة المتبقية أو شاشة إعداد Workspace إذا لم يبقَ شيء.
+- الحفاظ على حماية دخول Workspace الحالية عبر الرابط + العضوية + كلمة مرور الحساب.
+- دعم Gold Theme وDark/Light على مدير المساحات.
+- حد أقصى 2 Workspaces لكل مستخدم مفروض في Supabase RPC، وليس في الواجهة فقط.
+- create_workspace و join_workspace يحترمان الحد حتى لا يمكن تجاوزه عبر API.
+
+Production Commit: 5a38f7538131872361afd44c2671b6a271197559
+
+Supabase Migration: 20260928150000_two_workspace_limit.sql
+
+Vercel: READY — production deployment dpl_FQok1KXTuaV6zH2VzE6ehTdQpbeB
 ## أخطاء اكتُشفت أثناء الاختبار
 
 ### Mobile navigation consistency
