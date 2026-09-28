@@ -183,7 +183,7 @@ function calculateTotals(accounts: Account[]) {
   );
 }
 
-export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = [], onSwitchWorkspace, onCreateWorkspace, onDeleteWorkspace }: { cloudUser?: { id: string; email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null; availableWorkspaces?: WorkspaceOption[]; onSwitchWorkspace?: (workspace: WorkspaceOption) => Promise<void>; onCreateWorkspace?: (name: string) => Promise<void>; onDeleteWorkspace?: () => Promise<void> } = {}) {
+export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = [], onSwitchWorkspace, onCreateWorkspace, onDeleteWorkspace }: { cloudUser?: { id: string; email?: string | null } | null; cloudWorkspace?: { id: string; name: string; role: "owner" | "member" } | null; availableWorkspaces?: WorkspaceOption[]; onSwitchWorkspace?: (workspace: WorkspaceOption) => Promise<void>; onCreateWorkspace?: (name: string) => Promise<void>; onJoinWorkspace?: (workspaceId: string) => Promise<void>; onDeleteWorkspace?: () => Promise<void> } = {}) {
   const { theme, setTheme, toggleTheme } = useTheme();
   const [isUnlocked, setIsUnlocked] = useState(() => Boolean(cloudUser) || hasAuthSession());
   const [keyValue, setKeyValue] = useState("");
@@ -1369,6 +1369,11 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
             if (!onCreateWorkspace) return;
             setShowWorkspaceManager(false);
             await onCreateWorkspace(name);
+          }}
+          onJoin={async (workspaceId) => {
+            if (!onJoinWorkspace) return;
+            setShowWorkspaceManager(false);
+            await onJoinWorkspace(workspaceId);
           }}
           onDelete={async () => {
             setShowWorkspaceManager(false);
