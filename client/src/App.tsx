@@ -27,9 +27,7 @@ function App() {
     const root = document.documentElement;
 
     const updateDeviceClass = () => {
-      const isPhone =
-        window.innerWidth < 768 ||
-        window.matchMedia("(pointer: coarse)").matches;
+      const isPhone = window.innerWidth <= 820;
 
       root.classList.toggle("device-phone", isPhone);
       root.classList.toggle("device-pc", !isPhone);
