@@ -168,6 +168,8 @@ The repository also includes GitHub Actions for repeatable type-check and build 
 
 ## Documentation
 
+- [Code Documentation — Arabic + English](docs/CODE-DOCUMENTATION.md)
+
 - [Architecture](docs/ARCHITECTURE.md)
 - [Setup](docs/SETUP.md)
 - [Deployment](docs/DEPLOY.md)
