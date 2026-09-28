@@ -18,9 +18,10 @@ import {
   Sun,
   Trash2,
   WalletCards,
+  Settings,
 } from "lucide-react";
 
-type View = "dashboard" | "accounts" | "account" | "activity" | "invoice" | "manual" | "updates";
+type View = "dashboard" | "accounts" | "account" | "activity" | "invoice" | "manual" | "updates" | "settings";
 
 const items: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "نظرة عامة", icon: HomeIcon },
@@ -29,6 +30,7 @@ const items: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "invoice", label: "صانع الفواتير", icon: FileText },
   { id: "manual", label: "دليل الاستخدام", icon: BookOpen },
   { id: "updates", label: "التحديثات", icon: GitBranch },
+  { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 
 type Props = {
