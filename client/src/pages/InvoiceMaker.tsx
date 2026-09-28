@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, PointerEvent } from "react";
-import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Image as ImageIcon, Moon, Plus, RotateCcw, Search, Sun, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Image as ImageIcon, Moon, Plus, RotateCcw, Search, Sparkles, Sun, Upload, X } from "lucide-react";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -222,7 +222,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   return <main className="invoice-maker page-enter" dir="rtl">
     <header className="invoice-maker-head">
       <div><button className="text-btn invoice-back" onClick={onBack}><ArrowLeft size={16} /> رجوع</button><div className="eyebrow">ALEPPO CENTER <span>•</span> INVOICE MAKER</div><h1>صانع الفواتير</h1><p>اختار الدفعات مثل Excel، اربط أكثر من ملف قالب، راجع الفاتورة ثم استخرجها.</p></div>
-      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
+      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
     </header>
 
     <section className="invoice-toolbar surface-card">
