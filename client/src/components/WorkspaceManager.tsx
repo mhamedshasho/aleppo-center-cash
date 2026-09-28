@@ -73,7 +73,7 @@ export default function WorkspaceManager({ currentWorkspaceId, workspaces, onSwi
             const active = workspace.id === currentWorkspaceId;
             const switching = busyAction === workspace.id;
             return (
-              <button key={workspace.id} className={"workspace-option " + (active ? "active" : "")} onClick={() => { if (!active && !busyAction) { setBusyAction(workspace.id); onSwitch(workspace).finally(() => setBusyAction(null)); } }} disabled={Boolean(busyAction)}>
+              <button key={workspace.id} className={"workspace-option " + (active ? "active" : "")} onClick={() => { if (!active && !busyAction) { setBusyAction(workspace.id); void onSwitch(workspace).finally(() => setBusyAction(null)); } }} disabled={Boolean(busyAction)}>
                 <div className="workspace-option-avatar"><Building2 size={17} /></div>
                 <div className="workspace-option-copy"><strong>{workspace.name}</strong><span dir="ltr">{workspace.slug}</span></div>
                 <span className={"workspace-role " + workspace.role}>{workspace.role === "owner" ? "مالك" : "عضو"}</span>
