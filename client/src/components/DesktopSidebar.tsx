@@ -62,6 +62,7 @@ export default function DesktopSidebar({
   theme,
   onNavigate,
   onToggleTheme,
+  onOpenWorkspaceManager,
   onBackup,
   onExportFile,
   onCredits,
