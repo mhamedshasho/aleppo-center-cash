@@ -186,7 +186,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
           + (logo ? '<img src="' + logo + '" style="position:absolute;width:70px;height:70px;object-fit:contain;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:24px;border:1px solid #dfe7e2;border-radius:9px;overflow:hidden;font-size:10px;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
-          + '<thead><tr style="background:#173f47;color:#fff;font-weight:700;">'
+          + '<thead><tr style="background:' + invoiceAccent + ';color:#fff;font-weight:700;">'
           + '<th style="padding:10px 7px;text-align:right;">اسم القالب</th><th style="padding:10px 7px;text-align:center;">صورة القالب</th><th style="padding:10px 7px;text-align:center;">امتار</th><th style="padding:10px 7px;text-align:center;">السعر</th><th style="padding:10px 7px;text-align:center;">له/عليه</th><th style="padding:10px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
           + batch.map((r, i) => {
             const p = positions[r.id] || { x: 50, y: 50 };
@@ -196,7 +196,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
               + '<td style="padding:4px;vertical-align:middle;text-align:center;border-top:1px solid #e7eeeb;"><div style="height:72px;position:relative;overflow:hidden;"><img src="' + image + '" style="position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);max-width:92px;max-height:68px;object-fit:contain;" /></div></td>'
               + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(meters[r.id] || "—") + '</td>'
               + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(money(r.amount, r.currency)) + '</td>'
-              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (r.type === "credit" ? "#4d9b7b" : "#b66d52") + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
+              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
               + '<td style="padding:7px;font-size:9px;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:16px;padding:12px 15px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
