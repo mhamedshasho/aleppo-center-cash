@@ -36,6 +36,9 @@ jobs:
       - name: Sync Android project
         run: pnpm exec cap sync android
 
+      - name: Verify Capacitor Android project
+        run: test -f android/gradlew && test -d android/app
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
