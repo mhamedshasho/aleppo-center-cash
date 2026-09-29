@@ -280,7 +280,7 @@ export default function CloudAuthGate() {
         name: workspaceRow?.name ?? workspaceName.trim(),
         slug: workspaceRow?.slug ?? workspaceName.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
         role: membership.role,
-      } as WorkspaceState;
+      } as Exclude<WorkspaceState, null>;
 
       setWorkspaceLoading(false);
       setPendingWorkspace(createdWorkspace);
@@ -343,7 +343,7 @@ export default function CloudAuthGate() {
         name: workspaceRow?.name ?? data?.name ?? "مركز حلب",
         slug: workspaceRow?.slug ?? targetId.toUpperCase(),
         role: membership.role,
-      } as WorkspaceState;
+      } as Exclude<WorkspaceState, null>;
 
       setWorkspaceLoading(false);
       setPendingWorkspace(joinedWorkspace);
@@ -419,7 +419,7 @@ export default function CloudAuthGate() {
               name: workspaceRow?.name ?? name.trim(),
               slug: workspaceRow?.slug ?? name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
               role: membership.role,
-            } as WorkspaceState;
+            } as Exclude<WorkspaceState, null>;
             setPendingWorkspace(createdWorkspace);
             setWorkspace(null);
             setLocation("/" + encodeURIComponent(createdWorkspace.slug));
