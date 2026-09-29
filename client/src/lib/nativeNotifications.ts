@@ -51,7 +51,6 @@ export async function showNativeNotification(notification: NativeNotification) {
       body: notification.body,
       channelId: "aleppo-center-cash",
       sound: "default",
-      smallIcon: "ic_stat_icon_config_sample",
       extra: { source: "aleppo-center-cash" },
     }],
   });
