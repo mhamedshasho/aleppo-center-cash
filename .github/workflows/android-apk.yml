@@ -36,6 +36,27 @@ jobs:
       - name: Sync Android project
         run: pnpm exec cap sync android
 
+      - name: Configure Firebase FCM
+        working-directory: android
+        run: |
+          cp ../google-services.json app/google-services.json
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("build.gradle")
+          s = p.read_text()
+          if "com.google.gms:google-services" not in s:
+              if "dependencies {" in s:
+                  s = s.replace("dependencies {", "dependencies {\n        classpath 'com.google.gms:google-services:4.4.2'", 1)
+              else:
+                  s = "buildscript {\n    repositories { google(); mavenCentral() }\n    dependencies { classpath 'com.google.gms:google-services:4.4.2' }\n}\n" + s
+              p.write_text(s)
+          p = Path("app/build.gradle")
+          s = p.read_text()
+          if "com.google.gms.google-services" not in s:
+              s += "\napply plugin: 'com.google.gms.google-services'\n"
+              p.write_text(s)
+          PY
+
       - name: Verify Capacitor Android project
         run: test -f android/gradlew && test -d android/app
 
