@@ -40,7 +40,7 @@ type Props = {
   workspaceName?: string | null;
   workspaceId?: string | null;
   email?: string | null;
-  theme: "light" | "dark" | "gold";
+  theme: "light" | "dark" | "gold" | "red";
   onNavigate: (view: View) => void;
   onToggleTheme: () => void;
   onOpenWorkspaceManager: () => void;
@@ -121,8 +121,8 @@ export default function DesktopSidebar({
       </div>
 
       <div className="desktop-quick-actions">
-        <button onClick={onToggleTheme} title={theme === "dark" ? "الوضع الفاتح" : theme === "gold" ? "الوضع الذهبي" : "الوضع الداكن"}>
-          {theme === "dark" ? <Sun size={16} /> : theme === "gold" ? <Sparkles size={16} /> : <Moon size={16} />}
+        <button onClick={onToggleTheme} title={theme === "dark" ? "الوضع الفاتح" : theme === "gold" ? "الوضع الذهبي" : theme === "red" ? "الثيم الأحمر" : "الوضع الداكن"}>
+          {theme === "dark" ? <Sun size={16} /> : theme === "gold" ? <Sparkles size={16} /> : theme === "red" ? <Heart size={16} /> : <Moon size={16} />}
         </button>
         <button onClick={onBackup} title="النسخ والاستعادة"><ShieldCheck size={16} /></button>
         <button onClick={onCopyWorkspace} title="نسخ Workspace ID"><Copy size={16} /></button>
