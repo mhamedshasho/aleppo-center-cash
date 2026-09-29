@@ -1,16 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+const configuredSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const configuredSupabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+
+// The publishable key is intentionally safe for client-side applications.
+// Keeping these fallbacks makes the standalone Android build use the same
+// Supabase project as the Vercel deployment even when CI has no Vercel env vars.
+const supabaseUrl =
+  configuredSupabaseUrl || "https://xjiugcycrmthmaclvcwx.supabase.co";
+const supabasePublishableKey =
+  configuredSupabasePublishableKey ||
+  "sb_publishable_23JDaxeRSNMUBU8M4PnUZQ_cByij5q9";
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
-if (!isSupabaseConfigured) {
-  console.warn("Supabase is not configured; cloud-only mode is unavailable.");
-}
-
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabasePublishableKey!, {
+  ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
