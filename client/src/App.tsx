@@ -9,7 +9,7 @@ import CloudAuthGate from "./components/CloudAuthGate";
 import Home from "./pages/Home";
 import Credits from "./pages/Credits";
 import "./ui-enhancements.css";
-import { initializeNativeNotifications, scheduleUsageReminders } from "./lib/nativeNotifications";
+import { checkForAppUpdateNotification, initializeNativeNotifications, scheduleUsageReminders } from "./lib/nativeNotifications";
 
 function Router() {
   return (
@@ -26,7 +26,10 @@ function Router() {
 function App() {
   useEffect(() => {
     void initializeNativeNotifications().then((ready) => {
-      if (ready) void scheduleUsageReminders();
+      if (ready) {
+        void scheduleUsageReminders();
+        void checkForAppUpdateNotification();
+      }
     });
   }, []);
 
