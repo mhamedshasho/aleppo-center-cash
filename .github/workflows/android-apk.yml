@@ -49,38 +49,29 @@ jobs:
           root_text = root.read_text()
           app_text = app.read_text()
 
+          # Capacitor 7 uses the Gradle plugins DSL. Add Google Services
+          # to the existing root plugins block so Gradle accepts it.
           if "com.google.gms.google-services" not in root_text:
-              root_text += """
-plugins {
-    id 'com.google.gms.google-services' version '4.4.2' apply false
-}
-"""
+              if "plugins {" not in root_text:
+                  raise SystemExit("Root Gradle plugins block not found")
+              root_text = root_text.replace(
+                  "plugins {",
+                  "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false",
+                  1,
+              )
               root.write_text(root_text)
 
           if "com.google.gms.google-services" not in app_text:
-              if "plugins {" in app_text:
-                  app_text = app_text.replace(
-                      "plugins {",
-                      "plugins {\n    id 'com.google.gms.google-services'",
-                      1,
-                  )
-              else:
-                  app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
+              if "plugins {" not in app_text:
+                  raise SystemExit("App Gradle plugins block not found")
+              app_text = app_text.replace(
+                  "plugins {",
+                  "plugins {\n    id 'com.google.gms.google-services'",
+                  1,
+              )
               app.write_text(app_text)
 
-          if "firebase-messaging" not in app_text:
-              marker = "dependencies {"
-              if marker in app_text:
-                  app_text = app_text.replace(
-                      marker,
-                      marker + "\n    implementation 'com.google.firebase:firebase-messaging:24.0.1'",
-                      1,
-                  )
-                  app.write_text(app_text)
-              else:
-                  raise SystemExit("Could not find app dependencies block")
-
-          print("Firebase FCM configured")
+          print("Firebase Google Services Gradle plugin configured")
           PY
 
       - name: Verify Capacitor Android project
