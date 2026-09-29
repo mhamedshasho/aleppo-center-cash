@@ -68,7 +68,8 @@
     "zod": "^4.1.12",
     "@capacitor/core": "^7.4.4",
     "@capacitor/local-notifications": "^7.0.2",
-    "@capacitor/android": "^7.4.4"
+    "@capacitor/android": "^7.4.4",
+    "onesignal-cordova-plugin": "^5.2.14"
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
