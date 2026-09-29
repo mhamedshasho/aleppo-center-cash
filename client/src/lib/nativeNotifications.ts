@@ -83,3 +83,41 @@ export async function scheduleUsageReminders() {
 
   await notifications.schedule({ notifications: reminders });
 }
+
+
+const UPDATE_KEY = "aleppo-center-cash-last-update-sha";
+
+export async function checkForAppUpdateNotification() {
+  const notifications = await getLocalNotifications();
+  if (!notifications) return;
+
+  const permission = await notifications.checkPermissions();
+  if (permission.display !== "granted") return;
+
+  try {
+    const response = await fetch("https://api.github.com/repos/mhamedshasho/aleppo-center-cash/commits/main", {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!response.ok) return;
+
+    const data = await response.json() as { sha?: string };
+    if (!data.sha) return;
+
+    const previous = localStorage.getItem(UPDATE_KEY);
+    if (!previous) {
+      localStorage.setItem(UPDATE_KEY, data.sha);
+      return;
+    }
+
+    if (previous !== data.sha) {
+      localStorage.setItem(UPDATE_KEY, data.sha);
+      await showNativeNotification({
+        title: "تحديث جديد متوفر",
+        body: "في تحديث جديد لـ Aleppo Center Cash. افتح التطبيق لمراجعة آخر التحديثات.",
+        id: 600001,
+      });
+    }
+  } catch {
+    // Update checks are best-effort and must never affect accounting.
+  }
+}
