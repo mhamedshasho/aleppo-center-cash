@@ -521,9 +521,10 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
     }
 
     let active = true;
+    const client = supabase;
 
     const loadNotifications = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("audit_log")
         .select("id,action,entity,summary,created_at")
         .eq("workspace_id", cloudWorkspace.id)
