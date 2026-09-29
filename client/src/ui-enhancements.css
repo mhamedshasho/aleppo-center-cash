@@ -3238,112 +3238,109 @@ html.red .preview-debit {
 }
 
 
-/* Custom color theme */
+/* Custom color theme — accent-only: preserve the existing light design/layout */
 html.custom {
+  /* Keep the light theme's surfaces, spacing, typography and component geometry. */
   --primary: var(--custom-primary, #173f47);
-  --primary-foreground: var(--custom-primary-foreground, #fff);
-  --background: var(--custom-page, #f8faf9);
-  --foreground: var(--custom-text, #263238);
-  --card: var(--custom-surface, #fff);
-  --card-foreground: var(--custom-text, #263238);
-  --popover: var(--custom-surface, #fff);
-  --popover-foreground: var(--custom-text, #263238);
-  --secondary: var(--custom-accent-soft, #edf3f2);
-  --secondary-foreground: var(--custom-primary, #173f47);
-  --muted: var(--custom-accent-soft, #edf3f2);
-  --muted-foreground: var(--custom-muted, #68777d);
+  --primary-foreground: #ffffff;
+  --ring: var(--custom-primary, #173f47);
   --accent: var(--custom-accent-soft, #edf3f2);
   --accent-foreground: var(--custom-primary, #173f47);
-  --border: var(--custom-border, #d8e1df);
-  --input: var(--custom-border, #d8e1df);
-  --ring: var(--custom-primary, #173f47);
-  --theme-page: var(--custom-page, #f8faf9);
-  --theme-surface: var(--custom-surface, #fff);
-  --theme-surface-strong: var(--custom-accent-soft, #f4f8f7);
-  --theme-border: var(--custom-border, #d8e1df);
-  --theme-text: var(--custom-text, #263238);
-  --theme-muted: var(--custom-muted, #68777d);
+  --secondary-foreground: var(--custom-primary, #173f47);
   --theme-accent: var(--custom-primary, #173f47);
   --theme-accent-soft: var(--custom-accent-soft, #edf3f2);
 }
-html.custom body,
-html.custom .app-shell { background: var(--theme-page) !important; color: var(--theme-text) !important; }
-html.custom .topbar { background: color-mix(in srgb, var(--theme-page) 88%, transparent) !important; border-color: var(--theme-border) !important; }
-html.custom .surface-card,
-html.custom .card,
-html.custom .stat-card,
-html.custom .account-card,
-html.custom .recent-card,
-html.custom .currency-card,
-html.custom .activity-toolbar,
-html.custom .activity-row,
-html.custom .audit-card,
-html.custom .audit-row,
-html.custom .payment-toolbar,
-html.custom .payment-filters,
-html.custom .invoice-toolbar,
-html.custom .invoice-template-card,
-html.custom .invoice-template-panel,
-html.custom .invoice-summary-card,
-html.custom .invoice-payments-panel,
-html.custom .invoice-position-card,
-html.custom .backup-hero,
-html.custom .settings-section,
-html.custom .manual-toolbar,
-html.custom .manual-index,
-html.custom .manual-section,
-html.custom .manual-items article,
-html.custom .workspace-manager,
-html.custom .workspace-option,
-html.custom .workspace-create,
-html.custom .invoice-preview-modal,
-html.custom .notification-panel,
-html.custom .profile-menu,
-html.custom .modal-card {
-  background: var(--theme-surface) !important;
-  color: var(--theme-text) !important;
-  border-color: var(--theme-border) !important;
+
+/* Only recolor existing accent-bearing components. Do not recolor cards, page
+   backgrounds, borders, inputs or text globally. */
+html.custom .primary-btn {
+  color: #fff !important;
+  background: var(--custom-primary, #173f47) !important;
 }
-html.custom .page-heading h1,
-html.custom .page-heading h2,
-html.custom .page-heading h3,
-html.custom .surface-card h2,
-html.custom .surface-card h3,
-html.custom .settings-row-copy strong,
-html.custom .settings-section-head h2,
-html.custom .settings-info strong { color: var(--theme-text) !important; }
-html.custom .page-heading p,
-html.custom .surface-card p,
-html.custom .settings-section-head p,
-html.custom .settings-row-copy span,
-html.custom .settings-info span,
-html.custom .breadcrumb,
-html.custom .saved-state { color: var(--theme-muted) !important; }
-html.custom input,
-html.custom select,
-html.custom textarea,
-html.custom .search-box,
-html.custom .payment-search,
-html.custom .invoice-search,
-html.custom .manual-search { color: var(--theme-text) !important; background: var(--theme-surface-strong) !important; border-color: var(--theme-border) !important; }
-html.custom .primary-btn { color: var(--primary-foreground) !important; background: var(--primary) !important; }
-html.custom .secondary-btn { color: var(--theme-accent) !important; background: var(--theme-accent-soft) !important; border-color: var(--theme-border) !important; }
-html.custom .filter-btn,
-html.custom .icon-btn { color: var(--theme-muted) !important; border-color: var(--theme-border) !important; }
-html.custom .filter-btn:hover,
-html.custom .icon-btn:hover { color: var(--theme-accent) !important; background: var(--theme-accent-soft) !important; }
-html.custom .settings-theme-option.active { color: var(--theme-accent) !important; background: var(--theme-accent-soft) !important; border-color: var(--theme-accent) !important; }
-html.custom .settings-theme-option.custom-option { position: relative; overflow: hidden; }
-html.custom .custom-option input[type="color"] { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; overflow: hidden; cursor: pointer; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
-html.custom .custom-option input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-html.custom .custom-option input[type="color"]::-webkit-color-swatch { border: 2px solid var(--theme-border); border-radius: 50%; }
-html.custom .custom-option input[type="color"]::-moz-color-swatch { border: 2px solid var(--theme-border); border-radius: 50%; }
+html.custom .primary-btn:hover {
+  background: color-mix(in srgb, var(--custom-primary, #173f47) 88%, #000) !important;
+}
+html.custom .hero-summary {
+  background:
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--custom-primary, #173f47) 72%, #fff), transparent 42%),
+    radial-gradient(circle at 88% 90%, color-mix(in srgb, var(--custom-primary, #173f47) 78%, #fff), transparent 45%),
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--custom-primary, #173f47) 88%, #000),
+      var(--custom-primary, #173f47) 58%,
+      color-mix(in srgb, var(--custom-primary, #173f47) 82%, #fff));
+}
 html.custom .sidebar,
-html.custom .desktop-sidebar { background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 94%, #000), var(--theme-accent)) !important; color: #fff !important; border-color: color-mix(in srgb, var(--theme-accent) 35%, #fff) !important; }
-html.custom .main-nav button { color: color-mix(in srgb, var(--theme-accent) 45%, #fff) !important; }
-html.custom .main-nav button:hover,
-html.custom .main-nav button.active { color: #fff !important; background: color-mix(in srgb, var(--theme-accent) 82%, #fff 18%) !important; }
-html.custom .hero-summary { background: linear-gradient(111deg, color-mix(in srgb, var(--theme-accent) 82%, #000), var(--theme-accent), color-mix(in srgb, var(--theme-accent) 75%, #fff)) !important; }
+html.custom .desktop-sidebar {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--custom-primary, #173f47) 94%, #000),
+    var(--custom-primary, #173f47)) !important;
+}
+html.custom .main-nav button.active {
+  color: #fff !important;
+  background: color-mix(in srgb, var(--custom-primary, #173f47) 82%, #fff 18%) !important;
+}
+html.custom .main-nav button:hover {
+  color: #fff !important;
+  background: color-mix(in srgb, var(--custom-primary, #173f47) 16%, transparent) !important;
+}
 html.custom .stat-icon,
 html.custom .heading-count,
-html.custom .settings-badge { color: var(--theme-accent) !important; background: var(--theme-accent-soft) !important; }
+html.custom .settings-badge {
+  color: var(--custom-primary, #173f47) !important;
+  background: var(--custom-accent-soft, #edf3f2) !important;
+}
+html.custom .settings-section-icon,
+html.custom .settings-row-icon {
+  color: var(--custom-primary, #173f47) !important;
+  background: var(--custom-accent-soft, #edf3f2) !important;
+}
+html.custom .settings-switch.on {
+  background: var(--custom-primary, #173f47) !important;
+}
+html.custom .settings-theme-option.active {
+  color: var(--custom-primary, #173f47) !important;
+  background: var(--custom-accent-soft, #edf3f2) !important;
+  border-color: color-mix(in srgb, var(--custom-primary, #173f47) 45%, #dfe8e3) !important;
+}
+html.custom .filter-btn:hover,
+html.custom .icon-btn:hover {
+  color: var(--custom-primary, #173f47) !important;
+  background: var(--custom-accent-soft, #edf3f2) !important;
+}
+html.custom .manual-toggle-all:hover:not(:disabled) {
+  color: var(--custom-primary, #173f47) !important;
+}
+html.custom .key-input-wrap:focus-within,
+html.custom input:focus,
+html.custom select:focus,
+html.custom textarea:focus,
+html.custom .search-box:focus-within,
+html.custom .payment-search:focus-within,
+html.custom .invoice-search:focus-within,
+html.custom .manual-search:focus-within {
+  border-color: color-mix(in srgb, var(--custom-primary, #173f47) 48%, #d8e1df) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--custom-primary, #173f47) 10%, transparent) !important;
+}
+html.custom .settings-theme-option.custom-option {
+  position: relative;
+  overflow: hidden;
+}
+html.custom .custom-option input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+}
+html.custom .custom-option input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+html.custom .custom-option input[type="color"]::-webkit-color-swatch {
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+html.custom .custom-option input[type="color"]::-moz-color-swatch {
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
