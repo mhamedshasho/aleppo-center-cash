@@ -541,14 +541,14 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
     const channel = supabase
       .channel("notifications-" + cloudWorkspace.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_log", filter: "workspace_id=eq." + cloudWorkspace.id }, (payload) => {
-        const entry = payload.new as { id: number; action: string; entity: string; summary: string; created_at: string };
+        const entry = payload.new as { id: number; action: string; entity: string; summary: string; created_at: string; user_id?: string | null };
         const incoming = makeNotification(entry, false);
-        if (entry.entity === "payment" || entry.entity === "account") {
+        if ((entry.entity === "payment" || entry.entity === "account") && entry.user_id !== cloudUser.id) {
           void showNativeNotification({
             title: incoming.title,
             body: incoming.detail,
             id: 500000 + Number(entry.id),
-          });
+          }).catch((error) => console.error("[AleppoCenterCash] realtime native notification failed", error));
         }
         setNotifications((current) => {
           const duplicateIndex = current.findIndex((notification) =>
@@ -649,8 +649,12 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
     };
   }, [syncState, cloudWorkspace?.id, cloudUser?.id]);
 
-  const recordAudit = async (action: "create" | "update" | "delete" | "import" | "export", entity: "account" | "payment" | "backup", label: string) => {
-    if (entity !== "backup") return;
+  const recordAudit = async (
+    action: "create" | "update" | "delete" | "import" | "export",
+    entity: "account" | "payment" | "backup",
+    label: string,
+    entityId?: string | null,
+  ) => {
     pushClientNotification(action, entity, label);
     if (!supabase || !cloudWorkspace || !cloudUser) return;
     const { error } = await supabase.from("audit_log").insert({
@@ -659,10 +663,18 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       actor_email: cloudUser.email ?? null,
       action,
       entity,
-      entity_id: null,
+      entity_id: entityId ?? null,
       summary: JSON.stringify({ name: label }),
     });
-    if (error) console.error("[AleppoCenterCash] manual audit insert failed", error);
+    if (error) console.error("[AleppoCenterCash] audit insert failed", error);
+  };
+
+  const notifyNativeMutation = (action: "create" | "update" | "delete", entity: "account" | "payment", label: string) => {
+    void showNativeNotification({
+      title: (notificationActionLabels[action] ?? action) + " " + (notificationEntityLabels[entity] ?? entity),
+      body: label,
+      id: 500000 + Math.floor(Date.now() % 400000000),
+    }).catch((error) => console.error("[AleppoCenterCash] native notification failed", error));
   };
 
   const openAccount = (id: number) => {
@@ -953,6 +965,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       if (editingAccountId) {
         const nextAccounts = accounts.map((account) => account.id === editingAccountId ? { ...account, name: newAccountName.trim(), owner: newAccountOwner.trim() } : account);
         await commitAccounts(nextAccounts);
+        notifyNativeMutation("update", "account", "تم تعديل حساب " + newAccountName.trim());
+        void recordAudit("update", "account", newAccountName.trim(), accounts.find((account) => account.id === editingAccountId)?.remoteId ?? null);
         setEditingAccountId(null);
         setNewAccountName("");
         setNewAccountOwner("");
@@ -963,6 +977,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
 
       const next: Account = { id: Date.now(), remoteId: crypto.randomUUID(), version: 0, name: newAccountName.trim(), owner: newAccountOwner.trim(), accent: ["mint", "violet", "amber", "blue"][accounts.length % 4], payments: [] };
       await commitAccounts([...accounts, next]);
+      notifyNativeMutation("create", "account", "تم إنشاء حساب " + next.name);
+      void recordAudit("create", "account", next.name, next.remoteId ?? null);
       setNewAccountName("");
       setNewAccountOwner("");
       setShowAccountModal(false);
@@ -1007,6 +1023,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
         : account);
 
       await commitAccounts(nextAccounts);
+      notifyNativeMutation(editingPaymentId ? "update" : "create", "payment", (editingPaymentId ? "تم تعديل الدفعة " : "تمت إضافة الدفعة ") + payment.name);
+      void recordAudit(editingPaymentId ? "update" : "create", "payment", payment.name, payment.remoteId ?? null);
       setEditingPaymentId(null);
       setPaymentAccountId(null);
       setPaymentDraft({ name: "", amount: "", currency: "SYP", type: "credit", date: new Date().toISOString().slice(0, 10) });
@@ -1045,6 +1063,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       }
 
       setAccounts(nextAccounts);
+      notifyNativeMutation("delete", "payment", "تم حذف الدفعة " + payment.name);
+      void recordAudit("delete", "payment", payment.name, payment.remoteId ?? null);
       void saveCloudBackup();
       toast.success("انحذفت الدفعة");
     } catch (error) {
@@ -1077,6 +1097,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       }
 
       setAccounts(nextAccounts);
+      notifyNativeMutation("delete", "account", "تم حذف الحساب " + account.name);
+      void recordAudit("delete", "account", account.name, account.remoteId ?? null);
       setSelectedAccountId(nextAccounts[0]?.id ?? 0);
       setView("accounts");
       void saveCloudBackup();
