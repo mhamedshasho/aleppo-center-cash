@@ -9,7 +9,7 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout
@@ -24,14 +24,21 @@ jobs:
       - name: Enable pnpm
         run: corepack enable && corepack prepare pnpm@10.4.1 --activate
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies and sync lockfile
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Commit generated lockfile when needed
+        run: |
+          if ! git diff --quiet -- pnpm-lock.yaml; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add pnpm-lock.yaml
+            git commit -m "chore: sync pnpm lock [skip ci]"
+            git push
+          fi
 
       - name: Build web app
         run: pnpm run build
-
-      - name: Add Capacitor dependencies
-        run: pnpm add --ignore-workspace @capacitor/core@7 @capacitor/android@7 @capacitor/cli@7
 
       - name: Initialize Capacitor
         run: pnpm exec cap init "Aleppo Center Cash" "com.shashocompany.aleppocentercash" --web-dir dist/public
