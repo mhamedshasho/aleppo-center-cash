@@ -2423,3 +2423,816 @@ html.gold .workspace-limit-reached {
     animation: none !important;
   }
 }
+
+
+/* Unified theme coverage */
+html.dark,
+html.gold,
+html.red {
+  --theme-page: var(--background);
+  --theme-surface: var(--card);
+  --theme-surface-strong: var(--popover);
+  --theme-border: var(--border);
+  --theme-text: var(--foreground);
+  --theme-muted: var(--muted-foreground);
+  --theme-accent: var(--primary);
+  --theme-accent-soft: var(--accent);
+}
+
+html.dark {
+  --background: #0d1719;
+  --foreground: #e5f0ed;
+  --card: #142225;
+  --card-foreground: #e5f0ed;
+  --popover: #142225;
+  --popover-foreground: #e5f0ed;
+  --secondary: #193034;
+  --secondary-foreground: #c8dbd6;
+  --muted: #172a2d;
+  --muted-foreground: #8fa6a2;
+  --accent: #17352f;
+  --accent-foreground: #cce4dc;
+  --border: #293d40;
+  --input: #304346;
+  --ring: #4fba96;
+}
+
+html.gold {
+  --theme-page: #fbf8ef;
+  --theme-surface: #fffdf7;
+  --theme-surface-strong: #fffaf0;
+  --theme-border: #e5d9ba;
+  --theme-text: #4e3b17;
+  --theme-muted: #958564;
+  --theme-accent: #9a7418;
+  --theme-accent-soft: #f3e6c0;
+}
+
+html.red {
+  --primary: #8f1d2c;
+  --primary-foreground: #fff8f8;
+  --background: #f6f1ef;
+  --foreground: #3d2427;
+  --card: #fffaf8;
+  --card-foreground: #3d2427;
+  --popover: #fffaf8;
+  --popover-foreground: #3d2427;
+  --secondary: #f1dfdf;
+  --secondary-foreground: #71313a;
+  --muted: #f2e7e6;
+  --muted-foreground: #8d6f72;
+  --accent: #efd2d4;
+  --accent-foreground: #731d2b;
+  --border: #e4cdce;
+  --input: #ddc4c6;
+  --ring: #b52c3d;
+  --theme-page: #f6f1ef;
+  --theme-surface: #fffaf8;
+  --theme-surface-strong: #fff6f5;
+  --theme-border: #e2cacc;
+  --theme-text: #3d2427;
+  --theme-muted: #8d6f72;
+  --theme-accent: #9a2131;
+  --theme-accent-soft: #f0d8d9;
+}
+
+html.dark body,
+html.gold body,
+html.red body,
+html.dark .app-shell,
+html.gold .app-shell,
+html.red .app-shell {
+  background: var(--theme-page) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .topbar,
+html.gold .topbar,
+html.red .topbar {
+  background: color-mix(in srgb, var(--theme-page) 88%, transparent) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .surface-card,
+html.dark .card,
+html.dark .stat-card,
+html.dark .account-card,
+html.dark .recent-card,
+html.dark .currency-card,
+html.dark .activity-toolbar,
+html.dark .activity-row,
+html.dark .audit-card,
+html.dark .audit-row,
+html.dark .payment-toolbar,
+html.dark .payment-filters,
+html.dark .invoice-toolbar,
+html.dark .invoice-template-card,
+html.dark .invoice-template-panel,
+html.dark .invoice-summary-card,
+html.dark .invoice-payments-panel,
+html.dark .invoice-position-card,
+html.dark .backup-hero,
+html.dark .settings-section,
+html.gold .surface-card,
+html.gold .card,
+html.gold .stat-card,
+html.gold .account-card,
+html.gold .recent-card,
+html.gold .currency-card,
+html.gold .activity-toolbar,
+html.gold .activity-row,
+html.gold .audit-card,
+html.gold .audit-row,
+html.gold .payment-toolbar,
+html.gold .payment-filters,
+html.gold .invoice-toolbar,
+html.gold .invoice-template-card,
+html.gold .invoice-template-panel,
+html.gold .invoice-summary-card,
+html.gold .invoice-payments-panel,
+html.gold .invoice-position-card,
+html.gold .backup-hero,
+html.gold .settings-section,
+html.red .surface-card,
+html.red .card,
+html.red .stat-card,
+html.red .account-card,
+html.red .recent-card,
+html.red .currency-card,
+html.red .activity-toolbar,
+html.red .activity-row,
+html.red .audit-card,
+html.red .audit-row,
+html.red .payment-toolbar,
+html.red .payment-filters,
+html.red .invoice-toolbar,
+html.red .invoice-template-card,
+html.red .invoice-template-panel,
+html.red .invoice-summary-card,
+html.red .invoice-payments-panel,
+html.red .invoice-position-card,
+html.red .backup-hero,
+html.red .settings-section {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .page-heading h1,
+html.dark .page-heading h2,
+html.dark .page-heading h3,
+html.dark .surface-card h2,
+html.dark .surface-card h3,
+html.gold .page-heading h1,
+html.gold .page-heading h2,
+html.gold .page-heading h3,
+html.gold .surface-card h2,
+html.gold .surface-card h3,
+html.red .page-heading h1,
+html.red .page-heading h2,
+html.red .page-heading h3,
+html.red .surface-card h2,
+html.red .surface-card h3 {
+  color: var(--theme-text) !important;
+}
+
+html.dark .page-heading p,
+html.dark .surface-card p,
+html.gold .page-heading p,
+html.gold .surface-card p,
+html.red .page-heading p,
+html.red .surface-card p {
+  color: var(--theme-muted) !important;
+}
+
+html.dark .settings-row,
+html.gold .settings-row,
+html.red .settings-row {
+  color: var(--theme-text) !important;
+}
+
+html.dark .settings-row:hover,
+html.gold .settings-row:hover,
+html.red .settings-row:hover {
+  background: var(--theme-surface-strong) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .settings-section-head h2,
+html.gold .settings-section-head h2,
+html.red .settings-section-head h2,
+html.dark .settings-row-copy strong,
+html.gold .settings-row-copy strong,
+html.red .settings-row-copy strong,
+html.dark .settings-info strong,
+html.gold .settings-info strong,
+html.red .settings-info strong {
+  color: var(--theme-text) !important;
+}
+
+html.dark .settings-section-head p,
+html.dark .settings-row-copy span,
+html.dark .settings-info span,
+html.gold .settings-section-head p,
+html.gold .settings-row-copy span,
+html.gold .settings-info span,
+html.red .settings-section-head p,
+html.red .settings-row-copy span,
+html.red .settings-info span {
+  color: var(--theme-muted) !important;
+}
+
+html.dark .settings-section-icon,
+html.dark .settings-row-icon,
+html.gold .settings-section-icon,
+html.gold .settings-row-icon,
+html.red .settings-section-icon,
+html.red .settings-row-icon {
+  color: var(--theme-accent) !important;
+  background: var(--theme-accent-soft) !important;
+}
+
+html.dark .settings-theme-option,
+html.gold .settings-theme-option,
+html.red .settings-theme-option {
+  color: var(--theme-muted) !important;
+  background: var(--theme-surface-strong) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .settings-theme-option.active {
+  color: #cce4dc !important;
+  background: #17352f !important;
+  border-color: #4fba96 !important;
+}
+
+html.gold .settings-theme-option.active {
+  color: #76540d !important;
+  background: #f2e2b5 !important;
+  border-color: #c99a2e !important;
+}
+
+html.red .settings-theme-option.active,
+html.red .settings-theme-option.red-option {
+  color: #8f1d2c !important;
+  background: #f0d8d9 !important;
+  border-color: #b52c3d !important;
+}
+
+html.red .settings-theme-option.red-option {
+  color: #9a2131 !important;
+}
+
+html.red .settings-switch.on {
+  background: #b52c3d !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea,
+html.dark .search-box,
+html.dark .payment-search,
+html.dark .invoice-search,
+html.dark .manual-search,
+html.gold input,
+html.gold select,
+html.gold textarea,
+html.gold .search-box,
+html.gold .payment-search,
+html.gold .invoice-search,
+html.gold .manual-search,
+html.red input,
+html.red select,
+html.red textarea,
+html.red .search-box,
+html.red .payment-search,
+html.red .invoice-search,
+html.red .manual-search {
+  color: var(--theme-text) !important;
+  background: var(--theme-surface-strong) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder,
+html.gold input::placeholder,
+html.gold textarea::placeholder,
+html.red input::placeholder,
+html.red textarea::placeholder {
+  color: var(--theme-muted) !important;
+}
+
+html.dark .filter-btn,
+html.gold .filter-btn,
+html.red .filter-btn,
+html.dark .icon-btn,
+html.gold .icon-btn,
+html.red .icon-btn {
+  color: var(--theme-muted) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .filter-btn:hover,
+html.gold .filter-btn:hover,
+html.red .filter-btn:hover,
+html.dark .icon-btn:hover,
+html.gold .icon-btn:hover,
+html.red .icon-btn:hover {
+  color: var(--theme-accent) !important;
+  background: var(--theme-accent-soft) !important;
+}
+
+html.dark .primary-btn,
+html.gold .primary-btn,
+html.red .primary-btn {
+  color: var(--primary-foreground) !important;
+  background: var(--primary) !important;
+}
+
+html.dark .secondary-btn {
+  color: #cce4dc !important;
+  background: #193034 !important;
+  border-color: #304346 !important;
+}
+
+html.gold .secondary-btn {
+  color: #79570f !important;
+  background: #f3e6c0 !important;
+  border-color: #e1d2aa !important;
+}
+
+html.red .secondary-btn {
+  color: #8f1d2c !important;
+  background: #f0d8d9 !important;
+  border-color: #dfbfc2 !important;
+}
+
+html.dark .payment-count,
+html.dark .empty-state,
+html.gold .payment-count,
+html.gold .empty-state,
+html.red .payment-count,
+html.red .empty-state {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent) !important;
+}
+
+html.dark .payment-row,
+html.gold .payment-row,
+html.red .payment-row,
+html.dark .account-card,
+html.gold .account-card,
+html.red .account-card {
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .payment-copy strong,
+html.dark .account-card-copy strong,
+html.gold .payment-copy strong,
+html.gold .account-card-copy strong,
+html.red .payment-copy strong,
+html.red .account-card-copy strong {
+  color: var(--theme-text) !important;
+}
+
+html.dark .payment-copy span,
+html.gold .payment-copy span,
+html.red .payment-copy span {
+  color: var(--theme-muted) !important;
+}
+
+html.dark .invoice-preview-modal,
+html.gold .invoice-preview-modal,
+html.red .invoice-preview-modal {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .invoice-preview-page,
+html.gold .invoice-preview-page,
+html.red .invoice-preview-page {
+  background: var(--theme-surface-strong) !important;
+  color: var(--theme-text) !important;
+}
+
+html.dark .invoice-preview-row,
+html.gold .invoice-preview-row,
+html.red .invoice-preview-row {
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .invoice-preview-row:nth-child(odd),
+html.gold .invoice-preview-row:nth-child(odd),
+html.red .invoice-preview-row:nth-child(odd) {
+  background: color-mix(in srgb, var(--theme-surface) 90%, var(--theme-accent-soft)) !important;
+}
+
+html.dark .invoice-preview-total,
+html.gold .invoice-preview-total,
+html.red .invoice-preview-total {
+  background: var(--theme-accent-soft) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .manual-header,
+html.gold .manual-header,
+html.red .manual-header {
+  background: var(--theme-surface-strong) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .manual-toolbar,
+html.gold .manual-toolbar,
+html.red .manual-toolbar,
+html.dark .manual-index,
+html.gold .manual-index,
+html.red .manual-index,
+html.dark .manual-section,
+html.gold .manual-section,
+html.red .manual-section,
+html.dark .manual-items article,
+html.gold .manual-items article,
+html.red .manual-items article {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .manual-search,
+html.gold .manual-search,
+html.red .manual-search {
+  background: var(--theme-surface-strong) !important;
+}
+
+html.dark .manual-section h2,
+html.dark .manual-section h3,
+html.gold .manual-section h2,
+html.gold .manual-section h3,
+html.red .manual-section h2,
+html.red .manual-section h3 {
+  color: var(--theme-text) !important;
+}
+
+html.dark .manual-section p,
+html.gold .manual-section p,
+html.red .manual-section p {
+  color: var(--theme-muted) !important;
+}
+
+html.dark .activity-tabs button,
+html.gold .activity-tabs button,
+html.red .activity-tabs button,
+html.dark .activity-row strong,
+html.gold .activity-row strong,
+html.red .activity-row strong {
+  color: var(--theme-text) !important;
+}
+
+html.dark .activity-row span,
+html.gold .activity-row span,
+html.red .activity-row span {
+  color: var(--theme-muted) !important;
+}
+
+html.dark .workspace-manager,
+html.gold .workspace-manager,
+html.red .workspace-manager,
+html.dark .workspace-option,
+html.gold .workspace-option,
+html.red .workspace-option,
+html.dark .workspace-create,
+html.gold .workspace-create,
+html.red .workspace-create {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark .workspace-manager-title h2,
+html.gold .workspace-manager-title h2,
+html.red .workspace-manager-title h2,
+html.dark .workspace-option-copy strong,
+html.gold .workspace-option-copy strong,
+html.red .workspace-option-copy strong {
+  color: var(--theme-text) !important;
+}
+
+html.dark .workspace-manager-title p,
+html.gold .workspace-manager-title p,
+html.red .workspace-manager-title p,
+html.dark .workspace-option-copy span,
+html.gold .workspace-option-copy span,
+html.red .workspace-option-copy span {
+  color: var(--theme-muted) !important;
+}
+
+html.red .sidebar,
+html.red .desktop-sidebar {
+  background: linear-gradient(180deg, #8f1d2c 0%, #5b1520 100%) !important;
+  color: #fff7f7 !important;
+  border-color: rgba(255,218,220,.24) !important;
+}
+
+html.red .sidebar::before,
+html.red .desktop-sidebar::before {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,.18), transparent 34%),
+    radial-gradient(circle at 100% 90%, rgba(255,185,191,.16), transparent 35%) !important;
+}
+
+html.red .brand-lockup .brand-mark,
+html.red .desktop-brand .brand-mark {
+  background: #b52c3d !important;
+  color: #fff8f8 !important;
+}
+
+html.red .workspace-switcher,
+html.red .local-card {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,220,222,.16) !important;
+}
+
+html.red .workspace-avatar {
+  background: #f2c6ca !important;
+  color: #741b27 !important;
+}
+
+html.red .main-nav button {
+  color: #efc7cb !important;
+}
+
+html.red .main-nav button:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.08) !important;
+}
+
+html.red .main-nav button.active {
+  color: #fff !important;
+  background: #a62939 !important;
+  box-shadow: inset 3px 0 0 #f2a3ab !important;
+}
+
+html.red .main-nav button svg,
+html.red .nav-group-label,
+html.red .sidebar-profile span {
+  color: #dda1a8 !important;
+}
+
+html.red .main-nav button.active svg {
+  color: #ffd6d9 !important;
+}
+
+html.red .topbar,
+html.red .breadcrumb strong,
+html.red .page-heading h1,
+html.red .page-heading h2 {
+  color: #4b282c !important;
+}
+
+html.red .breadcrumb,
+html.red .page-heading p,
+html.red .saved-state {
+  color: #947174 !important;
+}
+
+html.red .hero-summary {
+  background: linear-gradient(111deg, #651723 0%, #8f1d2c 55%, #a92a3b 100%) !important;
+  box-shadow: 0 18px 35px rgba(110,25,38,.18) !important;
+}
+
+html.red .heading-count,
+html.red .stat-icon,
+html.red .settings-badge {
+  color: #8f1d2c !important;
+  background: #f0d8d9 !important;
+}
+
+html.red .notification-panel,
+html.red .profile-menu,
+html.red .modal-card {
+  background: #fffaf8 !important;
+  border-color: #e2cacc !important;
+}
+
+html.red .notification-panel-head,
+html.red .notification-item,
+html.red .notification-footer {
+  border-color: #f0dddd !important;
+}
+
+html.red .notification-panel-head strong,
+html.red .notification-copy strong,
+html.red .profile-menu-item strong,
+html.red .modal-head h2 {
+  color: #4b282c !important;
+}
+
+html.red .notification-panel-head span,
+html.red .notification-copy span,
+html.red .notification-copy small,
+html.red .profile-menu-item span {
+  color: #947174 !important;
+}
+
+html.red .notification-item {
+  background: #fffaf8 !important;
+}
+
+html.red .notification-item:hover,
+html.red .notification-item.unread {
+  background: #fff1f1 !important;
+}
+
+html.red .notification-dot,
+html.red .notification-item > i,
+html.red .saved-dot {
+  background: #b52c3d !important;
+}
+
+html.red .notification-dot {
+  border-color: #f6f1ef !important;
+}
+
+html.red .login-shell {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(181,44,61,.16), transparent 30%),
+    radial-gradient(circle at 85% 90%, rgba(111,24,39,.10), transparent 34%),
+    #f6f1ef !important;
+  color: #4b282c !important;
+}
+
+html.red .login-card {
+  background: rgba(255,250,248,.94) !important;
+  border-color: rgba(181,44,61,.24) !important;
+  box-shadow: 0 24px 80px rgba(91,21,32,.14) !important;
+}
+
+html.red .login-card h1 {
+  color: #4b282c !important;
+}
+
+html.red .login-card h1 em,
+html.red .privacy-note svg {
+  color: #a52335 !important;
+}
+
+html.red .primary-btn {
+  background: linear-gradient(135deg, #a52335, #731b28) !important;
+}
+
+html.red .primary-btn:hover {
+  background: linear-gradient(135deg, #b92d40, #851f2d) !important;
+}
+
+html.red .key-input-wrap:focus-within {
+  border-color: #b52c3d !important;
+  box-shadow: 0 0 0 4px rgba(181,44,61,.12) !important;
+}
+
+html.red .backup-hero {
+  background: linear-gradient(110deg, #f0d8d9, #fff0ef) !important;
+  border-color: #dfc1c4 !important;
+}
+
+html.red .backup-hero-icon,
+html.red .backup-status {
+  color: #9a2131 !important;
+  background: #fff7f6 !important;
+}
+
+html.red .workspace-manager-icon {
+  color: #8f1d2c !important;
+  background: linear-gradient(135deg, #f0d0d3, #e8bfc4) !important;
+}
+
+html.red .workspace-option.active {
+  border-color: #b52c3d !important;
+  background: linear-gradient(100deg, #fff3f2, #f6dddd) !important;
+}
+
+html.red .workspace-option-avatar {
+  color: #8f1d2c !important;
+  background: #f0d8d9 !important;
+}
+
+html.red .workspace-role.owner {
+  color: #8f1d2c !important;
+  background: #f0d8d9 !important;
+}
+
+html.red .workspace-create {
+  border-color: #ddbfc2 !important;
+  background: #fff5f4 !important;
+}
+
+html.red .workspace-create-row input {
+  background: #fffaf8 !important;
+  border-color: #ddc4c6 !important;
+  color: #4b282c !important;
+}
+
+html.red .workspace-create-row input:focus {
+  border-color: #b52c3d !important;
+  box-shadow: 0 0 0 4px rgba(181,44,61,.11) !important;
+}
+
+html.red .manual-hero-icon {
+  background: linear-gradient(145deg, #8f1d2c, #a92a3b) !important;
+  box-shadow: 0 18px 38px rgba(143,29,44,.22) !important;
+}
+
+html.red .manual-toggle-all {
+  color: #8f1d2c !important;
+  border-color: #e0c7c9 !important;
+  background: #fff1f1 !important;
+}
+
+html.red .manual-section:nth-child(1),
+html.red .manual-section:nth-child(2),
+html.red .manual-section:nth-child(3),
+html.red .manual-section:nth-child(4),
+html.red .manual-section:nth-child(5) {
+  --section-accent: #a52335;
+  --section-soft: #f0d8d9;
+}
+
+html.red .manual-help {
+  background: linear-gradient(135deg, #f8e4e5, #fff8f7) !important;
+  border-color: #e3c9cb !important;
+}
+
+html.red .manual-empty {
+  background: linear-gradient(135deg, #f7e1e2, #fff8f7) !important;
+  border-color: #e4c8ca !important;
+}
+
+html.dark .manual-hero-icon {
+  background: linear-gradient(145deg, #285e62, #344f75) !important;
+}
+
+html.gold .manual-hero-icon {
+  background: linear-gradient(145deg, #9b741b, #6e5110) !important;
+}
+
+html.dark .hero-summary {
+  background: linear-gradient(111deg, #102a2f 0%, #183f47 55%, #245c57 100%) !important;
+}
+
+html.gold .hero-summary {
+  background: linear-gradient(111deg, #49370f 0%, #76570f 55%, #9a7418 100%) !important;
+}
+
+html.dark .stat-card,
+html.gold .stat-card,
+html.red .stat-card {
+  box-shadow: 0 10px 28px rgba(0,0,0,.10) !important;
+}
+
+html.gold .topbar,
+html.gold .breadcrumb strong,
+html.gold .page-heading h1,
+html.gold .page-heading h2 {
+  color: #4e3b17 !important;
+}
+
+html.gold .breadcrumb,
+html.gold .page-heading p,
+html.gold .saved-state {
+  color: #958564 !important;
+}
+
+html.dark .breadcrumb strong,
+html.dark .page-heading h1,
+html.dark .page-heading h2 {
+  color: #e5f0ed !important;
+}
+
+html.dark .breadcrumb,
+html.dark .page-heading p,
+html.dark .saved-state {
+  color: #8fa6a2 !important;
+}
+
+html.dark .empty-state,
+html.gold .empty-state,
+html.red .empty-state {
+  border-color: var(--theme-border) !important;
+}
+
+html.red .invoice-preview-head {
+  background: #8f1d2c !important;
+}
+
+html.red .invoice-preview-total {
+  background: #f0d8d9 !important;
+  border-color: #dfc4c6 !important;
+}
+
+html.red .invoice-preview-total strong,
+html.red .preview-credit {
+  color: #9a2131 !important;
+}
+
+html.red .invoice-type.debit,
+html.red .preview-debit {
+  color: #a85f4f !important;
+}
