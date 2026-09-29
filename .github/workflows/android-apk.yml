@@ -49,29 +49,46 @@ jobs:
           root_text = root.read_text()
           app_text = app.read_text()
 
-          # Capacitor 7 uses the Gradle plugins DSL. Add Google Services
-          # to the existing root plugins block so Gradle accepts it.
-          if "com.google.gms.google-services" not in root_text:
-              if "plugins {" not in root_text:
-                  raise SystemExit("Root Gradle plugins block not found")
-              root_text = root_text.replace(
-                  "plugins {",
-                  "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false",
-                  1,
-              )
+          # Capacitor's generated Gradle template uses buildscript/dependencies.
+          # Add Google Services to that existing buildscript without assuming a
+          # plugins DSL block exists.
+          if "com.google.gms:google-services" not in root_text:
+              buildscript_pos = root_text.find("buildscript {")
+              if buildscript_pos >= 0:
+                  deps_pos = root_text.find("dependencies {", buildscript_pos)
+                  if deps_pos < 0:
+                      raise SystemExit("Gradle buildscript dependencies block not found")
+                  insert_at = deps_pos + len("dependencies {")
+                  root_text = (
+                      root_text[:insert_at]
+                      + "\n        classpath 'com.google.gms:google-services:4.4.2'"
+                      + root_text[insert_at:]
+                  )
+              else:
+                  root_text = (
+                      "buildscript {\n"
+                      "    repositories { google(); mavenCentral() }\n"
+                      "    dependencies {\n"
+                      "        classpath 'com.google.gms:google-services:4.4.2'\n"
+                      "    }\n"
+                      "}\n\n"
+                      + root_text
+                  )
               root.write_text(root_text)
 
+          # Apply the Google Services plugin to the Android app module.
           if "com.google.gms.google-services" not in app_text:
-              if "plugins {" not in app_text:
-                  raise SystemExit("App Gradle plugins block not found")
-              app_text = app_text.replace(
-                  "plugins {",
-                  "plugins {\n    id 'com.google.gms.google-services'",
-                  1,
-              )
+              if "plugins {" in app_text:
+                  app_text = app_text.replace(
+                      "plugins {",
+                      "plugins {\n    id 'com.google.gms.google-services'",
+                      1,
+                  )
+              else:
+                  app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
               app.write_text(app_text)
 
-          print("Firebase Google Services Gradle plugin configured")
+          print("Firebase Google Services configured")
           PY
 
       - name: Verify Capacitor Android project
