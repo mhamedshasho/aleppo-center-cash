@@ -55,6 +55,7 @@ import Manual from "@/pages/Manual";
 import Updates from "@/pages/Updates";
 import DesktopSidebar from "@/components/DesktopSidebar";
 import WorkspaceManager, { type WorkspaceOption } from "@/components/WorkspaceManager";
+import { showNativeNotification } from "@/lib/nativeNotifications";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -541,6 +542,13 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_log", filter: "workspace_id=eq." + cloudWorkspace.id }, (payload) => {
         const entry = payload.new as { id: number; action: string; entity: string; summary: string; created_at: string };
         const incoming = makeNotification(entry, false);
+        if (entry.entity === "payment" || entry.entity === "account") {
+          void showNativeNotification({
+            title: incoming.title,
+            body: incoming.detail,
+            id: 500000 + Number(entry.id),
+          });
+        }
         setNotifications((current) => {
           const duplicateIndex = current.findIndex((notification) =>
             notification.remoteId === incoming.remoteId ||
