@@ -57,6 +57,7 @@ import DesktopSidebar from "@/components/DesktopSidebar";
 import WorkspaceManager, { type WorkspaceOption } from "@/components/WorkspaceManager";
 import { showNativeNotification } from "@/lib/nativeNotifications";
 import { identifyOneSignalUser } from "@/lib/oneSignal";
+import { sendRemoteNotification } from "@/lib/remoteNotifications";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -672,7 +673,20 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       entity_id: entityId ?? null,
       summary: JSON.stringify({ name: label }),
     });
-    if (error) console.error("[AleppoCenterCash] audit insert failed", error);
+    if (error) {
+      console.error("[AleppoCenterCash] audit insert failed", error);
+      return;
+    }
+
+    if (entity === "account" || entity === "payment") {
+      void sendRemoteNotification({
+        workspaceId: cloudWorkspace.id,
+        action,
+        entity,
+        title: (notificationActionLabels[action] ?? action) + " " + (notificationEntityLabels[entity] ?? entity),
+        body: label,
+      });
+    }
   };
 
   const notifyNativeMutation = (action: "create" | "update" | "delete", entity: "account" | "payment", label: string) => {
