@@ -8,8 +8,6 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout
@@ -23,18 +21,8 @@ jobs:
       - name: Enable pnpm
         run: corepack enable && corepack prepare pnpm@10.4.1 --activate
 
-      - name: Install dependencies and sync lockfile
+      - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
-
-      - name: Commit generated lockfile when needed
-        run: |
-          if ! git diff --quiet -- pnpm-lock.yaml; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add pnpm-lock.yaml
-            git commit -m "chore: sync pnpm lock [skip ci]"
-            git push
-          fi
 
       - name: Build web app
         run: pnpm run build
@@ -56,14 +44,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Install Android SDK packages
-        run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          yes | sdkmanager --licenses || true
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
       - name: Build debug APK
         working-directory: android
