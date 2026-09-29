@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, PointerEvent } from "react";
-import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Image as ImageIcon, Moon, Plus, RotateCcw, Search, Sparkles, Sun, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Heart, Image as ImageIcon, Moon, Plus, RotateCcw, Search, Sparkles, Sun, Upload, X } from "lucide-react";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -71,7 +71,7 @@ async function renderTemplateFile(file: File): Promise<TemplatePage[]> {
   return [{ label: "الصورة", image: await fileData(file) }];
 }
 
-export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" }) {
+export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" | "red" }) {
   const [query, setQuery] = useState("");
   const [accountFilter, setAccountFilter] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
@@ -166,9 +166,9 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
     if (!chosen.length) return toast.error("اختار دفعة واحدة على الأقل");
     if (!invoiceNumber.trim()) return toast.error("اكتب رقم الفاتورة أولاً");
     setBusy(true);
-    const invoiceAccent = theme === "gold" ? "#b8891f" : "#173f47";
-    const invoiceAccentSoft = theme === "gold" ? "#fbf3d9" : "#f1f6f3";
-    const invoiceBorderSoft = theme === "gold" ? "#ead9a7" : "#dfe9e4";
+    const invoiceAccent = theme === "gold" ? "#b8891f" : theme === "red" ? "#8f1d2c" : "#173f47";
+    const invoiceAccentSoft = theme === "gold" ? "#fbf3d9" : theme === "red" ? "#f7e7e5" : "#f1f6f3";
+    const invoiceBorderSoft = theme === "gold" ? "#ead9a7" : theme === "red" ? "#e7c8c5" : "#dfe9e4";
     const host = document.createElement("div");
     host.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;";
     document.body.appendChild(host);
@@ -222,7 +222,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   return <main className="invoice-maker page-enter" dir="rtl">
     <header className="invoice-maker-head">
       <div><button className="text-btn invoice-back" onClick={onBack}><ArrowLeft size={16} /> رجوع</button><div className="eyebrow">ALEPPO CENTER <span>•</span> INVOICE MAKER</div><h1>صانع الفواتير</h1><p>اختار الدفعات مثل Excel، اربط أكثر من ملف قالب، راجع الفاتورة ثم استخرجها.</p></div>
-      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
+      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : theme === "red" ? <Heart size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
     </header>
 
     <section className="invoice-toolbar surface-card">
