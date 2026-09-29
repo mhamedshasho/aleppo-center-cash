@@ -10,28 +10,46 @@ async function getOneSignal() {
   return module.default;
 }
 
-export async function initializeOneSignal() {
+async function getReadyOneSignal() {
   const OneSignal = await getOneSignal();
-  if (!OneSignal) return false;
+  if (!OneSignal) return null;
 
   if (!initialized) {
     OneSignal.initialize(ONESIGNAL_APP_ID);
     initialized = true;
   }
 
-  await OneSignal.Notifications.requestPermission(true).catch(() => false);
+  return OneSignal;
+}
+
+export async function initializeOneSignal() {
+  const OneSignal = await getReadyOneSignal();
+  if (!OneSignal) return false;
+
+  try {
+    await OneSignal.Notifications.requestPermission(true);
+  } catch {}
+
+  try {
+    await OneSignal.User.pushSubscription.optIn();
+  } catch (error) {
+    console.warn("[AleppoCenterCash] OneSignal opt-in failed", error);
+  }
+
   return true;
 }
 
 export async function identifyOneSignalUser(userId: string) {
-  const OneSignal = await getOneSignal();
+  const OneSignal = await getReadyOneSignal();
   if (!OneSignal || !userId) return false;
 
-  if (!initialized) {
-    OneSignal.initialize(ONESIGNAL_APP_ID);
-    initialized = true;
+  await OneSignal.login(userId);
+
+  try {
+    await OneSignal.User.pushSubscription.optIn();
+  } catch (error) {
+    console.warn("[AleppoCenterCash] OneSignal post-login opt-in failed", error);
   }
 
-  await OneSignal.login(userId);
   return true;
 }
