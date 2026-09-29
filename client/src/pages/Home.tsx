@@ -56,6 +56,7 @@ import Updates from "@/pages/Updates";
 import DesktopSidebar from "@/components/DesktopSidebar";
 import WorkspaceManager, { type WorkspaceOption } from "@/components/WorkspaceManager";
 import { showNativeNotification } from "@/lib/nativeNotifications";
+import { identifyOneSignalUser } from "@/lib/oneSignal";
 
 type Currency = "SYP" | "USD";
 type PaymentType = "credit" | "debit";
@@ -231,6 +232,11 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
   const totals = useMemo(() => calculateTotals(accounts), [accounts]);
   const filteredAccounts = accounts.filter((account) => `${account.name} ${account.owner}`.toLowerCase().includes(searchTerm.toLowerCase()));
   const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
+
+  useEffect(() => {
+    if (!cloudUser?.id) return;
+    void identifyOneSignalUser(cloudUser.id).catch(() => undefined);
+  }, [cloudUser?.id]);
 
   const pushClientNotification = (action: string, entity: string, detail: string) => {
     const item: NotificationItem = {
