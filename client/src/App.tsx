@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Credits from "./pages/Credits";
 import "./ui-enhancements.css";
 import { checkForAppUpdateNotification, initializeNativeNotifications, scheduleUsageReminders } from "./lib/nativeNotifications";
+import { initializeOneSignal } from "./lib/oneSignal";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
 
 function App() {
   useEffect(() => {
+    void initializeOneSignal();
     void initializeNativeNotifications().then((ready) => {
       if (ready) {
         void scheduleUsageReminders();
