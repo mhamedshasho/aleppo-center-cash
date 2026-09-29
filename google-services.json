@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "613911898787",
+    "project_id": "aleppo-center-cash",
+    "storage_bucket": "aleppo-center-cash.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:613911898787:android:17af315867cbc2c00c2d16",
+        "android_client_info": {
+          "package_name": "com.shashocompany.aleppocentercash"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfv44Arg8PWKqdUgB4S_3uqAwbCqt7v5g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
