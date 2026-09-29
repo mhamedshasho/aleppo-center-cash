@@ -45,38 +45,27 @@ jobs:
 
           root = Path("build.gradle")
           app = Path("app/build.gradle")
-
           root_text = root.read_text()
           app_text = app.read_text()
 
-          # Capacitor's generated Gradle template uses buildscript/dependencies.
-          # Add Google Services to that existing buildscript without assuming a
-          # plugins DSL block exists.
-          if "com.google.gms:google-services" not in root_text:
-              buildscript_pos = root_text.find("buildscript {")
-              if buildscript_pos >= 0:
-                  deps_pos = root_text.find("dependencies {", buildscript_pos)
-                  if deps_pos < 0:
+          # Configure Google Services in whichever Gradle template Capacitor generated.
+          if "com.google.gms:google-services" not in root_text and "com.google.gms.google-services" not in root_text:
+              if "buildscript {" in root_text:
+                  pos = root_text.find("dependencies {", root_text.find("buildscript {"))
+                  if pos < 0:
                       raise SystemExit("Gradle buildscript dependencies block not found")
-                  insert_at = deps_pos + len("dependencies {")
-                  root_text = (
-                      root_text[:insert_at]
-                      + "\n        classpath 'com.google.gms:google-services:4.4.2'"
-                      + root_text[insert_at:]
+                  pos += len("dependencies {")
+                  root_text = root_text[:pos] + "\n        classpath 'com.google.gms:google-services:4.4.2'" + root_text[pos:]
+              elif "plugins {" in root_text:
+                  root_text = root_text.replace(
+                      "plugins {",
+                      "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false",
+                      1,
                   )
               else:
-                  root_text = (
-                      "buildscript {\n"
-                      "    repositories { google(); mavenCentral() }\n"
-                      "    dependencies {\n"
-                      "        classpath 'com.google.gms:google-services:4.4.2'\n"
-                      "    }\n"
-                      "}\n\n"
-                      + root_text
-                  )
+                  raise SystemExit("No supported root Gradle configuration found")
               root.write_text(root_text)
 
-          # Apply the Google Services plugin to the Android app module.
           if "com.google.gms.google-services" not in app_text:
               if "plugins {" in app_text:
                   app_text = app_text.replace(
@@ -86,9 +75,21 @@ jobs:
                   )
               else:
                   app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
-              app.write_text(app_text)
 
-          print("Firebase Google Services configured")
+          # Ensure Firebase Messaging is present for FCM token registration.
+          if "firebase-messaging" not in app_text:
+              if "dependencies {" not in app_text:
+                  raise SystemExit("App Gradle dependencies block not found")
+              pos = app_text.find("dependencies {") + len("dependencies {")
+              app_text = app_text[:pos] + "\n    implementation 'com.google.firebase:firebase-messaging:24.0.1'" + app_text[pos:]
+
+          # Give this APK an explicit version so every push-fix build is distinguishable.
+          import re
+          app_text = re.sub(r'versionCode\s+\d+', 'versionCode 2', app_text, count=1)
+          app_text = re.sub(r'versionName\s+"[^"]+"', 'versionName "1.0.2"', app_text, count=1)
+
+          app.write_text(app_text)
+          print("Firebase FCM + Google Services + Firebase Messaging configured")
           PY
 
       - name: Verify Capacitor Android project
