@@ -70,8 +70,8 @@ jobs:
               pos = app_text.find("dependencies {") + len("dependencies {")
               app_text = app_text[:pos] + "\n    implementation 'com.google.firebase:firebase-messaging:24.0.1'" + app_text[pos:]
 
-          app_text = re.sub(r'versionCode\\s+\\d+', 'versionCode 3', app_text, count=1)
-          app_text = re.sub(r'versionName\\s+"[^"]+"', 'versionName "1.0.3"', app_text, count=1)
+          app_text = re.sub(r'versionCode\s+\d+', 'versionCode 3', app_text, count=1)
+          app_text = re.sub(r'versionName\s+"[^"]+"', 'versionName "1.0.3"', app_text, count=1)
           app.write_text(app_text)
           PY
 
@@ -89,7 +89,6 @@ jobs:
           done
 
       - name: Verify Capacitor Android project
-        run: test -f android/gradlew && test -d android/app
         run: test -f android/gradlew && test -d android/app
 
       - name: Setup Java
