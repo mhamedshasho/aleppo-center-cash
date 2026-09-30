@@ -42,57 +42,54 @@ jobs:
           cp ../google-services.json app/google-services.json
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           root = Path("build.gradle")
           app = Path("app/build.gradle")
           root_text = root.read_text()
           app_text = app.read_text()
 
-          # Configure Google Services in whichever Gradle template Capacitor generated.
-          if "com.google.gms:google-services" not in root_text and "com.google.gms.google-services" not in root_text:
-              if "buildscript {" in root_text:
-                  pos = root_text.find("dependencies {", root_text.find("buildscript {"))
-                  if pos < 0:
-                      raise SystemExit("Gradle buildscript dependencies block not found")
-                  pos += len("dependencies {")
-                  root_text = root_text[:pos] + "\n        classpath 'com.google.gms:google-services:4.4.2'" + root_text[pos:]
-              elif "plugins {" in root_text:
-                  root_text = root_text.replace(
-                      "plugins {",
-                      "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false",
-                      1,
-                  )
-              else:
-                  raise SystemExit("No supported root Gradle configuration found")
+          # Capacitor templates differ across versions. Use the classic Gradle
+          # buildscript classpath so the Google Services plugin works reliably.
+          if "com.google.gms:google-services" not in root_text:
+              root_text = (
+                  "buildscript {\n"
+                  "    repositories { google(); mavenCentral() }\n"
+                  "    dependencies { classpath 'com.google.gms:google-services:4.4.2' }\n"
+                  "}\n\n"
+                  + root_text
+              )
               root.write_text(root_text)
 
           if "com.google.gms.google-services" not in app_text:
-              if "plugins {" in app_text:
-                  app_text = app_text.replace(
-                      "plugins {",
-                      "plugins {\n    id 'com.google.gms.google-services'",
-                      1,
-                  )
-              else:
-                  app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
+              app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
 
-          # Ensure Firebase Messaging is present for FCM token registration.
           if "firebase-messaging" not in app_text:
               if "dependencies {" not in app_text:
                   raise SystemExit("App Gradle dependencies block not found")
               pos = app_text.find("dependencies {") + len("dependencies {")
               app_text = app_text[:pos] + "\n    implementation 'com.google.firebase:firebase-messaging:24.0.1'" + app_text[pos:]
 
-          # Give this APK an explicit version so every push-fix build is distinguishable.
-          import re
-          app_text = re.sub(r'versionCode\s+\d+', 'versionCode 2', app_text, count=1)
-          app_text = re.sub(r'versionName\s+"[^"]+"', 'versionName "1.0.2"', app_text, count=1)
-
+          app_text = re.sub(r'versionCode\\s+\\d+', 'versionCode 3', app_text, count=1)
+          app_text = re.sub(r'versionName\\s+"[^"]+"', 'versionName "1.0.3"', app_text, count=1)
           app.write_text(app_text)
-          print("Firebase FCM + Google Services + Firebase Messaging configured")
           PY
 
+      - name: Install official app logo as Android launcher icon
+        working-directory: android
+        run: |
+          set -e
+          command -v magick || (sudo apt-get update && sudo apt-get install -y imagemagick)
+          for item in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            density="${item%%:*}"
+            size="${item##*:}"
+            mkdir -p "app/src/main/res/mipmap-${density}"
+            magick ../client/public/logo.jpg -resize "${size}x${size}" -background white -gravity center -extent "${size}x${size}" "app/src/main/res/mipmap-${density}/ic_launcher.png"
+            cp "app/src/main/res/mipmap-${density}/ic_launcher.png" "app/src/main/res/mipmap-${density}/ic_launcher_round.png"
+          done
+
       - name: Verify Capacitor Android project
+        run: test -f android/gradlew && test -d android/app
         run: test -f android/gradlew && test -d android/app
 
       - name: Setup Java
@@ -107,14 +104,14 @@ jobs:
           accept-android-sdk-licenses: true
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: aleppo-center-cash-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: aleppo-center-cash-release-apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 14
