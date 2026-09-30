@@ -3236,3 +3236,36 @@ html.red .invoice-type.debit,
 html.red .preview-debit {
   color: #a85f4f !important;
 }
+
+
+/* Project branding */
+.desktop-brand-logo {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+.desktop-brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.login-brand-logo {
+  width: min(270px, 78%);
+  margin: 0 auto 18px;
+  display: flex;
+  justify-content: center;
+}
+.login-brand-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 245px;
+  object-fit: contain;
+}
