@@ -1,120 +1,107 @@
 # Aleppo Center Cash
 
-**Arabic RTL cloud accounting for a small shop — built around accounts, payments, audit history, and reliable recovery.**
+<p align="center">
+  <strong>Arabic RTL cloud accounting for Aleppo Center</strong><br>
+  Accounts • Payments • SYP / USD • Workspaces • Cloud Sync
+</p>
 
-Aleppo Center Cash is a focused accounting workspace for recording what is **owed to a customer (له)** and what a **customer owes the shop (عليه)**, with separate SYP and USD balances.
+<p align="center">
+  <a href="https://aleppo-center-cash.vercel.app/">Open Web App</a> •
+  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions/workflows/android-apk.yml">Android Builds</a> •
+  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions">All Actions</a>
+</p>
 
-Production: **https://aleppo-center-cash.vercel.app/**
+---
 
-## What it does
+## 🚀 Use the app
+
+**Web:** https://aleppo-center-cash.vercel.app/
+
+**Android APK builds:**  
+https://github.com/mhamedshasho/aleppo-center-cash/actions/workflows/android-apk.yml
+
+Android builds are generated automatically with GitHub Actions.
+
+### 📥 Download the APK
+
+1. Open **Android Builds** above.
+2. Choose the latest run with a green **Success** mark.
+3. Scroll to **Artifacts**.
+4. Download **aleppo-center-cash-debug-apk**.
+5. Extract the downloaded ZIP.
+6. The APK will be inside the extracted folder.
+
+> The GitHub Actions artifact is a ZIP containing the APK. Extract it before installing.
+
+### 📱 Install on Android
+
+1. Download and extract the latest successful build.
+2. Open **app-debug.apk**.
+3. If Android asks for permission to install apps from this source, allow it for the browser or file manager you used.
+4. Install the app.
+5. Open Aleppo Center Cash and sign in.
+
+> These builds are debug APKs intended for testing and deployment validation. Android may display a warning because the APK is not a Play Store release.
+
+---
+
+## ✨ Features
 
 - Arabic RTL accounting workflow
-- Customer accounts with phone/owner information
-- Payments classified as **له / عليه**
-- Separate **SYP / USD** accounting
-- Dashboard with account and balance summaries
-- Account-level transaction history
-- Search and account navigation
-- Audit/activity history for important changes
-- Supabase Auth and PostgreSQL as the cloud source of truth
-- Row Level Security and workspace membership
+- Customer accounts
+- **له / عليه** payment tracking
+- Separate **SYP / USD** balances
+- Dashboard and account summaries
+- Account transaction history
+- Audit/activity history
+- Workspace-based multi-user access
+- Supabase Auth + PostgreSQL
+- Row Level Security (RLS)
 - Realtime synchronization
-- Automatic cloud restoration snapshots
-- Encrypted portable JSON restoration files using AES-GCM
-- PDF and PNG account reports
+- Cloud restoration snapshots
+- Encrypted AES-GCM JSON restoration files
+- PDF / PNG reports
 - Responsive desktop and mobile UI
-- Vercel production deployment
+- Light, Dark, Gold and Red Nostalgia themes
+- Android APK build pipeline
 
-## Product model
-
-The accounting meaning is intentionally explicit:
+## 💰 Accounting model
 
 | Entry | Meaning |
 |---|---|
 | **له** | The shop owes the customer |
 | **عليه** | The customer owes the shop |
 
-Balances are calculated independently for each currency. SYP and USD are never silently mixed.
+SYP and USD are calculated independently and are never silently mixed.
 
-## Architecture
+## 🏗️ Architecture
 
 ```text
-Browser
-  │
-  ├── React 19 + TypeScript + Vite
-  ├── Arabic RTL UI
-  └── Supabase client
+React + TypeScript + Vite
           │
-          ├── Auth / JWT
-          ├── PostgreSQL
-          ├── Row Level Security
-          ├── Realtime
-          └── Edge Functions
-                  │
-                  └── Private restoration storage
+          ▼
+      Supabase
+   ┌──────┼────────┐
+   ▼      ▼        ▼
+  Auth  PostgreSQL Realtime
+   │      │        │
+   └──────┼────────┘
+          ▼
+    Edge Functions
+          │
+          ▼
+   Private restoration
 ```
 
-PostgreSQL is authoritative while connected. The application does not treat browser storage as the accounting database.
+## 🔐 Security
 
-### Backup layers
+- Supabase publishable key is used by the client.
+- Database access is protected by RLS.
+- Workspace membership is required.
+- Sensitive server operations run through Edge Functions.
+- Restoration exports can be encrypted locally with AES-GCM.
 
-1. **Cloud restoration snapshot** — maintained in private Supabase Storage.
-2. **Portable restoration file** — exported as an AES-GCM encrypted JSON file.
-3. **Off-site backup** — Dropbox integration is planned as an additional encrypted copy; it is not represented as active until its server-side credentials are configured.
-
-The restoration file never contains a login password or Supabase secret.
-
-## Technology
-
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS 4
-- shadcn/ui / Radix UI primitives
-- Supabase Auth
-- PostgreSQL + RLS
-- Supabase Realtime
-- Supabase Edge Functions
-- Vercel
-- jsPDF
-- html2canvas
-- Lucide React
-- pnpm
-
-## Repository layout
-
-```text
-client/                 React application
-client/src/lib/         Supabase, sync, validation, backup helpers
-client/src/pages/       Dashboard, accounts, activity views
-supabase/migrations/    Database migrations
-supabase/functions/     Server-side Edge Functions
-docs/                   Architecture and deployment documentation
-.github/                CI and repository automation
-```
-
-## Local development
-
-Requirements:
-
-- Node.js
-- pnpm 10.x
-- A Supabase project
-
-```bash
-pnpm install
-cp .env.example .env.local
-pnpm check
-pnpm build
-pnpm dev
-```
-
-Configure:
-
-```env
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_PUBLISHABLE_KEY=...
-```
+This project is **not** described as zero-knowledge or end-to-end encrypted.
 
 Never commit:
 
@@ -125,60 +112,50 @@ Never commit:
 - access tokens
 - production accounting exports
 
-## Database
+## 🛠️ Development
 
-Migrations live in `supabase/migrations/`.
+Requirements:
+- Node.js
+- pnpm 10.x
+- Supabase project
 
-Apply migrations through the Supabase workflow used by the project. Do not manually delete production tables to resolve application problems.
+```bash
+pnpm install
+cp .env.example .env.local
+pnpm check
+pnpm build
+pnpm dev
+```
 
-Important domain tables include:
+## 📚 Documentation
 
-- `workspaces`
-- `workspace_members`
-- `profiles`
-- `accounts`
-- `payments`
-- `audit_log`
+- [Code Documentation — Arabic + English](docs/CODE-DOCUMENTATION.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Setup](docs/SETUP.md)
+- [Deployment](docs/DEPLOY.md)
+- [Multi-user architecture](docs/multi-user-simplified-architecture.md)
+- [Release Notes](docs/RELEASE-NOTES.md)
 
-## Security model
-
-This project is **not end-to-end encrypted**.
-
-The security boundary is:
-
-- browser receives only the Supabase publishable key
-- database access is protected by RLS
-- authenticated workspace membership is required
-- sensitive server operations run through Edge Functions
-- restoration files can be encrypted locally with AES-GCM
-- production security headers are configured at Vercel
-
-Do not describe the hosted application as zero-knowledge or E2EE.
-
-## Quality checks
-
-Run before shipping:
+## 🧪 Quality
 
 ```bash
 pnpm check
 pnpm build
 ```
 
-The repository also includes GitHub Actions for repeatable type-check and build validation.
+GitHub Actions also runs automated validation and Android APK builds.
 
-## Documentation
+## 📦 Build page
 
-- [Code Documentation — Arabic + English](docs/CODE-DOCUMENTATION.md)
+**All Android builds:**  
+https://github.com/mhamedshasho/aleppo-center-cash/actions/workflows/android-apk.yml
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Setup](docs/SETUP.md)
-- [Deployment](docs/DEPLOY.md)
-- [Multi-user architecture](docs/multi-user-simplified-architecture.md)
+**All GitHub Actions:**  
+https://github.com/mhamedshasho/aleppo-center-cash/actions
 
-## Project status
+---
 
-This is an actively developed production application. The repository is the source for the deployed application; production accounting data is stored outside GitHub.
-
-## License
-
-MIT
+<p align="center">
+  <strong>Aleppo Center Cash</strong><br>
+  Built for practical cloud accounting.
+</p>
