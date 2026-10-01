@@ -2,15 +2,20 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(<App />);
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    void navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => void registration.unregister());
-    });
+async function clearLegacyServiceWorkers() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
     if ("caches" in window) {
-      void caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
     }
-  });
+  } catch {
+    // Cleanup is best-effort and must never block the app.
+  }
 }
+
+void clearLegacyServiceWorkers().finally(() => {
+  createRoot(document.getElementById("root")!).render(<App />);
+});
