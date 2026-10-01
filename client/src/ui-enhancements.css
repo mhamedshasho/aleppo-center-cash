@@ -689,7 +689,13 @@ html.dark .manual-help{background:linear-gradient(135deg,rgba(75,131,196,.11),rg
     z-index: 2147483646 !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     visibility: visible !important;
+  }
+
+  html body .mobile-sidebar.sidebar::-webkit-scrollbar {
+    display: none;
   }
 
   html body .mobile-sidebar.sidebar.open {
