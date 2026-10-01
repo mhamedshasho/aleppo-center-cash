@@ -91,7 +91,7 @@ jobs:
           set -e
           sudo apt-get update
           sudo apt-get install -y imagemagick
-          logo="../client/public/logo.jpg"
+          logo="../client/public/logo-exact.svg"
           test -f "$logo"
           for item in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
             density="${item%%:*}"
