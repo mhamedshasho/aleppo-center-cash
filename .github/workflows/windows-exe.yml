@@ -1,4 +1,4 @@
-name: Windows Portable EXE
+name: Windows Desktop Releases
 
 on:
   push:
@@ -21,17 +21,17 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
       - name: Build EXE
-        run: npm run desktop:portable
+        run: npm run desktop:build
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aleppo-center-cash-portable-${{ github.run_number }}
+          name: aleppo-center-cash-desktop-${{ github.run_number }}
           path: release/*.exe
           if-no-files-found: error
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: portable-v${{ github.run_number }}
-          name: Aleppo Center Cash Portable v${{ github.run_number }}
+          tag_name: desktop-v${{ github.run_number }}
+          name: Aleppo Center Cash Desktop v${{ github.run_number }}
           generate_release_notes: true
           files: release/*.exe
