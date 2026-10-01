@@ -77,8 +77,8 @@ jobs:
               pos = app_text.find("dependencies {") + len("dependencies {")
               app_text = app_text[:pos] + "\n    implementation 'com.google.firebase:firebase-messaging:24.0.1'" + app_text[pos:]
 
-          app_text = re.sub(r'versionCode\s+\d+', 'versionCode 3', app_text, count=1)
-          app_text = re.sub(r'versionName\s+"[^"]+"', 'versionName "1.0.3"', app_text, count=1)
+          app_text = re.sub(r'versionCode\s+\d+', 'versionCode 4', app_text, count=1)
+          app_text = re.sub(r'versionName\s+"[^"]+"', 'versionName "1.0.4"', app_text, count=1)
           app.write_text(app_text)
           PY
 
@@ -87,12 +87,12 @@ jobs:
         run: |
           set -e
           sudo apt-get update
-          sudo apt-get install -y librsvg2-bin
+          sudo apt-get install -y imagemagick
           for item in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
             density="${item%%:*}"
             size="${item##*:}"
             mkdir -p "app/src/main/res/mipmap-${density}"
-            rsvg-convert -w "${size}" -h "${size}" ../client/public/logo.svg > "app/src/main/res/mipmap-${density}/ic_launcher.png"
+            convert ../client/public/logo.jpg -resize "${size}x${size}" -background white -gravity center -extent "${size}x${size}" "app/src/main/res/mipmap-${density}/ic_launcher.png"
             cp "app/src/main/res/mipmap-${density}/ic_launcher.png" "app/src/main/res/mipmap-${density}/ic_launcher_round.png"
           done
 
@@ -111,6 +111,46 @@ jobs:
           accept-android-sdk-licenses: true
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
+      - name: Create release signing key
+        working-directory: android
+        run: |
+          keytool -genkeypair -v \
+            -keystore ci-release.keystore \
+            -alias aleppo-release \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=Aleppo Center Cash, OU=Mobile, O=Aleppo Center Cash, C=SY"
+
+      - name: Configure release signing
+        working-directory: android
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle")
+          s = p.read_text()
+          if "signingConfigs {" not in s:
+              s = s.replace(
+                  "android {",
+                  """android {
+    signingConfigs {
+        release {
+            storeFile file("../ci-release.keystore")
+            storePassword "android"
+            keyAlias "aleppo-release"
+            keyPassword "android"
+        }
+    }""",
+                  1,
+              )
+          if "signingConfig signingConfigs.release" not in s:
+              s = s.replace(
+                  "release {",
+                  "release {\n            signingConfig signingConfigs.release",
+                  1,
+              )
+          p.write_text(s)
+          PY
+
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
@@ -119,6 +159,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aleppo-center-cash-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
