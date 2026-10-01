@@ -1,4 +1,5 @@
 name: Windows Portable Lite
+# Portable build: Tauri + WebView2, no Electron runtime
 
 on:
   push:
