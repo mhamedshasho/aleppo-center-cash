@@ -62,7 +62,14 @@ jobs:
               root.write_text(root_text)
 
           if "com.google.gms.google-services" not in app_text:
-              app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
+              if "plugins {" in app_text:
+                  app_text = app_text.replace(
+                      "plugins {",
+                      "plugins {\n    id 'com.google.gms.google-services'",
+                      1,
+                  )
+              else:
+                  app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
 
           if "firebase-messaging" not in app_text:
               if "dependencies {" not in app_text:
