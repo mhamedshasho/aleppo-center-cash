@@ -11,8 +11,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "desktop:build": "vite build --base=./ && electron-builder --win --publish never",
-    "desktop:portable": "vite build --base=./ && electron-builder --win portable --publish never",
-    "desktop:portable:lite": "vite build --base=./ && npx @tauri-apps/cli@2.8.5 build --no-bundle"
+    "desktop:portable": "vite build --base=./ && electron-builder --win portable --publish never"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -135,7 +134,8 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
