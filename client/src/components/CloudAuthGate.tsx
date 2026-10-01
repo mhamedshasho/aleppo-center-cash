@@ -139,8 +139,7 @@ export default function CloudAuthGate() {
           .select("workspace_id, role, joined_at, workspaces(name, slug)")
           .eq("user_id", session.user.id)
           .eq("active", true)
-          .order("joined_at", { ascending: true })
-          .limit(2);
+          .order("joined_at", { ascending: true });
 
         if (!active) return;
 
@@ -173,8 +172,10 @@ export default function CloudAuthGate() {
           const selected = options.find((item) => item.slug.toUpperCase() === routeSlug);
           if (!selected) {
             setWorkspace(null);
+            setPendingWorkspace(null);
             setWorkspaceLoading(false);
-            toast.error("مساحة العمل غير موجودة أو لا تملك صلاحية الدخول إليها.");
+            toast.error("رابط مساحة العمل قديم أو لا تملك صلاحية الدخول إليها. سنعيدك لمساحتك المتاحة.");
+            setLocation("/");
             return;
           }
 
