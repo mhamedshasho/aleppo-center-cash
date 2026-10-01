@@ -85,17 +85,19 @@ jobs:
           app.write_text(app_text)
           PY
 
-      - name: Install exact app logo as Android launcher icon
+      - name: Install Aleppo Center Cash logo as Android launcher icon
         working-directory: android
         run: |
           set -e
           sudo apt-get update
           sudo apt-get install -y imagemagick
+          logo="../client/public/logo.jpg"
+          test -f "$logo"
           for item in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
             density="${item%%:*}"
             size="${item##*:}"
             mkdir -p "app/src/main/res/mipmap-${density}"
-            convert ../client/public/icon.jpg -resize "${size}x${size}" -background white -gravity center -extent "${size}x${size}" "app/src/main/res/mipmap-${density}/ic_launcher.png"
+            convert "$logo" -auto-orient -strip -resize "${size}x${size}" -background white -gravity center -extent "${size}x${size}" "app/src/main/res/mipmap-${density}/ic_launcher.png"
             cp "app/src/main/res/mipmap-${density}/ic_launcher.png" "app/src/main/res/mipmap-${density}/ic_launcher_round.png"
           done
 
@@ -154,4 +156,3 @@ jobs:
           generate_release_notes: false
           make_latest: true
           files: android/app-release.apk
-
