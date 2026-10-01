@@ -486,7 +486,7 @@ export default function CloudAuthGate() {
     <main className="login-shell" dir="rtl">
       <div className="login-ambient ambient-one" /><div className="login-ambient ambient-two" />
       <section className="login-card">
-        <div className="login-brand-logo"><img src="/logo.jpg" alt="Aleppo Center Cash" /></div>
+        <div className="login-brand-logo"><img src="/logo.svg" alt="Aleppo Center Cash" /></div>
         <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> SHARED SPACE</div>
         <h1>حساباتكم،<br /><em>بنفس الصفحة.</em></h1>
         <p className="login-copy">دخول آمن لصاحب المحل وشريكه، مع نفس الحسابات وتحديثات مباشرة.</p>
