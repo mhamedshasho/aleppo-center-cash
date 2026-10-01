@@ -86,12 +86,13 @@ jobs:
         working-directory: android
         run: |
           set -e
-          command -v magick || (sudo apt-get update && sudo apt-get install -y imagemagick)
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
           for item in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
             density="${item%%:*}"
             size="${item##*:}"
             mkdir -p "app/src/main/res/mipmap-${density}"
-            magick ../client/public/logo.svg -resize "${size}x${size}" -background white -gravity center -extent "${size}x${size}" "app/src/main/res/mipmap-${density}/ic_launcher.png"
+            rsvg-convert -w "${size}" -h "${size}" ../client/public/logo.svg > "app/src/main/res/mipmap-${density}/ic_launcher.png"
             cp "app/src/main/res/mipmap-${density}/ic_launcher.png" "app/src/main/res/mipmap-${density}/ic_launcher_round.png"
           done
 
