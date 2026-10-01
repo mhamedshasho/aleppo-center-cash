@@ -144,8 +144,8 @@ jobs:
               )
           if "signingConfig signingConfigs.release" not in s:
               s = s.replace(
-                  "buildTypes {",
-                  "buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }",
+                  "buildTypes {\n        release {",
+                  "buildTypes {\n        release {\n            signingConfig signingConfigs.release",
                   1,
               )
           p.write_text(s)
