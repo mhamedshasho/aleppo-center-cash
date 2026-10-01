@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
       - name: Build lightweight portable EXE
-        run: npx @tauri-apps/cli@2.8.5 build --no-bundle
+        run: npx @tauri-apps/cli@latest build --no-bundle
       - name: Prepare release file
         shell: pwsh
         run: |
