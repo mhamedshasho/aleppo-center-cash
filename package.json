@@ -1,6 +1,6 @@
 {
   "name": "aleppo-center-cash",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -9,7 +9,8 @@
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "desktop:build": "vite build && electron-builder --win nsis"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -94,7 +95,9 @@
     "vite": "^7.1.7",
     "vite-plugin-manus-runtime": "^0.0.58",
     "vitest": "^2.1.4",
-    "@capacitor/cli": "^7.4.4"
+    "@capacitor/cli": "^7.4.4",
+    "electron": "^38.3.0",
+    "electron-builder": "^26.0.12"
   },
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
   "pnpm": {
@@ -103,6 +106,33 @@
     },
     "overrides": {
       "tailwindcss>nanoid": "3.3.7"
+    }
+  },
+  "build": {
+    "appId": "com.mhamedshasho.aleppocentercash",
+    "productName": "Aleppo Center Cash",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/public/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
     }
   }
 }
