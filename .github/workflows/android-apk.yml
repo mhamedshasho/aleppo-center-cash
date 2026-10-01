@@ -79,7 +79,7 @@ jobs:
               pos += len("dependencies {")
               app_text = app_text[:pos] + "\n    implementation 'com.google.firebase:firebase-messaging:24.0.1'" + app_text[pos:]
 
-          app_text = run_number = __import__("os").environ.get("GITHUB_RUN_NUMBER", "5")
+          run_number = __import__("os").environ.get("GITHUB_RUN_NUMBER", "5")
           app_text = re.sub(r'versionCode\s+\d+', f'versionCode {run_number}', app_text, count=1)
           app_text = re.sub(r'versionName\s+"[^"]+"', f'versionName "1.0.{run_number}"', app_text, count=1)
           app.write_text(app_text)
