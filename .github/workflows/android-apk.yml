@@ -101,6 +101,14 @@ jobs:
             cp "app/src/main/res/mipmap-${density}/ic_launcher.png" "app/src/main/res/mipmap-${density}/ic_launcher_round.png"
           done
 
+          # Capacitor creates adaptive-icon XML resources that can override the
+          # density-specific PNGs above on Android 8+. Remove those overrides so
+          # the launcher uses the exact repository JPG converted above.
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_foreground.xml
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_background.xml
+
       - name: Verify Capacitor Android project
         run: test -f android/gradlew && test -d android/app
 
