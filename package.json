@@ -1,6 +1,6 @@
 {
   "name": "aleppo-center-cash",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -11,7 +11,8 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "desktop:build": "vite build --base=./ && electron-builder --win --publish never",
-    "desktop:portable": "vite build --base=./ && electron-builder --win portable --publish never"
+    "desktop:portable": "vite build --base=./ && electron-builder --win portable --publish never",
+    "desktop:portable:lite": "vite build --base=./ && npx @tauri-apps/cli@2.8.5 build --no-bundle"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

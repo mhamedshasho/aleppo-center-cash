@@ -1,0 +1,19 @@
+[package]
+name = "aleppo-center-cash"
+version = "1.0.3"
+description = "Aleppo Center Cash"
+authors = ["Muhammad Shasho"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "abort"
+strip = true
+opt-level = "s"
