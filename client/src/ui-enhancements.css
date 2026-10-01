@@ -3269,3 +3269,21 @@ html.red .preview-debit {
   max-height: 245px;
   object-fit: contain;
 }
+
+/* Exact project logo */
+.brand-logo-inline {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+.brand-logo-inline img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
