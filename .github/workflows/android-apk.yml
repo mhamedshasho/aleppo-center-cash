@@ -36,7 +36,7 @@ jobs:
       - name: Sync Android project
         run: pnpm exec cap sync android
 
-      - name: Configure Firebase FCM and Android push
+      - name: Configure Firebase FCM
         working-directory: android
         run: |
           cp ../google-services.json app/google-services.json
@@ -49,8 +49,6 @@ jobs:
           root_text = root.read_text()
           app_text = app.read_text()
 
-          # Capacitor templates differ across versions. Use the classic Gradle
-          # buildscript classpath so the Google Services plugin works reliably.
           if "com.google.gms:google-services" not in root_text:
               root_text = (
                   "buildscript {\n"
@@ -72,9 +70,10 @@ jobs:
                   app_text = "apply plugin: 'com.google.gms.google-services'\n" + app_text
 
           if "firebase-messaging" not in app_text:
-              if "dependencies {" not in app_text:
+              pos = app_text.find("dependencies {")
+              if pos < 0:
                   raise SystemExit("App Gradle dependencies block not found")
-              pos = app_text.find("dependencies {") + len("dependencies {")
+              pos += len("dependencies {")
               app_text = app_text[:pos] + "\n    implementation 'com.google.firebase:firebase-messaging:24.0.1'" + app_text[pos:]
 
           app_text = re.sub(r'versionCode\s+\d+', 'versionCode 4', app_text, count=1)
@@ -82,7 +81,7 @@ jobs:
           app.write_text(app_text)
           PY
 
-      - name: Install official app logo as Android launcher icon
+      - name: Install exact app logo as Android launcher icon
         working-directory: android
         run: |
           set -e
@@ -111,7 +110,7 @@ jobs:
           accept-android-sdk-licenses: true
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
-      - name: Create release signing key
+      - name: Create CI signing key
         working-directory: android
         run: |
           keytool -genkeypair -v \
@@ -121,44 +120,24 @@ jobs:
             -storepass android -keypass android \
             -dname "CN=Aleppo Center Cash, OU=Mobile, O=Aleppo Center Cash, C=SY"
 
-      - name: Configure release signing
-        working-directory: android
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("app/build.gradle")
-          s = p.read_text()
-          if "signingConfigs {" not in s:
-              s = s.replace(
-                  "android {",
-                  """android {
-    signingConfigs {
-        release {
-            storeFile file("../ci-release.keystore")
-            storePassword "android"
-            keyAlias "aleppo-release"
-            keyPassword "android"
-        }
-    }""",
-                  1,
-              )
-          if "signingConfig signingConfigs.release" not in s:
-              s = s.replace(
-                  "buildTypes {\n        release {",
-                  "buildTypes {\n        release {\n            signingConfig signingConfigs.release",
-                  1,
-              )
-          p.write_text(s)
-          PY
-
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK
+      - name: Zipalign and sign release APK
+        working-directory: android
+        run: |
+          set -e
+          ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk app-release-aligned.apk
+          "$APKSIGNER" sign --ks ci-release.keystore --ks-pass pass:android --key-pass pass:android --ks-key-alias aleppo-release --out app-release.apk app-release-aligned.apk
+          "$APKSIGNER" verify --verbose app-release.apk
+
+      - name: Upload installable release APK
         uses: actions/upload-artifact@v4
         with:
           name: aleppo-center-cash-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app-release.apk
           if-no-files-found: error
           retention-days: 14
