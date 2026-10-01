@@ -24,8 +24,8 @@ Use the **Releases** page for the packaged versions:
 ### Direct current builds
 
 - **Android APK:** [v1.0.106 — app-release.apk](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.106/app-release.apk)
-- **Windows Installer:** [desktop-v11 — Aleppo Center Cash Setup 1.0.2.exe](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v11/Aleppo.Center.Cash.Setup.1.0.2.exe)
-- **Windows Portable:** [desktop-v11 — Aleppo Center Cash 1.0.2.exe (Portable)](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v11/Aleppo.Center.Cash.1.0.2.exe)
+- **Windows Installer:** [desktop-v12 — Aleppo Center Cash Setup 1.0.2.exe](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v12/Aleppo.Center.Cash.Setup.1.0.2.exe)
+- **Windows Portable:** [desktop-v12 — Aleppo Center Cash 1.0.2.exe (Portable)](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v12/Aleppo.Center.Cash.1.0.2.exe)
 
 > The Windows builds are x64. The Portable version does not require installation.
 
