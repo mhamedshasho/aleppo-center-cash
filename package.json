@@ -10,7 +10,8 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
-    "desktop:build": "vite build && electron-builder --win nsis --publish never"
+    "desktop:build": "vite build && electron-builder --win nsis --publish never",
+    "desktop:portable": "vite build && electron-builder --win portable --publish never"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -122,7 +123,7 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "portable",
           "arch": [
             "x64"
           ]
