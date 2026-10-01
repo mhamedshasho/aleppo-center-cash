@@ -15,19 +15,14 @@
 
 ## 📥 Downloads
 
-Use the **Releases** page for the packaged versions:
+### Current releases
 
-- **Android APK:** [Download / view APK releases](https://github.com/mhamedshasho/aleppo-center-cash/releases)
-- **Windows Installer (EXE):** [Download Windows installer](https://github.com/mhamedshasho/aleppo-center-cash/releases)
-- **Windows Portable EXE:** [Download Portable EXE](https://github.com/mhamedshasho/aleppo-center-cash/releases)
+- **Android APK:** [Download APK](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.106/app-release.apk)
+- **Windows Installer:** [Download Installer](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v21/Aleppo.Center.Cash.Setup.1.0.3.exe)
+- **Windows Portable:** [Download Portable EXE](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/portable-v7/Aleppo.Center.Cash.Portable.1.0.3.exe)
+- **All releases:** [Open GitHub Releases](https://github.com/mhamedshasho/aleppo-center-cash/releases)
 
-### Direct current builds
-
-- **Android APK:** [v1.0.106 — app-release.apk](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.106/app-release.apk)
-- **Windows Installer:** [desktop-v12 — Aleppo Center Cash Setup 1.0.2.exe](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v12/Aleppo.Center.Cash.Setup.1.0.2.exe)
-- **Windows Portable:** [desktop-v12 — Aleppo Center Cash 1.0.2.exe (Portable)](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v12/Aleppo.Center.Cash.1.0.2.exe)
-
-> The Windows builds are x64. The Portable version does not require installation.
+> Windows builds are x64. The Installer installs the full Electron desktop application. The Portable build is intended to run without installation.
 
 ## 🚀 Use the web app
 
