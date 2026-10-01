@@ -10,7 +10,7 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
-    "desktop:build": "vite build && electron-builder --win nsis"
+    "desktop:build": "vite build && electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
