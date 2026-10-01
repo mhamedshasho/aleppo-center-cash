@@ -109,6 +109,24 @@ jobs:
           rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_foreground.xml
           rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_background.xml
 
+      - name: Verify exact logo source and launcher icons
+        working-directory: android
+        run: |
+          set -e
+          test -f ../grok_1790774221995.jpg
+          identify ../grok_1790774221995.jpg
+          for item in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            density="${item%%:*}"
+            size="${item##*:}"
+            icon="app/src/main/res/mipmap-${density}/ic_launcher.png"
+            test -f "$icon"
+            identify "$icon"
+            actual="$(identify -format '%wx%h' "$icon")"
+            test "$actual" = "${size}x${size}"
+          done
+          test ! -e app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          test ! -e app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+
       - name: Verify Capacitor Android project
         run: test -f android/gradlew && test -d android/app
 
