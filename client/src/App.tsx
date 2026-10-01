@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Router as WouterRouter, Switch, useHashLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import CloudAuthGate from "./components/CloudAuthGate";
@@ -16,14 +16,20 @@ import { checkForAppUpdateNotification, initializeNativeNotifications, scheduleU
 import { initializeOneSignal } from "./lib/oneSignal";
 
 function Router() {
+  const useDesktopHashRouting = () => {
+    return window.location.protocol === "file:" ? useHashLocation() : undefined;
+  };
+
   return (
-    <Switch>
+    <WouterRouter hook={useDesktopHashRouting}>
+      <Switch>
       <Route path={"/"} component={CloudAuthGate} />
       <Route path={"/credits"} component={Credits} />
       <Route path={"/:workspaceSlug"} component={CloudAuthGate} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
-    </Switch>
+      </Switch>
+    </WouterRouter>
   );
 }
 
