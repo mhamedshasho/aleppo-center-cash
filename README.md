@@ -6,44 +6,32 @@
 </p>
 
 <p align="center">
-  <a href="https://aleppo-center-cash.vercel.app/">Open Web App</a> •
-  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions/workflows/android-apk.yml">Android Builds</a> •
-  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions">All Actions</a>
+  <a href="https://aleppo-center-cash.vercel.app/">Web App</a> •
+  <a href="https://github.com/mhamedshasho/aleppo-center-cash/releases">Releases</a> •
+  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions">GitHub Actions</a>
 </p>
 
 ---
 
-## 🚀 Use the app
+## 📥 Downloads
+
+Use the **Releases** page for the packaged versions:
+
+- **Android APK:** [Download / view APK releases](https://github.com/mhamedshasho/aleppo-center-cash/releases)
+- **Windows Installer (EXE):** [Download Windows installer](https://github.com/mhamedshasho/aleppo-center-cash/releases)
+- **Windows Portable EXE:** [Download Portable EXE](https://github.com/mhamedshasho/aleppo-center-cash/releases)
+
+### Direct current builds
+
+- **Android APK:** [v1.0.104 — app-release.apk](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.104/app-release.apk)
+- **Windows Installer:** [v5 — Aleppo Center Cash Setup 1.0.1.exe](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v5/Aleppo.Center.Cash.Setup.1.0.1.exe)
+- **Windows Portable:** [portable-v6 — Aleppo Center Cash 1.0.1.exe](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/portable-v6/Aleppo.Center.Cash.1.0.1.exe)
+
+> The Windows builds are x64. The Portable version does not require installation.
+
+## 🚀 Use the web app
 
 **Web:** https://aleppo-center-cash.vercel.app/
-
-**Android APK builds:**  
-https://github.com/mhamedshasho/aleppo-center-cash/actions/workflows/android-apk.yml
-
-Android builds are generated automatically with GitHub Actions.
-
-### 📥 Download the APK
-
-1. Open **Android Builds** above.
-2. Choose the latest run with a green **Success** mark.
-3. Scroll to **Artifacts**.
-4. Download **aleppo-center-cash-debug-apk**.
-5. Extract the downloaded ZIP.
-6. The APK will be inside the extracted folder.
-
-> The GitHub Actions artifact is a ZIP containing the APK. Extract it before installing.
-
-### 📱 Install on Android
-
-1. Download and extract the latest successful build.
-2. Open **app-debug.apk**.
-3. If Android asks for permission to install apps from this source, allow it for the browser or file manager you used.
-4. Install the app.
-5. Open Aleppo Center Cash and sign in.
-
-> These builds are debug APKs intended for testing and deployment validation. Android may display a warning because the APK is not a Play Store release.
-
----
 
 ## ✨ Features
 
@@ -63,7 +51,7 @@ Android builds are generated automatically with GitHub Actions.
 - PDF / PNG reports
 - Responsive desktop and mobile UI
 - Light, Dark, Gold and Red Nostalgia themes
-- Android APK build pipeline
+- Android APK and Windows desktop builds
 
 ## 💰 Accounting model
 
@@ -127,6 +115,15 @@ pnpm build
 pnpm dev
 ```
 
+### Windows desktop builds
+
+```bash
+pnpm desktop:build
+pnpm desktop:portable
+```
+
+The desktop build uses a relative asset base so the Electron app can load its Vite assets correctly from the local `file://` page.
+
 ## 📚 Documentation
 
 - [Code Documentation — Arabic + English](docs/CODE-DOCUMENTATION.md)
@@ -143,15 +140,7 @@ pnpm check
 pnpm build
 ```
 
-GitHub Actions also runs automated validation and Android APK builds.
-
-## 📦 Build page
-
-**All Android builds:**  
-https://github.com/mhamedshasho/aleppo-center-cash/actions/workflows/android-apk.yml
-
-**All GitHub Actions:**  
-https://github.com/mhamedshasho/aleppo-center-cash/actions
+GitHub Actions validates the repository and builds Android/Windows releases.
 
 ---
 
