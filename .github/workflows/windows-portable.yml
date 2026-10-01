@@ -20,19 +20,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           targets: x86_64-pc-windows-msvc
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Generate Tauri icon from project logo
+        shell: pwsh
+        run: |
+          if (!(Test-Path "grok_1790774221995.jpg")) { throw "Project logo not found: grok_1790774221995.jpg" }
+          New-Item -ItemType Directory -Force -Path "src-tauri/icons" | Out-Null
+          magick "grok_1790774221995.jpg" -resize 256x256^ -gravity center -extent 256x256 "src-tauri/icons/icon.ico"
+          if (!(Test-Path "src-tauri/icons/icon.ico")) { throw "Failed to generate Tauri icon" }
+
       - name: Build lightweight portable EXE
         run: npx @tauri-apps/cli@latest build --no-bundle
+
       - name: Prepare release file
         shell: pwsh
         run: |
@@ -40,18 +53,21 @@ jobs:
           if (!(Test-Path $source)) { throw "Portable EXE was not produced: $source" }
           New-Item -ItemType Directory -Force -Path release | Out-Null
           Copy-Item $source "release/Aleppo.Center.Cash.Portable.1.0.3.exe"
+
       - name: Verify portable size
         shell: pwsh
         run: |
           $file = Get-Item "release/Aleppo.Center.Cash.Portable.1.0.3.exe"
           Write-Host "Portable EXE size: $($file.Length) bytes"
           if ($file.Length -ge 100000000) { throw "Portable EXE exceeds 100 MB: $($file.Length) bytes" }
+
       - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
           name: aleppo-center-cash-portable-lite-${{ github.run_number }}
           path: release/Aleppo.Center.Cash.Portable.1.0.3.exe
           if-no-files-found: error
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
