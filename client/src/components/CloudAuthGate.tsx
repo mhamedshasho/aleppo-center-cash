@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Building2, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
+import { ArrowLeft, Building2, Eye, EyeOff, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
 import type { WorkspaceOption } from "@/components/WorkspaceManager";
 import { toast } from "sonner";
 import Home from "@/pages/Home";
@@ -57,12 +57,14 @@ export default function CloudAuthGate() {
   const [availableWorkspaces, setAvailableWorkspaces] = useState<WorkspaceOption[]>([]);
   const [pendingWorkspace, setPendingWorkspace] = useState<WorkspaceState>(null);
   const [workspacePassword, setWorkspacePassword] = useState("");
+  const [showWorkspacePassword, setShowWorkspacePassword] = useState(false);
   const workspaceUnlockInProgressRef = useRef(false);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [workspaceName, setWorkspaceName] = useState("Aleppo Center Cash");
   const [workspaceId, setWorkspaceId] = useState("");
@@ -126,6 +128,7 @@ export default function CloudAuthGate() {
     setWorkspace(null);
     setPendingWorkspace(null);
     setWorkspacePassword("");
+    setShowWorkspacePassword(false);
     setAvailableWorkspaces([]);
     setWorkspaceLoading(true);
 
@@ -307,6 +310,7 @@ export default function CloudAuthGate() {
       });
       if (error) throw error;
       setWorkspacePassword("");
+      setShowWorkspacePassword(false);
       setWorkspace(targetWorkspace);
       setPendingWorkspace(null);
       toast.success("تم فتح مساحة العمل");
@@ -367,6 +371,7 @@ export default function CloudAuthGate() {
       availableWorkspaces={availableWorkspaces}
       onSwitchWorkspace={async (target) => {
         setWorkspacePassword("");
+        setShowWorkspacePassword(false);
         setPendingWorkspace(target);
         setWorkspace(null);
         setLocation("/" + encodeURIComponent(target.slug));
@@ -446,7 +451,7 @@ export default function CloudAuthGate() {
           <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> WORKSPACE</div>
           <h1>مساحة<br /><em>{pendingWorkspace.name}</em></h1>
           <p className="login-copy">هذا رابط مساحة عمل مستقلة. لفتحها، اكتب كلمة مرور حسابك.</p>
-          <div className="key-input-wrap"><input id="workspace-password" type="password" value={workspacePassword} onChange={(event) => setWorkspacePassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }} placeholder="كلمة مرور حسابك" dir="ltr" autoComplete="current-password" autoFocus /></div>
+          <div className="key-input-wrap password-input-wrap"><input id="workspace-password" type={showWorkspacePassword ? "text" : "password"} value={workspacePassword} onChange={(event) => setWorkspacePassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }} placeholder="كلمة مرور حسابك" dir="ltr" autoComplete="current-password" autoFocus /><button type="button" className="password-toggle" aria-label={showWorkspacePassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} aria-pressed={showWorkspacePassword} onClick={() => setShowWorkspacePassword((visible) => !visible)}>{showWorkspacePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
           <button className="primary-btn full" disabled={busy || !workspacePassword} onClick={() => void enterWorkspace()}>
             {busy ? <Loader2 className="spin" size={17} /> : <KeyRound size={17} />}
             دخول إلى مساحة العمل
@@ -494,7 +499,7 @@ export default function CloudAuthGate() {
         <label className="field-label" htmlFor="auth-email">البريد الإلكتروني</label>
         <div className="key-input-wrap"><input id="auth-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" dir="ltr" autoComplete="email" /></div>
         <label className="field-label" htmlFor="auth-password">كلمة المرور</label>
-        <div className="key-input-wrap"><input id="auth-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submitAuth(); }} placeholder="٨ محارف أو أكتر" dir="ltr" autoComplete={mode === "login" ? "current-password" : "new-password"} /></div>
+        <div className="key-input-wrap password-input-wrap"><input id="auth-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submitAuth(); }} placeholder="٨ محارف أو أكتر" dir="ltr" autoComplete={mode === "login" ? "current-password" : "new-password"} /><button type="button" className="password-toggle" aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
         <button className="primary-btn full" disabled={busy || (mode === "signup" && signupCooldownUntil > Date.now())} onClick={() => void submitAuth()}>{busy ? <Loader2 className="spin" size={17} /> : mode === "login" ? <LogIn size={17} /> : <UserPlus size={17} />}{mode === "login" ? "فوت على الحساب" : signupCooldownUntil > Date.now() ? `انتظر ${Math.ceil((signupCooldownUntil - Date.now()) / 1000)}ث` : "إنشاء حساب"}<ArrowLeft size={17} /></button>
         <div className="privacy-note"><KeyRound size={16} /> TLS وحماية صلاحيات — مو E2EE</div>
       </section>

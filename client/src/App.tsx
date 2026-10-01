@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Credits from "./pages/Credits";
 import "./ui-enhancements.css";
 import "./manual-upgrade.css";
+import "./password-toggle.css";
 import { checkForAppUpdateNotification, initializeNativeNotifications, scheduleUsageReminders } from "./lib/nativeNotifications";
 import { initializeOneSignal } from "./lib/oneSignal";
 
