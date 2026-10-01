@@ -9,6 +9,7 @@ import CloudAuthGate from "./components/CloudAuthGate";
 import Home from "./pages/Home";
 import Credits from "./pages/Credits";
 import "./ui-enhancements.css";
+import "./web-redesign.css";
 import "./manual-upgrade.css";
 import "./password-toggle.css";
 import { checkForAppUpdateNotification, initializeNativeNotifications, scheduleUsageReminders } from "./lib/nativeNotifications";
