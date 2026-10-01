@@ -3,9 +3,17 @@ name: Windows Desktop Releases
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - README.md
-      - docs/**
+    paths:
+      - package.json
+      - electron/**
+      - client/**
+      - shared/**
+      - server/**
+      - vite.config.*
+      - tsconfig.json
+      - patches/**
+      - grok_1790774221995.jpg
+      - .github/workflows/windows-exe.yml
   workflow_dispatch:
 
 permissions:
@@ -17,20 +25,46 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Generate Windows icon from project logo
+        shell: pwsh
+        run: |
+          if (-not (Get-Command magick -ErrorAction SilentlyContinue)) {
+            choco install imagemagick.app -y --no-progress
+          }
+          New-Item -ItemType Directory -Force build | Out-Null
+          magick grok_1790774221995.jpg -background none -alpha on -define icon:auto-resize=256,128,64,48,32,16 build/icon.ico
+          if (-not (Test-Path build/icon.ico)) {
+            throw "Failed to generate build/icon.ico"
+          }
+
       - name: Build EXE
         run: npm run desktop:build
+
+      - name: Verify EXE outputs
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem release -Filter *.exe
+          if ($files.Count -lt 2) {
+            throw "Expected both Installer and Portable EXE outputs."
+          }
+          $files | Select-Object Name, Length
+
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
           name: aleppo-center-cash-desktop-${{ github.run_number }}
           path: release/*.exe
           if-no-files-found: error
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
