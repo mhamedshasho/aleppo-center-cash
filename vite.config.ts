@@ -150,6 +150,20 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
+function vitePluginLogoAsset(): Plugin {
+  return {
+    name: "aleppo-center-logo-asset",
+    buildStart() {
+      const source = path.resolve(import.meta.dirname, "grok_1790774221995.jpg");
+      const target = path.resolve(import.meta.dirname, "client", "public", "grok_1790774221995.jpg");
+      if (!fs.existsSync(source)) {
+        throw new Error(`Aleppo Center Cash logo not found: ${source}`);
+      }
+      fs.copyFileSync(source, target);
+    },
+  };
+}
+
 function vitePluginStorageProxy(): Plugin {
   return {
     name: "manus-storage-proxy",
@@ -203,7 +217,7 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy(), vitePluginLogoAsset()];
 
 export default defineConfig({
   plugins,
