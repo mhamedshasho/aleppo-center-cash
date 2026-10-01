@@ -91,7 +91,7 @@ jobs:
             density="${item%%:*}"
             size="${item##*:}"
             mkdir -p "app/src/main/res/mipmap-${density}"
-            magick ../client/public/logo.jpg -resize "${size}x${size}" -background white -gravity center -extent "${size}x${size}" "app/src/main/res/mipmap-${density}/ic_launcher.png"
+            magick ../client/public/logo.svg -resize "${size}x${size}" -background white -gravity center -extent "${size}x${size}" "app/src/main/res/mipmap-${density}/ic_launcher.png"
             cp "app/src/main/res/mipmap-${density}/ic_launcher.png" "app/src/main/res/mipmap-${density}/ic_launcher_round.png"
           done
 
