@@ -74,7 +74,7 @@ export default function DesktopSidebar({
   return (
     <aside className="desktop-sidebar" dir="rtl">
       <div className="desktop-brand">
-        <div className="desktop-brand-logo"><img src="/logo.svg" alt="Aleppo Center Cash" /></div>
+        <div className="desktop-brand-logo"><img src="/logo.jpg" alt="Aleppo Center Cash" /></div>
         <div><strong>Aleppo Center</strong><span>CASH BOOK</span></div>
       </div>
 
