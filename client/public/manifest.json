@@ -11,10 +11,10 @@
   "theme_color": "#173f47",
   "icons": [
     {
-      "src": "/logo-exact.svg",
+      "src": "/grok_1790774221995.jpg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ]
 }
