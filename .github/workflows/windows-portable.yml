@@ -1,4 +1,4 @@
-name: Windows Portable Lite
+# Windows Portable Lite — hard limit: 100 MB\nname: Windows Portable Lite
 # Portable build: Tauri + WebView2, no Electron runtime
 
 on:
