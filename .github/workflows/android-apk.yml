@@ -36,6 +36,23 @@ jobs:
       - name: Add Android platform
         run: pnpm exec cap add android
 
+      - name: Configure Android to load the live web app
+        shell: bash
+        run: |
+          cat > capacitor.config.ts <<'EOF'
+          import type { CapacitorConfig } from "@capacitor/cli";
+          const config: CapacitorConfig = {
+            appId: "com.shashocompany.aleppocentercash",
+            appName: "Aleppo Center Cash",
+            webDir: "dist/public",
+            server: {
+              url: "https://aleppo-center-cash.vercel.app/",
+              cleartext: false
+            }
+          };
+          export default config;
+          EOF
+
       - name: Sync Android project
         run: pnpm exec cap sync android
 
