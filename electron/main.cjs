@@ -12,7 +12,7 @@ function showLoadFailure(error) {
     "&": "&amp;",
   })[char]);
 
-  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+  const html = `
     <!doctype html>
     <html>
       <head><meta charset="utf-8"><title>Aleppo Center Cash</title></head>
@@ -23,7 +23,9 @@ function showLoadFailure(error) {
         <pre style="white-space:pre-wrap;background:#15221f;padding:16px;border-radius:10px">${safeError}</pre>
       </body>
     </html>
-  `)`);
+  `;
+
+  mainWindow.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
 }
 
 async function createWindow() {
