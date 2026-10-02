@@ -100,7 +100,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const accountRows = useMemo(() => accountFilter ? rows.filter((r) => String(r.accountId) === accountFilter) : [], [rows, accountFilter]);
   const filtered = useMemo(() => accountRows.filter((r) => (r.name + " " + r.accountName).toLowerCase().includes(query.toLowerCase())), [accountRows, query]);
   const chosen = rows.filter((r) => selected.includes(r.id));
-  const totals = chosen.reduce((a, r) => ({ ...a, [r.currency]: (a[r.currency] || 0) + r.amount }), {} as Record<Currency, number>);
+  const totals = chosen.reduce((a, r) => ({ ...a, [r.currency]: (a[r.currency] || 0) + (r.type === "debit" ? r.amount : -r.amount) }), {} as Record<Currency, number>);
   const activeRow = activeId === null ? null : rows.find((r) => r.id === activeId) || null;
   const activePosition = activeId === null ? { x: 50, y: 50 } : positions[activeId] || { x: 50, y: 50 };
   const activeFile = templateFiles.find((f) => f.id === templateFileId);
@@ -176,7 +176,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
       const pdf = new jsPDF({ unit: "mm", format: "a4" });
       for (let start = 0; start < chosen.length; start += 10) {
         const batch = chosen.slice(start, start + 10);
-        const batchTotals = batch.reduce((sum, row) => ({ ...sum, [row.currency]: (sum[row.currency] || 0) + row.amount }), {} as Record<Currency, number>);
+        const batchTotals = batch.reduce((sum, row) => ({ ...sum, [row.currency]: (sum[row.currency] || 0) + (row.type === "debit" ? row.amount : -row.amount) }), {} as Record<Currency, number>);
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
         host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;position:relative;">'
           + '<div style="height:7px;background:' + invoiceAccent + ';border-radius:4px;"></div>'
@@ -200,7 +200,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
               + '<td style="padding:7px;font-size:9px;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:16px;padding:12px 15px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
-          + '<span>الإجمالي</span><span style="color:' + (theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
+          + '<span>الرصيد الصافي</span><span style="color:' + (theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
           + '<div style="position:absolute;bottom:15px;left:0;right:0;text-align:center;font-size:9px;color:#9aa9a5;">Aleppo Center Cash</div></div>';
         const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", logging: false });
         if (start > 0) pdf.addPage();
@@ -275,7 +275,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
           <div className="invoice-preview-table">
             <div className="invoice-preview-head"><span>اسم القالب</span><span>صورة القالب</span><span>امتار</span><span>السعر</span><span>له/عليه</span><span>التاريخ</span></div>
             {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}          </div>
-          <div className="invoice-preview-total"><span>الإجمالي</span><strong>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
+          <div className="invoice-preview-total"><span>الرصيد الصافي</span><strong>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
         </div>
         <footer><button className="secondary-btn" onClick={() => setShowPreview(false)}>إغلاق</button><button className="primary-btn" disabled={busy || !chosen.length || !invoiceNumber.trim()} onClick={() => { setShowPreview(false); void exportPdf(); }}><Download size={16} /> اعتماد واستخراج PDF</button></footer>
       </div>
