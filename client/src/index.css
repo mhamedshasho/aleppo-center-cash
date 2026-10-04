@@ -1976,3 +1976,10 @@ body, button, input, select, textarea{font-family:"Noto Sans Arabic","Segoe UI",
     height:72px!important;
   }
 }
+
+
+/* Logo window: the uploaded square image is clipped to a true circle. */
+.settings-logo-preview{border-radius:50%!important;border:3px solid var(--primary)!important;background:transparent!important}
+.settings-logo-preview img{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;border-radius:50%!important;object-fit:cover!important}
+.invoice-preview-logo{border-radius:50%!important;border:3px solid var(--primary)!important;box-shadow:0 5px 16px rgba(21,48,50,.14)!important}
+html.yellow-black .invoice-preview-logo,html.yellow-black .settings-logo-preview{border-color:#f2c300!important}
