@@ -50,162 +50,17 @@ async function normalizeLogo(file: File) {
       ctx.clearRect(0, 0, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-
-      const sourceWidth = image.naturalWidth || 1;
-      const sourceHeight = image.naturalHeight || 1;
-      const previewScale = Math.min(1, 1400 / Math.max(sourceWidth, sourceHeight));
-      const scanWidth = Math.max(1, Math.round(sourceWidth * previewScale));
-      const scanHeight = Math.max(1, Math.round(sourceHeight * previewScale));
-
-      const scanCanvas = document.createElement("canvas");
-      scanCanvas.width = scanWidth;
-      scanCanvas.height = scanHeight;
-      const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
-      if (!scanCtx) return reject(new Error("تعذر تحليل الشعار"));
-      scanCtx.clearRect(0, 0, scanWidth, scanHeight);
-      scanCtx.drawImage(image, 0, 0, scanWidth, scanHeight);
-
-      const { data: pixels } = scanCtx.getImageData(0, 0, scanWidth, scanHeight);
-      const pixelIndex = (x: number, y: number) => (y * scanWidth + x) * 4;
-      const colorDistance = (a: number, b: number, c: number, d: number) =>
-        Math.sqrt((a - b) ** 2 + (c - d) ** 2);
-
-      // Read a few edge samples. We only remove background that is connected
-      // to the image edges, so black/yellow colors used INSIDE the logo remain.
-      const samplePoints = [
-        [0, 0],
-        [scanWidth - 1, 0],
-        [0, scanHeight - 1],
-        [scanWidth - 1, scanHeight - 1],
-        [Math.floor(scanWidth / 2), 0],
-        [Math.floor(scanWidth / 2), scanHeight - 1],
-        [0, Math.floor(scanHeight / 2)],
-        [scanWidth - 1, Math.floor(scanHeight / 2)],
-      ];
-      const cornerColors = samplePoints.map(([x, y]) => {
-        const i = pixelIndex(Math.max(0, Math.min(scanWidth - 1, x)), Math.max(0, Math.min(scanHeight - 1, y)));
-        return [pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]] as const;
-      });
-      const opaqueColors = cornerColors.filter((c) => c[3] > 30);
-      const reference = opaqueColors[0] || [0, 0, 0, 0];
-      const tolerance = 30;
-
-      const background = new Uint8Array(scanWidth * scanHeight);
-      const queueX = new Int32Array(scanWidth * scanHeight);
-      const queueY = new Int32Array(scanWidth * scanHeight);
-      let head = 0;
-      let tail = 0;
-
-      const enqueue = (x: number, y: number) => {
-        if (x < 0 || y < 0 || x >= scanWidth || y >= scanHeight) return;
-        const q = y * scanWidth + x;
-        if (background[q]) return;
-        background[q] = 1;
-        queueX[tail] = x;
-        queueY[tail] = y;
-        tail += 1;
-      };
-
-      // Transparent edge pixels are always background.
-      for (let x = 0; x < scanWidth; x += 1) {
-        if (pixels[pixelIndex(x, 0) + 3] < 30) enqueue(x, 0);
-        if (pixels[pixelIndex(x, scanHeight - 1) + 3] < 30) enqueue(x, scanHeight - 1);
-      }
-      for (let y = 0; y < scanHeight; y += 1) {
-        if (pixels[pixelIndex(0, y) + 3] < 30) enqueue(0, y);
-        if (pixels[pixelIndex(scanWidth - 1, y) + 3] < 30) enqueue(scanWidth - 1, y);
-      }
-
-      const matchesBackground = (x: number, y: number) => {
-        const i = pixelIndex(x, y);
-        const alpha = pixels[i + 3];
-        if (alpha < 30) return true;
-        return colorDistance(pixels[i], reference[0], pixels[i + 1], reference[1]) +
-          Math.abs(pixels[i + 2] - reference[2]) < tolerance * 2.2;
-      };
-
-      // Start flood fill from opaque edge pixels close to the reference color.
-      for (const [x, y] of samplePoints) {
-        if (matchesBackground(x, y)) enqueue(x, y);
-      }
-
-      while (head < tail) {
-        const x = queueX[head];
-        const y = queueY[head];
-        head += 1;
-        const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
-        for (const [nx, ny] of neighbors) {
-          if (nx < 0 || ny < 0 || nx >= scanWidth || ny >= scanHeight) continue;
-          const q = ny * scanWidth + nx;
-          if (background[q] || !matchesBackground(nx, ny)) continue;
-          background[q] = 1;
-          queueX[tail] = nx;
-          queueY[tail] = ny;
-          tail += 1;
-        }
-      }
-
-      let minX = scanWidth;
-      let minY = scanHeight;
-      let maxX = -1;
-      let maxY = -1;
-
-      for (let y = 0; y < scanHeight; y += 1) {
-        for (let x = 0; x < scanWidth; x += 1) {
-          const i = pixelIndex(x, y);
-          const alpha = pixels[i + 3];
-          const isContent = alpha >= 30 && !background[y * scanWidth + x];
-          if (!isContent) continue;
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x);
-          maxY = Math.max(maxY, y);
-        }
-      }
-
-      // Fallback for unusual images where the edge flood-fill found nothing.
-      if (maxX < minX || maxY < minY) {
-        minX = scanWidth;
-        minY = scanHeight;
-        maxX = -1;
-        maxY = -1;
-        for (let y = 0; y < scanHeight; y += 1) {
-          for (let x = 0; x < scanWidth; x += 1) {
-            const alpha = pixels[pixelIndex(x, y) + 3];
-            if (alpha < 30) continue;
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-          }
-        }
-      }
-
-      const cropX = Math.floor(minX / previewScale);
-      const cropY = Math.floor(minY / previewScale);
-      const cropRight = Math.ceil((maxX + 1) / previewScale);
-      const cropBottom = Math.ceil((maxY + 1) / previewScale);
-      const cropWidth = Math.max(1, cropRight - cropX);
-      const cropHeight = Math.max(1, cropBottom - cropY);
-
-      // Very small safety margin: the logo fills its 200×200 canvas instead
-      // of looking tiny, while retaining a clean edge.
-      const padding = 4;
-      const scale = Math.min(
-        (LOGO_CANVAS_SIZE - padding * 2) / cropWidth,
-        (LOGO_CANVAS_SIZE - padding * 2) / cropHeight
-      );
-      const width = cropWidth * scale;
-      const height = cropHeight * scale;
-
-      ctx.drawImage(
-        image,
-        cropX, cropY, cropWidth, cropHeight,
-        (LOGO_CANVAS_SIZE - width) / 2,
-        (LOGO_CANVAS_SIZE - height) / 2,
-        width, height
-      );
-
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(LOGO_CANVAS_SIZE / 2, LOGO_CANVAS_SIZE / 2, LOGO_CANVAS_SIZE / 2, 0, Math.PI * 2);
+      ctx.clip();
+      const w = image.naturalWidth || LOGO_CANVAS_SIZE;
+      const h = image.naturalHeight || LOGO_CANVAS_SIZE;
+      const size = Math.min(w, h);
+      const sx = (w - size) / 2;
+      const sy = (h - size) / 2;
+      ctx.drawImage(image, sx, sy, size, size, 0, 0, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
+      ctx.restore();
       resolve(canvas.toDataURL("image/png"));
     };
     image.onerror = () => reject(new Error("تعذر قراءة الشعار"));
@@ -386,7 +241,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
           + '<div style="text-align:left;font-size:13px;font-weight:800;line-height:1.9;color:#617873;">'
           + (customer ? '<div><strong style="color:' + invoiceBodyText + ';">العميل:</strong> ' + esc(customer) + '</div>' : "")
           + '<div><strong style="color:' + invoiceBodyText + ';">التاريخ:</strong> ' + esc(dateText(invoiceDate)) + '</div></div></div>'
-          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:0;right:42px;top:12px;" />' : "")
+          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:50%;border:3px solid ${invoiceAccent};right:42px;top:12px;" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:12px;overflow:hidden;font-size:13px;font-weight:800;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
           + '<thead><tr style="background:' + invoiceAccent + ';color:' + invoiceText + ';font-weight:700;">'
