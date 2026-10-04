@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export type Theme = "light" | "dark" | "gold" | "red" | "yellow-black";
 
@@ -15,22 +16,60 @@ interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   switchable?: boolean;
+  workspaceId?: string | null;
 }
 
-export function ThemeProvider({
-  children,
-  defaultTheme = "light",
-  switchable = false,
-}: ThemeProviderProps) {
+const isTheme = (value: unknown): value is Theme =>
+  value === "light" || value === "dark" || value === "gold" || value === "red" || value === "yellow-black";
+
+export function ThemeProvider({ children, defaultTheme = "light", switchable = false, workspaceId }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (switchable) {
+    if (switchable && typeof localStorage !== "undefined") {
       const stored = localStorage.getItem("theme");
-      return stored === "dark" || stored === "gold" || stored === "red" || stored === "yellow-black" || stored === "light" ? stored : defaultTheme;
+      return isTheme(stored) ? stored : defaultTheme;
     }
     return defaultTheme;
   });
 
-  const setTheme = (nextTheme: Theme) => setThemeState(nextTheme);
+  useEffect(() => {
+    if (!switchable || !workspaceId || !supabase) return;
+    let active = true;
+
+    const load = async () => {
+      const { data, error } = await supabase.from("workspace_settings").select("theme").eq("workspace_id", workspaceId).maybeSingle();
+      if (error) {
+        console.warn("[AleppoCenterCash] shared theme load failed", error);
+        return;
+      }
+      if (active && isTheme(data?.theme)) setThemeState(data.theme);
+      if (!data) {
+        const { error: insertError } = await supabase.from("workspace_settings").insert({ workspace_id: workspaceId, theme });
+        if (insertError && insertError.code !== "23505") console.warn("[AleppoCenterCash] shared theme initialize failed", insertError);
+      }
+    };
+
+    void load();
+    const channel = supabase.channel("workspace-theme-" + workspaceId)
+      .on("postgres_changes", { event: "*", schema: "public", table: "workspace_settings", filter: "workspace_id=eq." + workspaceId }, (payload) => {
+        const next = (payload.new as { theme?: unknown } | null)?.theme;
+        if (active && isTheme(next)) setThemeState(next);
+      })
+      .subscribe();
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [workspaceId, switchable]);
+
+  const setTheme = (nextTheme: Theme) => {
+    setThemeState(nextTheme);
+    if (switchable && typeof localStorage !== "undefined") localStorage.setItem("theme", nextTheme);
+    if (switchable && workspaceId && supabase) {
+      void supabase.from("workspace_settings").upsert({ workspace_id: workspaceId, theme: nextTheme }, { onConflict: "workspace_id" })
+        .then(({ error }) => { if (error) console.warn("[AleppoCenterCash] shared theme save failed", error); });
+    }
+  };
 
   useEffect(() => {
     const root = document.documentElement;
@@ -38,29 +77,17 @@ export function ThemeProvider({
     root.classList.toggle("gold", theme === "gold");
     root.classList.toggle("red", theme === "red");
     root.classList.toggle("yellow-black", theme === "yellow-black");
-
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme, switchable]);
+  }, [theme]);
 
   const toggleTheme = switchable
-    ? () => {
-        setThemeState(prev => prev === "light" ? "dark" : prev === "dark" ? "gold" : prev === "gold" ? "red" : prev === "red" ? "yellow-black" : "light");
-      }
+    ? () => setTheme(theme === "light" ? "dark" : theme === "dark" ? "gold" : theme === "gold" ? "red" : theme === "red" ? "yellow-black" : "light")
     : undefined;
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, switchable }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, switchable }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider");
-  }
+  if (!context) throw new Error("useTheme must be used within ThemeProvider");
   return context;
 }
