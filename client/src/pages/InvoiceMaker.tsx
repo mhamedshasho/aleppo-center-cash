@@ -15,7 +15,22 @@ type TemplatePage = { label: string; image: string };
 type TemplateFile = { id: string; name: string; pages: TemplatePage[] };
 type Position = { x: number; y: number };
 
-type NativeFileSaverPlugin = { savePdf(options: { filename: string; base64: string }): Promise<{ uri: string }> };\nconst NativeFileSaver = registerPlugin<NativeFileSaverPlugin>("NativeFileSaver");\n\nasync function saveInvoicePdf(pdf: jsPDF, filename: string) {\n  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {\n    const dataUrl = pdf.output("datauristring");\n    const base64 = dataUrl.split(",")[1] || "";\n    if (!base64) throw new Error("تعذر تجهيز ملف PDF");\n    await NativeFileSaver.savePdf({ filename, base64 });\n    return "android-download";\n  }\n  pdf.save(filename);\n  return "browser-download";\n}\n\nconst money = (n: number, c: Currency) => new Intl.NumberFormat(c === "SYP" ? "ar-SY" : "en-US", { maximumFractionDigits: c === "SYP" ? 0 : 2 }).format(n) + " " + (c === "SYP" ? "ل.س" : "$");
+type NativeFileSaverPlugin = { savePdf(options: { filename: string; base64: string }): Promise<{ uri: string }> };
+const NativeFileSaver = registerPlugin<NativeFileSaverPlugin>("NativeFileSaver");
+
+async function saveInvoicePdf(pdf: jsPDF, filename: string) {
+  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
+    const dataUrl = pdf.output("datauristring");
+    const base64 = dataUrl.split(",")[1] || "";
+    if (!base64) throw new Error("تعذر تجهيز ملف PDF");
+    await NativeFileSaver.savePdf({ filename, base64 });
+    return "android-download";
+  }
+  pdf.save(filename);
+  return "browser-download";
+}
+
+const money = (n: number, c: Currency) => new Intl.NumberFormat(c === "SYP" ? "ar-SY" : "en-US", { maximumFractionDigits: c === "SYP" ? 0 : 2 }).format(n) + " " + (c === "SYP" ? "ل.س" : "$");
 const dateText = (d: string) => new Intl.DateTimeFormat("ar-SY", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d + "T12:00:00"));
 const esc = (v: string) => v.replace(/[&<>"']/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[x] || x);
 
