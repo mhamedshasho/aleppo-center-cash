@@ -141,6 +141,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
   const [busy, setBusy] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewZoom, setPreviewZoom] = useState(1);
   const [dragging, setDragging] = useState(false);
   const templateRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
@@ -329,14 +330,14 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
 
     {showPreview && <div className="invoice-preview-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
       <div className="invoice-preview-modal" dir="rtl">
-        <header><div><span className="eyebrow">PREVIEW</span><h2>معاينة الفاتورة</h2><p>هذه معاينة قبل إنشاء ملف PDF.</p></div><button className="icon-btn bordered" onClick={() => setShowPreview(false)}><X size={18} /></button></header>
-        <div className="invoice-preview-page">
+        <header className="invoice-preview-header"><div><span className="eyebrow">PREVIEW</span><h2>معاينة الفاتورة</h2><p>معاينة مطابقة قدر الإمكان لصفحة الـPDF قبل الاعتماد.</p></div><div className="invoice-preview-header-actions"><div className="invoice-preview-zoom"><button className="icon-btn bordered" aria-label="تصغير المعاينة" onClick={() => setPreviewZoom((z) => Math.max(.75, +(z - .1).toFixed(1)))}>−</button><span>{Math.round(previewZoom * 100)}%</span><button className="icon-btn bordered" aria-label="تكبير المعاينة" onClick={() => setPreviewZoom((z) => Math.min(1.3, +(z + .1).toFixed(1)))}>+</button><button className="text-btn" onClick={() => setPreviewZoom(1)}>ملاءمة</button></div><button className="icon-btn bordered" aria-label="إغلاق المعاينة" onClick={() => setShowPreview(false)}><X size={18} /></button></div></header>
+        <div className="invoice-preview-scroll"><div className="invoice-preview-page" style={{ transform: `scale(${previewZoom})` }}>
           <div className="invoice-preview-top"><div><h1>فاتورة رقم {invoiceNumber || "—"}</h1>{customer && <p>العميل: {customer}</p>}<small>تاريخ الفاتورة: {dateText(invoiceDate)}</small></div></div>{effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="الشعار" />}
           <div className="invoice-preview-table">
             <div className="invoice-preview-head"><span>اسم القالب</span><span>صورة القالب</span><span>امتار</span><span>السعر</span><span>له/عليه</span><span>التاريخ</span></div>
             {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}          </div>
           <div className="invoice-preview-total"><span>الرصيد الصافي</span><strong>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
-        </div>
+        </div></div>
         <footer><button className="secondary-btn" onClick={() => setShowPreview(false)}>إغلاق</button><button className="primary-btn" disabled={busy || !chosen.length || !invoiceNumber.trim()} onClick={() => { setShowPreview(false); void exportPdf(); }}><Download size={16} /> اعتماد واستخراج PDF</button></footer>
       </div>
     </div>}
