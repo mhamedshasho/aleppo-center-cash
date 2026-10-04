@@ -48,13 +48,15 @@ async function normalizeLogo(file: File) {
       const ctx = canvas.getContext("2d");
       if (!ctx) return reject(new Error("تعذر تجهيز الشعار"));
       ctx.clearRect(0, 0, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
 
-      const sourceWidth = image.naturalWidth;
-      const sourceHeight = image.naturalHeight;
-      const maxSize = Math.max(sourceWidth, sourceHeight);
-      const previewScale = Math.min(1, 1200 / maxSize);
+      const sourceWidth = image.naturalWidth || 1;
+      const sourceHeight = image.naturalHeight || 1;
+      const previewScale = Math.min(1, 1400 / Math.max(sourceWidth, sourceHeight));
       const scanWidth = Math.max(1, Math.round(sourceWidth * previewScale));
       const scanHeight = Math.max(1, Math.round(sourceHeight * previewScale));
+
       const scanCanvas = document.createElement("canvas");
       scanCanvas.width = scanWidth;
       scanCanvas.height = scanHeight;
@@ -62,40 +64,115 @@ async function normalizeLogo(file: File) {
       if (!scanCtx) return reject(new Error("تعذر تحليل الشعار"));
       scanCtx.clearRect(0, 0, scanWidth, scanHeight);
       scanCtx.drawImage(image, 0, 0, scanWidth, scanHeight);
-      const pixels = scanCtx.getImageData(0, 0, scanWidth, scanHeight).data;
 
-      // Crop transparent margins first. If the image has an opaque background,
-      // also detect the dominant corner color so a logo like black/yellow
-      // does not remain tiny inside a full-size square.
-      const sampleSize = Math.max(1, Math.min(12, Math.floor(Math.min(scanWidth, scanHeight) / 10)));
-      const samples: number[][] = [];
-      for (const [sx, sy] of [[0, 0], [scanWidth - sampleSize, 0], [0, scanHeight - sampleSize], [scanWidth - sampleSize, scanHeight - sampleSize]]) {
-        let rr = 0, gg = 0, bb = 0, aa = 0, count = 0;
-        for (let y = Math.max(0, sy); y < Math.min(scanHeight, sy + sampleSize); y += 1) {
-          for (let x = Math.max(0, sx); x < Math.min(scanWidth, sx + sampleSize); x += 1) {
-            const i = (y * scanWidth + x) * 4;
-            rr += pixels[i]; gg += pixels[i + 1]; bb += pixels[i + 2]; aa += pixels[i + 3]; count += 1;
-          }
-        }
-        samples.push([rr / count, gg / count, bb / count, aa / count]);
+      const { data: pixels } = scanCtx.getImageData(0, 0, scanWidth, scanHeight);
+      const pixelIndex = (x: number, y: number) => (y * scanWidth + x) * 4;
+      const colorDistance = (a: number, b: number, c: number, d: number) =>
+        Math.sqrt((a - b) ** 2 + (c - d) ** 2);
+
+      // Read a few edge samples. We only remove background that is connected
+      // to the image edges, so black/yellow colors used INSIDE the logo remain.
+      const samplePoints = [
+        [0, 0],
+        [scanWidth - 1, 0],
+        [0, scanHeight - 1],
+        [scanWidth - 1, scanHeight - 1],
+        [Math.floor(scanWidth / 2), 0],
+        [Math.floor(scanWidth / 2), scanHeight - 1],
+        [0, Math.floor(scanHeight / 2)],
+        [scanWidth - 1, Math.floor(scanHeight / 2)],
+      ];
+      const cornerColors = samplePoints.map(([x, y]) => {
+        const i = pixelIndex(Math.max(0, Math.min(scanWidth - 1, x)), Math.max(0, Math.min(scanHeight - 1, y)));
+        return [pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]] as const;
+      });
+      const opaqueColors = cornerColors.filter((c) => c[3] > 30);
+      const reference = opaqueColors[0] || [0, 0, 0, 0];
+      const tolerance = 30;
+
+      const background = new Uint8Array(scanWidth * scanHeight);
+      const queueX = new Int32Array(scanWidth * scanHeight);
+      const queueY = new Int32Array(scanWidth * scanHeight);
+      let head = 0;
+      let tail = 0;
+
+      const enqueue = (x: number, y: number) => {
+        if (x < 0 || y < 0 || x >= scanWidth || y >= scanHeight) return;
+        const q = y * scanWidth + x;
+        if (background[q]) return;
+        background[q] = 1;
+        queueX[tail] = x;
+        queueY[tail] = y;
+        tail += 1;
+      };
+
+      // Transparent edge pixels are always background.
+      for (let x = 0; x < scanWidth; x += 1) {
+        if (pixels[pixelIndex(x, 0) + 3] < 30) enqueue(x, 0);
+        if (pixels[pixelIndex(x, scanHeight - 1) + 3] < 30) enqueue(x, scanHeight - 1);
       }
-      const corner = samples.sort((a, b) => (b[3] || 0) - (a[3] || 0))[0] || [0, 0, 0, 0];
-      const transparentCorners = corner[3] < 40;
-      const backgroundTolerance = 34;
+      for (let y = 0; y < scanHeight; y += 1) {
+        if (pixels[pixelIndex(0, y) + 3] < 30) enqueue(0, y);
+        if (pixels[pixelIndex(scanWidth - 1, y) + 3] < 30) enqueue(scanWidth - 1, y);
+      }
 
-      let minX = scanWidth, minY = scanHeight, maxX = -1, maxY = -1;
+      const matchesBackground = (x: number, y: number) => {
+        const i = pixelIndex(x, y);
+        const alpha = pixels[i + 3];
+        if (alpha < 30) return true;
+        return colorDistance(pixels[i], reference[0], pixels[i + 1], reference[1]) +
+          Math.abs(pixels[i + 2] - reference[2]) < tolerance * 2.2;
+      };
+
+      // Start flood fill from opaque edge pixels close to the reference color.
+      for (const [x, y] of samplePoints) {
+        if (matchesBackground(x, y)) enqueue(x, y);
+      }
+
+      while (head < tail) {
+        const x = queueX[head];
+        const y = queueY[head];
+        head += 1;
+        const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
+        for (const [nx, ny] of neighbors) {
+          if (nx < 0 || ny < 0 || nx >= scanWidth || ny >= scanHeight) continue;
+          const q = ny * scanWidth + nx;
+          if (background[q] || !matchesBackground(nx, ny)) continue;
+          background[q] = 1;
+          queueX[tail] = nx;
+          queueY[tail] = ny;
+          tail += 1;
+        }
+      }
+
+      let minX = scanWidth;
+      let minY = scanHeight;
+      let maxX = -1;
+      let maxY = -1;
+
       for (let y = 0; y < scanHeight; y += 1) {
         for (let x = 0; x < scanWidth; x += 1) {
-          const i = (y * scanWidth + x) * 4;
+          const i = pixelIndex(x, y);
           const alpha = pixels[i + 3];
-          if (alpha <= 12) continue;
-          const distance = Math.sqrt(
-            Math.pow(pixels[i] - corner[0], 2) +
-            Math.pow(pixels[i + 1] - corner[1], 2) +
-            Math.pow(pixels[i + 2] - corner[2], 2)
-          );
-          const isVisibleContent = transparentCorners || alpha < 235 || distance > backgroundTolerance;
-          if (isVisibleContent) {
+          const isContent = alpha >= 30 && !background[y * scanWidth + x];
+          if (!isContent) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+
+      // Fallback for unusual images where the edge flood-fill found nothing.
+      if (maxX < minX || maxY < minY) {
+        minX = scanWidth;
+        minY = scanHeight;
+        maxX = -1;
+        maxY = -1;
+        for (let y = 0; y < scanHeight; y += 1) {
+          for (let x = 0; x < scanWidth; x += 1) {
+            const alpha = pixels[pixelIndex(x, y) + 3];
+            if (alpha < 30) continue;
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);
             maxX = Math.max(maxX, x);
@@ -104,35 +181,23 @@ async function normalizeLogo(file: File) {
         }
       }
 
-      const bboxWidth = maxX >= 0 ? maxX - minX + 1 : 0;
-      const bboxHeight = maxY >= 0 ? maxY - minY + 1 : 0;
-      // If background detection is too aggressive, fall back to alpha bounds/full image.
-      const detectionLooksValid = bboxWidth >= scanWidth * 0.18 && bboxHeight >= scanHeight * 0.18;
-      if (!detectionLooksValid) {
-        minX = scanWidth; minY = scanHeight; maxX = -1; maxY = -1;
-        for (let y = 0; y < scanHeight; y += 1) {
-          for (let x = 0; x < scanWidth; x += 1) {
-            const alpha = pixels[(y * scanWidth + x) * 4 + 3];
-            if (alpha > 12) {
-              minX = Math.min(minX, x);
-              minY = Math.min(minY, y);
-              maxX = Math.max(maxX, x);
-              maxY = Math.max(maxY, y);
-            }
-          }
-        }
-      }
-
-      const hasContent = maxX >= 0 && maxY >= 0;
-      const cropX = hasContent ? Math.floor(minX / previewScale) : 0;
-      const cropY = hasContent ? Math.floor(minY / previewScale) : 0;
-      const cropRight = hasContent ? Math.ceil((maxX + 1) / previewScale) : sourceWidth;
-      const cropBottom = hasContent ? Math.ceil((maxY + 1) / previewScale) : sourceHeight;
+      const cropX = Math.floor(minX / previewScale);
+      const cropY = Math.floor(minY / previewScale);
+      const cropRight = Math.ceil((maxX + 1) / previewScale);
+      const cropBottom = Math.ceil((maxY + 1) / previewScale);
       const cropWidth = Math.max(1, cropRight - cropX);
       const cropHeight = Math.max(1, cropBottom - cropY);
-      const scale = Math.min((LOGO_CANVAS_SIZE - 8) / cropWidth, (LOGO_CANVAS_SIZE - 8) / cropHeight);
+
+      // Very small safety margin: the logo fills its 200×200 canvas instead
+      // of looking tiny, while retaining a clean edge.
+      const padding = 4;
+      const scale = Math.min(
+        (LOGO_CANVAS_SIZE - padding * 2) / cropWidth,
+        (LOGO_CANVAS_SIZE - padding * 2) / cropHeight
+      );
       const width = cropWidth * scale;
       const height = cropHeight * scale;
+
       ctx.drawImage(
         image,
         cropX, cropY, cropWidth, cropHeight,
@@ -140,6 +205,7 @@ async function normalizeLogo(file: File) {
         (LOGO_CANVAS_SIZE - height) / 2,
         width, height
       );
+
       resolve(canvas.toDataURL("image/png"));
     };
     image.onerror = () => reject(new Error("تعذر قراءة الشعار"));
