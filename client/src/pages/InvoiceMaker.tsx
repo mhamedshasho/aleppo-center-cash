@@ -58,42 +58,94 @@ async function normalizeLogo(file: File) {
       const scanCanvas = document.createElement("canvas");
       scanCanvas.width = scanWidth;
       scanCanvas.height = scanHeight;
-      const scanCtx = scanCanvas.getContext("2d");
+      const scanCtx = scanCanvas.getContext("2d", { willReadFrequently: true });
       if (!scanCtx) return reject(new Error("تعذر تحليل الشعار"));
       scanCtx.clearRect(0, 0, scanWidth, scanHeight);
       scanCtx.drawImage(image, 0, 0, scanWidth, scanHeight);
       const pixels = scanCtx.getImageData(0, 0, scanWidth, scanHeight).data;
+
+      // Crop transparent margins first. If the image has an opaque background,
+      // also detect the dominant corner color so a logo like black/yellow
+      // does not remain tiny inside a full-size square.
+      const sampleSize = Math.max(1, Math.min(12, Math.floor(Math.min(scanWidth, scanHeight) / 10)));
+      const samples: number[][] = [];
+      for (const [sx, sy] of [[0, 0], [scanWidth - sampleSize, 0], [0, scanHeight - sampleSize], [scanWidth - sampleSize, scanHeight - sampleSize]]) {
+        let rr = 0, gg = 0, bb = 0, aa = 0, count = 0;
+        for (let y = Math.max(0, sy); y < Math.min(scanHeight, sy + sampleSize); y += 1) {
+          for (let x = Math.max(0, sx); x < Math.min(scanWidth, sx + sampleSize); x += 1) {
+            const i = (y * scanWidth + x) * 4;
+            rr += pixels[i]; gg += pixels[i + 1]; bb += pixels[i + 2]; aa += pixels[i + 3]; count += 1;
+          }
+        }
+        samples.push([rr / count, gg / count, bb / count, aa / count]);
+      }
+      const corner = samples.sort((a, b) => (b[3] || 0) - (a[3] || 0))[0] || [0, 0, 0, 0];
+      const transparentCorners = corner[3] < 40;
+      const backgroundTolerance = 34;
+
       let minX = scanWidth, minY = scanHeight, maxX = -1, maxY = -1;
       for (let y = 0; y < scanHeight; y += 1) {
         for (let x = 0; x < scanWidth; x += 1) {
-          const alpha = pixels[(y * scanWidth + x) * 4 + 3];
-          if (alpha > 12) {
-            if (x < minX) minX = x;
-            if (y < minY) minY = y;
-            if (x > maxX) maxX = x;
-            if (y > maxY) maxY = y;
+          const i = (y * scanWidth + x) * 4;
+          const alpha = pixels[i + 3];
+          if (alpha <= 12) continue;
+          const distance = Math.sqrt(
+            Math.pow(pixels[i] - corner[0], 2) +
+            Math.pow(pixels[i + 1] - corner[1], 2) +
+            Math.pow(pixels[i + 2] - corner[2], 2)
+          );
+          const isVisibleContent = transparentCorners || alpha < 235 || distance > backgroundTolerance;
+          if (isVisibleContent) {
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
           }
         }
       }
 
-      const hasTransparentBackground = maxX >= 0 && maxY >= 0;
-      const cropX = hasTransparentBackground ? Math.floor(minX / previewScale) : 0;
-      const cropY = hasTransparentBackground ? Math.floor(minY / previewScale) : 0;
-      const cropRight = hasTransparentBackground ? Math.ceil((maxX + 1) / previewScale) : sourceWidth;
-      const cropBottom = hasTransparentBackground ? Math.ceil((maxY + 1) / previewScale) : sourceHeight;
+      const bboxWidth = maxX >= 0 ? maxX - minX + 1 : 0;
+      const bboxHeight = maxY >= 0 ? maxY - minY + 1 : 0;
+      // If background detection is too aggressive, fall back to alpha bounds/full image.
+      const detectionLooksValid = bboxWidth >= scanWidth * 0.18 && bboxHeight >= scanHeight * 0.18;
+      if (!detectionLooksValid) {
+        minX = scanWidth; minY = scanHeight; maxX = -1; maxY = -1;
+        for (let y = 0; y < scanHeight; y += 1) {
+          for (let x = 0; x < scanWidth; x += 1) {
+            const alpha = pixels[(y * scanWidth + x) * 4 + 3];
+            if (alpha > 12) {
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+            }
+          }
+        }
+      }
+
+      const hasContent = maxX >= 0 && maxY >= 0;
+      const cropX = hasContent ? Math.floor(minX / previewScale) : 0;
+      const cropY = hasContent ? Math.floor(minY / previewScale) : 0;
+      const cropRight = hasContent ? Math.ceil((maxX + 1) / previewScale) : sourceWidth;
+      const cropBottom = hasContent ? Math.ceil((maxY + 1) / previewScale) : sourceHeight;
       const cropWidth = Math.max(1, cropRight - cropX);
       const cropHeight = Math.max(1, cropBottom - cropY);
-      const scale = Math.min((LOGO_CANVAS_SIZE - 12) / cropWidth, (LOGO_CANVAS_SIZE - 12) / cropHeight);
+      const scale = Math.min((LOGO_CANVAS_SIZE - 8) / cropWidth, (LOGO_CANVAS_SIZE - 8) / cropHeight);
       const width = cropWidth * scale;
       const height = cropHeight * scale;
-      ctx.drawImage(image, cropX, cropY, cropWidth, cropHeight, (LOGO_CANVAS_SIZE - width) / 2, (LOGO_CANVAS_SIZE - height) / 2, width, height);
+      ctx.drawImage(
+        image,
+        cropX, cropY, cropWidth, cropHeight,
+        (LOGO_CANVAS_SIZE - width) / 2,
+        (LOGO_CANVAS_SIZE - height) / 2,
+        width, height
+      );
       resolve(canvas.toDataURL("image/png"));
     };
     image.onerror = () => reject(new Error("تعذر قراءة الشعار"));
     image.src = source;
   });
 }
-
 async function fileData(file: File) {
   return await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
@@ -262,28 +314,28 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
         const rowAltBackground = theme === "yellow-black" || theme === "dark" ? "#171717" : "#fbfcfb";
         const rowBorder = theme === "yellow-black" || theme === "dark" ? "#303030" : "#e7eeeb";
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
-        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:30px 38px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:Cairo,Arial,sans-serif;font-weight:700;position:relative;">'
+        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:30px 38px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;font-weight:800;position:relative;">'
           + '<div style="height:8px;background:' + invoiceAccent + ';border-radius:6px;"></div>'
           + '<div style="display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:16px 18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:14px;background:' + invoiceAccentSoft + ';">'
-          + '<div style="text-align:right;"><div style="font-size:27px;font-weight:900;color:' + invoiceAccent + ';line-height:1.2;">فاتورة</div><div style="font-size:16px;font-weight:900;margin-top:5px;color:' + invoiceBodyText + ';">رقم ' + esc(invoiceNumber) + '</div></div>'
-          + '<div style="text-align:left;font-size:11px;font-weight:700;line-height:1.8;color:#617873;">'
+          + '<div style="text-align:right;"><div style="font-size:29px;font-weight:900;color:' + invoiceAccent + ';line-height:1.2;">فاتورة</div><div style="font-size:18px;font-weight:900;margin-top:5px;color:' + invoiceBodyText + ';">رقم ' + esc(invoiceNumber) + '</div></div>'
+          + '<div style="text-align:left;font-size:13px;font-weight:800;line-height:1.9;color:#617873;">'
           + (customer ? '<div><strong style="color:' + invoiceBodyText + ';">العميل:</strong> ' + esc(customer) + '</div>' : "")
           + '<div><strong style="color:' + invoiceBodyText + ';">التاريخ:</strong> ' + esc(dateText(invoiceDate)) + '</div></div></div>'
-          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:90px;height:90px;object-fit:cover;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
-          + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:12px;overflow:hidden;font-size:11px;direction:rtl;">'
+          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:0;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
+          + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:12px;overflow:hidden;font-size:13px;font-weight:800;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
           + '<thead><tr style="background:' + invoiceAccent + ';color:' + invoiceText + ';font-weight:700;">'
-          + '<th style="padding:12px 7px;text-align:right;">القالب</th><th style="padding:12px 7px;text-align:center;">الصورة</th><th style="padding:12px 7px;text-align:center;">الأمتار</th><th style="padding:12px 7px;text-align:center;">المبلغ</th><th style="padding:12px 7px;text-align:center;">الحالة</th><th style="padding:12px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
+          + '<th style="padding:14px 8px;text-align:right;font-size:13px;font-weight:900;">القالب</th><th style="padding:14px 8px;text-align:center;font-size:13px;font-weight:900;">الصورة</th><th style="padding:12px 7px;text-align:center;">الأمتار</th><th style="padding:12px 7px;text-align:center;">المبلغ</th><th style="padding:12px 7px;text-align:center;">الحالة</th><th style="padding:12px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
           + batch.map((r, i) => {
             const p = positions[r.id] || { x: 50, y: 50 };
             const image = images[r.id] || "";
             return '<tr style="height:92px;background:' + (i % 2 ? rowBackground : rowAltBackground) + ';">'
-              + '<td style="padding:7px;font-weight:800;font-size:11px;vertical-align:middle;word-break:break-word;border-top:1px solid ' + rowBorder + ';">' + esc(r.name) + (imageLabels[r.id] ? '<div style="font-size:7px;color:#91a29e;margin-top:3px;line-height:1.25;word-break:break-word;">' + esc(imageLabels[r.id]) + '</div>' : "") + '</td>'
+              + '<td style="padding:7px;font-weight:900;font-size:13px;vertical-align:middle;word-break:break-word;border-top:1px solid ' + rowBorder + ';">' + esc(r.name) + (imageLabels[r.id] ? '<div style="font-size:9px;color:#91a29e;margin-top:3px;line-height:1.25;word-break:break-word;">' + esc(imageLabels[r.id]) + '</div>' : "") + '</td>'
               + '<td style="padding:4px;vertical-align:middle;text-align:center;border-top:1px solid #e7eeeb;"><div style="height:72px;position:relative;overflow:hidden;"><img src="' + image + '" style="position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);max-width:92px;max-height:68px;object-fit:contain;" /></div></td>'
-              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(meters[r.id] || "—") + '</td>'
-              + '<td style="padding:7px;font-weight:900;font-size:12px;text-align:center;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(money(r.amount, r.currency)) + '</td>'
+              + '<td style="padding:7px;font-weight:900;font-size:13px;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(meters[r.id] || "—") + '</td>'
+              + '<td style="padding:7px;font-weight:900;font-size:15px;text-align:center;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(money(r.amount, r.currency)) + '</td>'
               + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "yellow-black" || theme === "dark" ? (r.type === "credit" ? "#f2c300" : "#ff7b7b") : theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
-              + '<td style="padding:7px;font-size:9px;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
+              + '<td style="padding:7px;font-size:11px;font-weight:800;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:16px;padding:12px 15px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
           + '<span>الرصيد الصافي</span><span style="color:' + (theme === "yellow-black" || theme === "dark" ? "#f2c300" : theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
