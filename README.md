@@ -17,7 +17,7 @@
 
 ### Current releases
 
-- **Android APK:** [Download APK](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.106/app-release.apk)
+- **Android APK:** [Download APK](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.160/app-release.apk)
 - **Windows Installer:** [Download latest Windows Installer](https://github.com/mhamedshasho/aleppo-center-cash/releases?q=desktop)
 - **Windows Portable:** [Download latest Windows Portable](https://github.com/mhamedshasho/aleppo-center-cash/releases?q=portable)
 - **All releases:** [Open GitHub Releases](https://github.com/mhamedshasho/aleppo-center-cash/releases)
