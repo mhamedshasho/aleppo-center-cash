@@ -18,6 +18,7 @@ import {
   CircleDollarSign,
   Download,
   FileText,
+  Image as ImageIcon,
   Heart,
   Home as HomeIcon,
   Landmark,
@@ -38,6 +39,7 @@ import {
   Moon,
   Sun,
   Settings,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
