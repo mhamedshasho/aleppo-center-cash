@@ -57,7 +57,7 @@ jobs:
       - name: Verify portable size
         shell: pwsh
         run: |
-          $file = Get-Item "release/Aleppo.Center.Cash.Portable.1.0.3.exe"
+          $file = Get-Item "release/Aleppo.Center.Cash.Portable.1.0.9.exe"
           Write-Host "Portable EXE size: $($file.Length) bytes"
           if ($file.Length -ge 100000000) { throw "Portable EXE exceeds 100 MB: $($file.Length) bytes" }
 
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aleppo-center-cash-portable-lite-${{ github.run_number }}
-          path: release/Aleppo.Center.Cash.Portable.1.0.3.exe
+          path: release/Aleppo.Center.Cash.Portable.1.0.9.exe
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -74,4 +74,4 @@ jobs:
           tag_name: portable-v${{ github.run_number }}
           name: Aleppo Center Cash Portable v${{ github.run_number }}
           generate_release_notes: true
-          files: release/Aleppo.Center.Cash.Portable.1.0.3.exe
+          files: release/Aleppo.Center.Cash.Portable.1.0.9.exe
