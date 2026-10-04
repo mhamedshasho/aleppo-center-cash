@@ -1635,16 +1635,16 @@ html.device-phone .sidebar.open + .main-area {
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
 .settings-section{padding:20px}
 .settings-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
-.settings-section-head h2{margin:0;font-size:17px}
-.settings-section-head p{margin:5px 0 0;color:#78908b;font-size:12px;line-height:1.6}
+.settings-section-head h2{margin:0;font-size:18px;font-weight:800;line-height:1.35}
+.settings-section-head p{margin:5px 0 0;color:#78908b;font-size:13px;font-weight:600;line-height:1.6}
 .settings-section-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:rgba(53,137,119,.10);color:#3c8d78;flex:0 0 auto}
 .settings-row{width:100%;display:flex;align-items:center;gap:12px;padding:13px;border:1px solid rgba(104,139,132,.18);border-radius:14px;background:transparent;text-align:right;color:inherit}
 .settings-action{cursor:pointer;transition:background .12s ease,border-color .12s ease,transform .12s ease}
 .settings-action:hover{background:rgba(53,137,119,.06);border-color:rgba(53,137,119,.28);transform:translateY(-1px)}
 .settings-row-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:rgba(53,137,119,.10);color:#3c8d78;flex:0 0 auto}
 .settings-row-copy{min-width:0;flex:1}
-.settings-row-copy strong{display:block;font-size:13px}
-.settings-row-copy span{display:block;margin-top:3px;color:#78908b;font-size:11px;line-height:1.5}
+.settings-row-copy strong{display:block;font-size:15px;font-weight:800;line-height:1.4}
+.settings-row-copy span{display:block;margin-top:4px;color:#78908b;font-size:13px;font-weight:600;line-height:1.55}
 .settings-switch{width:42px;height:24px;padding:3px;border-radius:999px;background:#aebbb8;display:flex;align-items:center;justify-content:flex-start;flex:0 0 auto;transition:background .14s ease}
 .settings-switch i{width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.18);transition:transform .14s ease}
 .settings-switch.on{background:#3c8d78}
@@ -1653,8 +1653,8 @@ html.device-phone .sidebar.open + .main-area {
 .settings-badge{min-width:24px;height:24px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(53,137,119,.12);color:#3c8d78;font-size:11px;font-weight:800;flex:0 0 auto}
 
 .settings-info-list{display:grid;gap:0}
-.settings-info{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid rgba(104,139,132,.13);font-size:12px}
-.settings-info span{color:#78908b}.settings-info strong{max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settings-info{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid rgba(104,139,132,.13);font-size:13px;font-weight:600}
+.settings-info span{color:#78908b;font-weight:700}.settings-info strong{max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:800}
 .settings-ok{color:#3c987c!important}.settings-muted{color:#9b8270!important}
 .settings-copy{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:11px;padding:10px;border:1px solid rgba(104,139,132,.18);border-radius:11px;background:transparent;color:inherit;cursor:pointer}
 .settings-copy:disabled{opacity:.45;cursor:not-allowed}
@@ -1753,3 +1753,22 @@ html.yellow-black,html.yellow-black body{background:#080808!important;color:#f5f
 .settings-logo-preview img{width:46px;height:46px;max-width:46px;max-height:46px;object-fit:contain;object-position:center;display:block;flex:none}
 .invoice-preview-logo{width:72px!important;height:72px!important;max-width:72px!important;max-height:72px!important;object-fit:contain!important;object-position:center;border-radius:0!important;display:block}
 @media(max-width:700px){.invoice-preview-logo{width:60px!important;height:60px!important;max-width:60px!important;max-height:60px!important}}
+
+/* Strong, readable typography for Settings and Invoice UI. */
+.settings-section-head h2,
+.settings-row-copy strong,
+.settings-info strong{font-weight:800}
+.settings-section-head p,
+.settings-row-copy span,
+.settings-info,
+.invoice-field label,
+.invoice-logo-source label{font-weight:700}
+.invoice-preview-top h1{font-weight:900}
+.invoice-preview-top p{font-weight:700;font-size:13px}
+.invoice-preview-top small{font-weight:700;font-size:11px}
+.invoice-preview-head{font-weight:900;font-size:11px}
+.invoice-preview-row{font-size:11px;font-weight:700}
+.invoice-preview-row b{font-weight:900}
+.invoice-preview-row small{font-size:8px;font-weight:700}
+.invoice-preview-total{font-size:13px;font-weight:900}
+
