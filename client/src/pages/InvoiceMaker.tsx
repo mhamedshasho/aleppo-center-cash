@@ -34,6 +34,31 @@ const money = (n: number, c: Currency) => new Intl.NumberFormat(c === "SYP" ? "a
 const dateText = (d: string) => new Intl.DateTimeFormat("ar-SY", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d + "T12:00:00"));
 const esc = (v: string) => v.replace(/[&<>"']/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[x] || x);
 
+const LOGO_CANVAS_SIZE = 200;
+const LOGO_DISPLAY_SIZE = 90;
+
+async function normalizeLogo(file: File) {
+  const source = await fileData(file);
+  return await new Promise<string>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = LOGO_CANVAS_SIZE;
+      canvas.height = LOGO_CANVAS_SIZE;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("تعذر تجهيز الشعار"));
+      ctx.clearRect(0, 0, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
+      const scale = Math.min(LOGO_CANVAS_SIZE / image.naturalWidth, LOGO_CANVAS_SIZE / image.naturalHeight);
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      ctx.drawImage(image, (LOGO_CANVAS_SIZE - width) / 2, (LOGO_CANVAS_SIZE - height) / 2, width, height);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    image.onerror = () => reject(new Error("تعذر قراءة الشعار"));
+    image.src = source;
+  });
+}
+
 async function fileData(file: File) {
   return await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
@@ -155,7 +180,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    try { setLogo(await fileData(file)); toast.success("تم اختيار الشعار"); } catch { toast.error("تعذر قراءة الشعار"); }
+    try { setLogo(await normalizeLogo(file)); toast.success("تم اختيار الشعار بحجم ثابت 200×200px"); } catch { toast.error("تعذر قراءة الشعار"); }
   };
 
   const applyTemplate = () => {
@@ -207,7 +232,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
           + '<div style="text-align:center;margin:18px 70px 0;"><div style="font-size:25px;font-weight:800;color:' + invoiceAccent + ';">فاتورة رقم ' + esc(invoiceNumber) + '</div>'
           + '<div style="font-size:12px;font-weight:700;color:#78908b;margin-top:6px;">' + (customer ? esc("العميل: " + customer) : "") + '</div>'
           + '<div style="font-size:11px;font-weight:700;color:#9aa9a5;margin-top:4px;">التاريخ: ' + esc(dateText(invoiceDate)) + '</div></div>'
-          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:70px;height:70px;object-fit:contain;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
+          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:${LOGO_DISPLAY_SIZE}px;height:${LOGO_DISPLAY_SIZE}px;object-fit:cover;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:24px;border:1px solid #dfe7e2;border-radius:9px;overflow:hidden;font-size:10px;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
           + '<thead><tr style="background:' + invoiceAccent + ';color:' + invoiceText + ';font-weight:700;">'
