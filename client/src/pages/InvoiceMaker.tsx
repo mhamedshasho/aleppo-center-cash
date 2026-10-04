@@ -213,7 +213,6 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
   const [activeId, setActiveId] = useState<number | null>(null);
   const [logo, setLogo] = useState("");
   const [logoSource, setLogoSource] = useState<"settings" | "device">("settings");
-  const [logoCorner, setLogoCorner] = useState("top-right");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [customer, setCustomer] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
@@ -316,12 +315,12 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
         host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:30px 38px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;font-weight:800;position:relative;">'
           + '<div style="height:8px;background:' + invoiceAccent + ';border-radius:6px;"></div>'
-          + '<div style="display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:16px 18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:14px;background:' + invoiceAccentSoft + ';">'
+          + '<div style="display:flex;align-items:center;justify-content:flex-start;gap:18px;margin-top:18px;padding:16px 18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:14px;background:' + invoiceAccentSoft + ';">'
           + '<div style="text-align:right;"><div style="font-size:29px;font-weight:900;color:' + invoiceAccent + ';line-height:1.2;">فاتورة</div><div style="font-size:18px;font-weight:900;margin-top:5px;color:' + invoiceBodyText + ';">رقم ' + esc(invoiceNumber) + '</div></div>'
           + '<div style="text-align:left;font-size:13px;font-weight:800;line-height:1.9;color:#617873;">'
           + (customer ? '<div><strong style="color:' + invoiceBodyText + ';">العميل:</strong> ' + esc(customer) + '</div>' : "")
           + '<div><strong style="color:' + invoiceBodyText + ';">التاريخ:</strong> ' + esc(dateText(invoiceDate)) + '</div></div></div>'
-          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:0;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
+          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:0;right:42px;top:12px;" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:12px;overflow:hidden;font-size:13px;font-weight:800;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
           + '<thead><tr style="background:' + invoiceAccent + ';color:' + invoiceText + ';font-weight:700;">'
@@ -368,7 +367,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
       <div className="invoice-field"><label>رقم الفاتورة</label><input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="مثلاً 28" /></div>
       <div className="invoice-field"><label>العميل</label><input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="اختياري" /></div>
       <div className="invoice-field"><label>التاريخ</label><input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
-      <div className="invoice-field"><label>زاوية الشعار</label><select value={logoCorner} onChange={(e) => setLogoCorner(e.target.value)}><option value="top-right">أعلى اليمين</option><option value="top-left">أعلى اليسار</option><option value="bottom-right">أسفل اليمين</option><option value="bottom-left">أسفل اليسار</option></select></div>
+      
       <div className="invoice-logo-source"><label>مصدر الشعار</label><div><button className={logoSource === "settings" ? "active" : ""} onClick={() => setLogoSource("settings")} disabled={!settingsLogo}><ImageIcon size={15} /> من الإعدادات</button><button className={logoSource === "device" ? "active" : ""} onClick={() => setLogoSource("device")}><Upload size={15} /> من الجهاز</button></div></div><button className="secondary-btn invoice-logo-btn" onClick={() => logoRef.current?.click()}><ImageIcon size={16} /> {logo ? "تغيير شعار الجهاز" : "اختيار من الجهاز"}</button><button className="secondary-btn" disabled={!logoSource || !onSaveSettingsLogo || !effectiveLogo} onClick={() => onSaveSettingsLogo?.(effectiveLogo)}>حفظ هذا الشعار في الإعدادات</button><input ref={logoRef} hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => void chooseLogo(e)} />
     </section>
 
@@ -409,7 +408,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
       <div className="invoice-preview-modal" dir="rtl">
         <header><div><span className="eyebrow">PREVIEW</span><h2>معاينة الفاتورة</h2><p>هذه معاينة قبل إنشاء ملف PDF.</p></div><button className="icon-btn bordered" onClick={() => setShowPreview(false)}><X size={18} /></button></header>
         <div className="invoice-preview-page">
-          <div className="invoice-preview-top"><div><h1>فاتورة رقم {invoiceNumber || "—"}</h1>{customer && <p>العميل: {customer}</p>}<small>تاريخ الفاتورة: {dateText(invoiceDate)}</small></div>{effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="الشعار" />}</div>
+          <div className="invoice-preview-top"><div><h1>فاتورة رقم {invoiceNumber || "—"}</h1>{customer && <p>العميل: {customer}</p>}<small>تاريخ الفاتورة: {dateText(invoiceDate)}</small></div></div>{effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="الشعار" />}
           <div className="invoice-preview-table">
             <div className="invoice-preview-head"><span>اسم القالب</span><span>صورة القالب</span><span>امتار</span><span>السعر</span><span>له/عليه</span><span>التاريخ</span></div>
             {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}          </div>
