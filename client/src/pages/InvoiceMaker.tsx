@@ -48,10 +48,45 @@ async function normalizeLogo(file: File) {
       const ctx = canvas.getContext("2d");
       if (!ctx) return reject(new Error("تعذر تجهيز الشعار"));
       ctx.clearRect(0, 0, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
-      const scale = Math.min(LOGO_CANVAS_SIZE / image.naturalWidth, LOGO_CANVAS_SIZE / image.naturalHeight);
-      const width = image.naturalWidth * scale;
-      const height = image.naturalHeight * scale;
-      ctx.drawImage(image, (LOGO_CANVAS_SIZE - width) / 2, (LOGO_CANVAS_SIZE - height) / 2, width, height);
+
+      const sourceWidth = image.naturalWidth;
+      const sourceHeight = image.naturalHeight;
+      const maxSize = Math.max(sourceWidth, sourceHeight);
+      const previewScale = Math.min(1, 1200 / maxSize);
+      const scanWidth = Math.max(1, Math.round(sourceWidth * previewScale));
+      const scanHeight = Math.max(1, Math.round(sourceHeight * previewScale));
+      const scanCanvas = document.createElement("canvas");
+      scanCanvas.width = scanWidth;
+      scanCanvas.height = scanHeight;
+      const scanCtx = scanCanvas.getContext("2d");
+      if (!scanCtx) return reject(new Error("تعذر تحليل الشعار"));
+      scanCtx.clearRect(0, 0, scanWidth, scanHeight);
+      scanCtx.drawImage(image, 0, 0, scanWidth, scanHeight);
+      const pixels = scanCtx.getImageData(0, 0, scanWidth, scanHeight).data;
+      let minX = scanWidth, minY = scanHeight, maxX = -1, maxY = -1;
+      for (let y = 0; y < scanHeight; y += 1) {
+        for (let x = 0; x < scanWidth; x += 1) {
+          const alpha = pixels[(y * scanWidth + x) * 4 + 3];
+          if (alpha > 12) {
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      const hasTransparentBackground = maxX >= 0 && maxY >= 0;
+      const cropX = hasTransparentBackground ? Math.floor(minX / previewScale) : 0;
+      const cropY = hasTransparentBackground ? Math.floor(minY / previewScale) : 0;
+      const cropRight = hasTransparentBackground ? Math.ceil((maxX + 1) / previewScale) : sourceWidth;
+      const cropBottom = hasTransparentBackground ? Math.ceil((maxY + 1) / previewScale) : sourceHeight;
+      const cropWidth = Math.max(1, cropRight - cropX);
+      const cropHeight = Math.max(1, cropBottom - cropY);
+      const scale = Math.min((LOGO_CANVAS_SIZE - 12) / cropWidth, (LOGO_CANVAS_SIZE - 12) / cropHeight);
+      const width = cropWidth * scale;
+      const height = cropHeight * scale;
+      ctx.drawImage(image, cropX, cropY, cropWidth, cropHeight, (LOGO_CANVAS_SIZE - width) / 2, (LOGO_CANVAS_SIZE - height) / 2, width, height);
       resolve(canvas.toDataURL("image/png"));
     };
     image.onerror = () => reject(new Error("تعذر قراءة الشعار"));
