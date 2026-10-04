@@ -238,14 +238,14 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
         const rowBorder = theme === "yellow-black" || theme === "dark" ? "#303030" : "#e7eeeb";
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
         host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:30px 38px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;font-weight:800;position:relative;">'
-          + '<div style="height:8px;background:' + invoiceAccent + ';border-radius:6px;"></div>'
-          + '<div style="display:flex;align-items:center;justify-content:flex-start;gap:18px;margin-top:18px;padding:16px 18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:14px;background:' + invoiceAccentSoft + ';">'
-          + '<div style="text-align:right;"><div style="font-size:29px;font-weight:900;color:' + invoiceAccent + ';line-height:1.2;">فاتورة</div><div style="font-size:18px;font-weight:900;margin-top:5px;color:' + invoiceBodyText + ';">رقم ' + esc(invoiceNumber) + '</div></div>'
+          + '<div style="height:10px;background:' + invoiceAccent + ';border-radius:6px;"></div>'
+          + '<div style="display:flex;align-items:center;justify-content:flex-start;gap:18px;margin-top:18px;padding:18px 20px;border:1px solid ' + invoiceBorderSoft + ';border-radius:16px;background:' + invoiceAccentSoft + ';">'
+          + '<div style="text-align:right;"><div style="font-size:32px;font-weight:900;color:' + invoiceAccent + ';line-height:1.2;">فاتورة</div><div style="font-size:18px;font-weight:900;margin-top:5px;color:' + invoiceBodyText + ';">رقم ' + esc(invoiceNumber) + '</div></div>'
           + '<div style="text-align:left;font-size:13px;font-weight:800;line-height:1.9;color:#617873;">'
           + (customer ? '<div><strong style="color:' + invoiceBodyText + ';">العميل:</strong> ' + esc(customer) + '</div>' : "")
           + '<div><strong style="color:' + invoiceBodyText + ';">التاريخ:</strong> ' + esc(dateText(invoiceDate)) + '</div></div></div>'
-          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:50%;border:3px solid ${invoiceAccent};right:42px;top:12px;" />' : "")
-          + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:18px;border:1px solid ' + invoiceBorderSoft + ';border-radius:12px;overflow:hidden;font-size:13px;font-weight:800;direction:rtl;">'
+          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:50%;border:3px solid ' + invoiceAccent + ';right:42px;top:12px;" />' : "")
+          + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:20px;border:1px solid ' + invoiceBorderSoft + ';border-radius:14px;overflow:hidden;font-size:13px;font-weight:800;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
           + '<thead><tr style="background:' + invoiceAccent + ';color:' + invoiceText + ';font-weight:700;">'
           + '<th style="padding:14px 8px;text-align:right;font-size:13px;font-weight:900;">القالب</th><th style="padding:14px 8px;text-align:center;font-size:13px;font-weight:900;">الصورة</th><th style="padding:12px 7px;text-align:center;">الأمتار</th><th style="padding:12px 7px;text-align:center;">المبلغ</th><th style="padding:12px 7px;text-align:center;">الحالة</th><th style="padding:12px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
@@ -260,12 +260,12 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
               + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "yellow-black" || theme === "dark" ? (r.type === "credit" ? "#f2c300" : "#ff7b7b") : theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
               + '<td style="padding:7px;font-size:11px;font-weight:800;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
-          + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:16px;padding:12px 15px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
+          + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:18px;padding:14px 16px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
           + '<span>الرصيد الصافي</span><span style="color:' + (theme === "yellow-black" || theme === "dark" ? "#f2c300" : theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
           + '<div style="position:absolute;bottom:16px;left:38px;right:38px;padding-top:8px;border-top:1px solid ' + invoiceBorderSoft + ';text-align:center;font-size:9px;font-weight:800;color:#7f938f;">Aleppo Center Cash • فاتورة مالية</div></div>';
-        const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 2, backgroundColor: invoiceBackground, logging: false });
+        const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 3, backgroundColor: invoiceBackground, logging: false, useCORS: true, imageTimeout: 15000 });
         if (start > 0) pdf.addPage();
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, 210, 297, undefined, "FAST");
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297, undefined, "FAST");
       }
       pdf.save("aleppo-center-invoice-" + invoiceNumber + ".pdf");
       toast.success("تم استخراج الفاتورة PDF");
