@@ -244,7 +244,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
           + '<div style="text-align:left;font-size:13px;font-weight:800;line-height:1.9;color:#617873;">'
           + (customer ? '<div><strong style="color:' + invoiceBodyText + ';">العميل:</strong> ' + esc(customer) + '</div>' : "")
           + '<div><strong style="color:' + invoiceBodyText + ';">التاريخ:</strong> ' + esc(dateText(invoiceDate)) + '</div></div></div>'
-          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:50%;border:3px solid ' + invoiceAccent + ';right:42px;top:12px;" />' : "")
+          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:104px;height:104px;object-fit:contain;border-radius:50%;border:3px solid ' + invoiceAccent + ';left:50%;transform:translateX(-50%);top:12px;" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:20px;border:1px solid ' + invoiceBorderSoft + ';border-radius:14px;overflow:hidden;font-size:13px;font-weight:800;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
           + '<thead><tr style="background:' + invoiceAccent + ';color:' + invoiceText + ';font-weight:700;">'
