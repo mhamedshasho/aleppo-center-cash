@@ -2192,3 +2192,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
   .invoice-maker{max-width:1580px}
   .invoice-maker-grid{grid-template-columns:minmax(0,1fr) 380px}
 }
+
+
+/* Final logo placement: center the circular logo inside the invoice header panel. */
+.invoice-preview-paper-head{position:relative!important;overflow:visible}
+.invoice-preview-paper-head .invoice-preview-logo{
+  left:50%!important;
+  right:auto!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+}
+@media(max-width:700px){
+  .invoice-preview-paper-head .invoice-preview-logo{
+    left:50%!important;
+    right:auto!important;
+    top:50%!important;
+    transform:translate(-50%,-50%)!important;
+  }
+}
