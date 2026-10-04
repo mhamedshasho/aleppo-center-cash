@@ -2009,3 +2009,12 @@ html.yellow-black .invoice-preview-logo{border-color:#f2c300!important}
 
 /* Keep the circular logo window centered on the square source image. */
 .invoice-preview-logo{object-position:50% 50%!important;transform-origin:50% 50%!important}
+
+/* Final invoice polish */
+.invoice-preview-page{border-radius:4px}
+.invoice-preview-top{padding-top:6px!important}
+.invoice-preview-table{box-shadow:0 4px 16px rgba(21,48,50,.06)}
+.invoice-preview-head{letter-spacing:.01em}
+.invoice-preview-row{transition:background .15s ease}
+.invoice-preview-total{min-height:52px;align-items:center}
+@media(max-width:720px){.invoice-preview-scroll{padding:10px 6px}.invoice-preview-page{padding:12px 8px 16px}.invoice-preview-total{min-height:46px}}
