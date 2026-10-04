@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type Theme = "light" | "dark" | "gold" | "red";
+export type Theme = "light" | "dark" | "gold" | "red" | "yellow-black";
 
 interface ThemeContextType {
   theme: Theme;
@@ -25,7 +25,7 @@ export function ThemeProvider({
   const [theme, setThemeState] = useState<Theme>(() => {
     if (switchable) {
       const stored = localStorage.getItem("theme");
-      return stored === "dark" || stored === "gold" || stored === "red" || stored === "light" ? stored : defaultTheme;
+      return stored === "dark" || stored === "gold" || stored === "red" || stored === "yellow-black" || stored === "light" ? stored : defaultTheme;
     }
     return defaultTheme;
   });
@@ -37,6 +37,7 @@ export function ThemeProvider({
     root.classList.toggle("dark", theme === "dark");
     root.classList.toggle("gold", theme === "gold");
     root.classList.toggle("red", theme === "red");
+    root.classList.toggle("yellow-black", theme === "yellow-black");
 
     if (switchable) {
       localStorage.setItem("theme", theme);
@@ -45,7 +46,7 @@ export function ThemeProvider({
 
   const toggleTheme = switchable
     ? () => {
-        setThemeState(prev => prev === "light" ? "dark" : prev === "dark" ? "gold" : prev === "gold" ? "red" : "light");
+        setThemeState(prev => prev === "light" ? "dark" : prev === "dark" ? "gold" : prev === "gold" ? "red" : prev === "red" ? "yellow-black" : "light");
       }
     : undefined;
 
