@@ -52,7 +52,7 @@ jobs:
           $source = "src-tauri/target/release/aleppo-center-cash.exe"
           if (!(Test-Path $source)) { throw "Portable EXE was not produced: $source" }
           New-Item -ItemType Directory -Force -Path release | Out-Null
-          Copy-Item $source "release/Aleppo.Center.Cash.Portable.1.0.3.exe"
+          Copy-Item $source "release/Aleppo.Center.Cash.Portable.1.0.9.exe"
 
       - name: Verify portable size
         shell: pwsh
