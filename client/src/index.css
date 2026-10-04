@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@500;600;700;800;900&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./cloud-auth.css";
@@ -1774,7 +1775,47 @@ html.yellow-black,html.yellow-black body{background:#080808!important;color:#f5f
 
 
 
-/* Modern invoice presentation: clean hierarchy, strong typography, phone-friendly layout. */
+/* Invoice typography and logo polish: Arabic-first, bold, crisp, and logo-content focused. */
+body, button, input, select, textarea{font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif}
+.invoice-preview-page,
+.invoice-preview-page *{font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif}
+.invoice-preview-page{width:min(920px,calc(100% - 24px));padding:30px}
+.invoice-preview-top{
+  min-height:116px;
+  padding:20px 132px 20px 20px;
+  border-radius:18px;
+}
+.invoice-preview-top h1{font-size:31px;font-weight:900;letter-spacing:-.02em}
+.invoice-preview-top p{margin:9px 0 0;font-size:17px;font-weight:800}
+.invoice-preview-top small{font-size:14px;font-weight:700}
+.invoice-preview-logo{
+  width:104px!important;height:104px!important;max-width:104px!important;max-height:104px!important;
+  object-fit:contain!important;object-position:center!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;padding:0!important;
+}
+.invoice-preview-head{min-height:48px;font-size:14px;font-weight:900}
+.invoice-preview-row{min-height:96px;font-size:14px;font-weight:800}
+.invoice-preview-row > span{padding:12px 9px}
+.invoice-preview-row b{font-size:15px;font-weight:900}
+.invoice-preview-row small{font-size:10px;font-weight:700}
+.invoice-preview-total{font-size:16px;font-weight:900;padding:17px 18px}
+.invoice-preview-total strong{font-size:20px;font-weight:900}
+.preview-credit,.preview-debit{font-weight:900}
+.preview-image-cell img{max-width:100%;max-height:78px}
+@media(max-width:700px){
+  .invoice-preview-page{width:calc(100% - 12px);padding:10px}
+  .invoice-preview-top{padding:15px 84px 15px 12px;min-height:0}
+  .invoice-preview-top h1{font-size:23px}
+  .invoice-preview-top p{font-size:13px}
+  .invoice-preview-top small{font-size:11px}
+  .invoice-preview-logo{width:72px!important;height:72px!important;max-width:72px!important;max-height:72px!important;right:8px!important;top:8px!important}
+  .invoice-preview-row{font-size:13px}
+  .invoice-preview-row b{font-size:14px}
+  .invoice-preview-row > span{padding:8px 9px}
+  .invoice-preview-total strong{font-size:17px}
+}
+
 .invoice-preview-page{
   width:min(920px,calc(100% - 28px));
   min-height:560px;
