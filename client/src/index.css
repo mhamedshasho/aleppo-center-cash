@@ -1954,3 +1954,25 @@ body, button, input, select, textarea{font-family:"Noto Sans Arabic","Segoe UI",
   }
   .invoice-preview-modal > footer button{flex:1;justify-content:center}
 }
+
+/* Fixed invoice logo: always at the very top, without reserving header space. */
+.invoice-preview-page{position:relative!important}
+.invoice-preview-top{padding-right:20px!important}
+.invoice-preview-logo{
+  position:absolute!important;
+  top:10px!important;
+  right:12px!important;
+  width:104px!important;
+  height:104px!important;
+  margin:0!important;
+  z-index:3!important;
+}
+@media(max-width:700px){
+  .invoice-preview-top{padding-right:12px!important}
+  .invoice-preview-logo{
+    top:6px!important;
+    right:8px!important;
+    width:72px!important;
+    height:72px!important;
+  }
+}
