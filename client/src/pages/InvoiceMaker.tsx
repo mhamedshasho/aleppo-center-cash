@@ -202,11 +202,11 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
         const rowAltBackground = theme === "yellow-black" || theme === "dark" ? "#171717" : "#fbfcfb";
         const rowBorder = theme === "yellow-black" || theme === "dark" ? "#303030" : "#e7eeeb";
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
-        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:Cairo,Arial,sans-serif;position:relative;">'
+        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:Cairo,Arial,sans-serif;font-weight:700;position:relative;">'
           + '<div style="height:7px;background:' + invoiceAccent + ';border-radius:4px;"></div>'
           + '<div style="text-align:center;margin:18px 70px 0;"><div style="font-size:25px;font-weight:800;color:' + invoiceAccent + ';">فاتورة رقم ' + esc(invoiceNumber) + '</div>'
-          + '<div style="font-size:12px;color:#78908b;margin-top:6px;">' + (customer ? esc("العميل: " + customer) : "") + '</div>'
-          + '<div style="font-size:11px;color:#9aa9a5;margin-top:4px;">التاريخ: ' + esc(dateText(invoiceDate)) + '</div></div>'
+          + '<div style="font-size:12px;font-weight:700;color:#78908b;margin-top:6px;">' + (customer ? esc("العميل: " + customer) : "") + '</div>'
+          + '<div style="font-size:11px;font-weight:700;color:#9aa9a5;margin-top:4px;">التاريخ: ' + esc(dateText(invoiceDate)) + '</div></div>'
           + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:70px;height:70px;object-fit:contain;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:24px;border:1px solid #dfe7e2;border-radius:9px;overflow:hidden;font-size:10px;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
@@ -225,7 +225,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:16px;padding:12px 15px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
           + '<span>الرصيد الصافي</span><span style="color:' + (theme === "yellow-black" || theme === "dark" ? "#f2c300" : theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
-          + '<div style="position:absolute;bottom:15px;left:0;right:0;text-align:center;font-size:9px;color:#9aa9a5;">Aleppo Center Cash</div></div>';
+          + '<div style="position:absolute;bottom:15px;left:0;right:0;text-align:center;font-size:9px;font-weight:700;color:#9aa9a5;">Aleppo Center Cash</div></div>';
         const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 2, backgroundColor: invoiceBackground, logging: false });
         if (start > 0) pdf.addPage();
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, 210, 297, undefined, "FAST");
