@@ -59,7 +59,9 @@ async function normalizeLogo(file: File) {
       const size = Math.min(w, h);
       const sx = (w - size) / 2;
       const sy = (h - size) / 2;
-      ctx.drawImage(image, sx, sy, size, size, 0, 0, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
+      const dx = (LOGO_CANVAS_SIZE - LOGO_CANVAS_SIZE) / 2;
+      const dy = (LOGO_CANVAS_SIZE - LOGO_CANVAS_SIZE) / 2;
+      ctx.drawImage(image, sx, sy, size, size, dx, dy, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
       ctx.restore();
       resolve(canvas.toDataURL("image/png"));
     };
