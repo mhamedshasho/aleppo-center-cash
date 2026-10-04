@@ -182,32 +182,35 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
       for (let start = 0; start < chosen.length; start += 10) {
         const batch = chosen.slice(start, start + 10);
         const batchTotals = batch.reduce((sum, row) => ({ ...sum, [row.currency]: (sum[row.currency] || 0) + (row.type === "debit" ? row.amount : -row.amount) }), {} as Record<Currency, number>);
+        const rowBackground = theme === "yellow-black" || theme === "dark" ? "#111111" : "#ffffff";
+        const rowAltBackground = theme === "yellow-black" || theme === "dark" ? "#171717" : "#fbfcfb";
+        const rowBorder = theme === "yellow-black" || theme === "dark" ? "#303030" : "#e7eeeb";
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
-        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:${invoiceBackground};color:${invoiceBodyText};font-family:Cairo,Arial,sans-serif;position:relative;">'
+        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:Cairo,Arial,sans-serif;position:relative;">'
           + '<div style="height:7px;background:' + invoiceAccent + ';border-radius:4px;"></div>'
           + '<div style="text-align:center;margin:18px 70px 0;"><div style="font-size:25px;font-weight:800;color:' + invoiceAccent + ';">فاتورة رقم ' + esc(invoiceNumber) + '</div>'
           + '<div style="font-size:12px;color:#78908b;margin-top:6px;">' + (customer ? esc("العميل: " + customer) : "") + '</div>'
           + '<div style="font-size:11px;color:#9aa9a5;margin-top:4px;">التاريخ: ' + esc(dateText(invoiceDate)) + '</div></div>'
-          + (logo ? '<img src="' + logo + '" style="position:absolute;width:70px;height:70px;object-fit:contain;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
+          + (effectiveLogo ? '<img src="' + effectiveLogo + '" style="position:absolute;width:70px;height:70px;object-fit:contain;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:24px;border:1px solid #dfe7e2;border-radius:9px;overflow:hidden;font-size:10px;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
-          + '<thead><tr style="background:' + invoiceAccent + ';color:${invoiceText};font-weight:700;">'
+          + '<thead><tr style="background:' + invoiceAccent + ';color:' + invoiceText + ';font-weight:700;">'
           + '<th style="padding:10px 7px;text-align:right;">اسم القالب</th><th style="padding:10px 7px;text-align:center;">صورة القالب</th><th style="padding:10px 7px;text-align:center;">امتار</th><th style="padding:10px 7px;text-align:center;">السعر</th><th style="padding:10px 7px;text-align:center;">له/عليه</th><th style="padding:10px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
           + batch.map((r, i) => {
             const p = positions[r.id] || { x: 50, y: 50 };
             const image = images[r.id] || "";
-            return '<tr style="height:88px;background:' + (i % 2 ? "#fff" : "#fbfcfb") + ';">'
-              + '<td style="padding:7px;font-weight:700;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(r.name) + (imageLabels[r.id] ? '<div style="font-size:7px;color:#91a29e;margin-top:3px;line-height:1.25;word-break:break-word;">' + esc(imageLabels[r.id]) + '</div>' : "") + '</td>'
+            return '<tr style="height:88px;background:' + (i % 2 ? rowBackground : rowAltBackground) + ';">'
+              + '<td style="padding:7px;font-weight:700;vertical-align:middle;word-break:break-word;border-top:1px solid ' + rowBorder + ';">' + esc(r.name) + (imageLabels[r.id] ? '<div style="font-size:7px;color:#91a29e;margin-top:3px;line-height:1.25;word-break:break-word;">' + esc(imageLabels[r.id]) + '</div>' : "") + '</td>'
               + '<td style="padding:4px;vertical-align:middle;text-align:center;border-top:1px solid #e7eeeb;"><div style="height:72px;position:relative;overflow:hidden;"><img src="' + image + '" style="position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);max-width:92px;max-height:68px;object-fit:contain;" /></div></td>'
               + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(meters[r.id] || "—") + '</td>'
               + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(money(r.amount, r.currency)) + '</td>'
-              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
+              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "yellow-black" || theme === "dark" ? (r.type === "credit" ? "#f2c300" : "#ff7b7b") : theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
               + '<td style="padding:7px;font-size:9px;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:16px;padding:12px 15px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
-          + '<span>الرصيد الصافي</span><span style="color:' + (theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
+          + '<span>الرصيد الصافي</span><span style="color:' + (theme === "yellow-black" || theme === "dark" ? "#f2c300" : theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
           + '<div style="position:absolute;bottom:15px;left:0;right:0;text-align:center;font-size:9px;color:#9aa9a5;">Aleppo Center Cash</div></div>';
-        const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", logging: false });
+        const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 2, backgroundColor: invoiceBackground, logging: false });
         if (start > 0) pdf.addPage();
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, 210, 297, undefined, "FAST");
       }
