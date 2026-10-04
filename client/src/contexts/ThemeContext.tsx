@@ -22,7 +22,10 @@ interface ThemeProviderProps {
 const isTheme = (value: unknown): value is Theme =>
   value === "light" || value === "dark" || value === "gold" || value === "red" || value === "yellow-black";
 
-export function ThemeProvider({ children, defaultTheme = "light", switchable = false, workspaceId }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultTheme = "light", switchable = false, workspaceId: explicitWorkspaceId }: ThemeProviderProps) {
+  const [sharedWorkspaceId, setSharedWorkspaceId] = useState<string | null>(() => explicitWorkspaceId ?? (typeof localStorage !== "undefined" ? localStorage.getItem("aleppo-shared-workspace-id") : null));
+  const workspaceId = explicitWorkspaceId ?? sharedWorkspaceId;
+  useEffect(() => { if (explicitWorkspaceId) return; const handler = () => setSharedWorkspaceId(localStorage.getItem("aleppo-shared-workspace-id")); window.addEventListener("aleppo-workspace-context", handler); return () => window.removeEventListener("aleppo-workspace-context", handler); }, [explicitWorkspaceId]);
   const [theme, setThemeState] = useState<Theme>(() => {
     if (switchable && typeof localStorage !== "undefined") {
       const stored = localStorage.getItem("theme");
