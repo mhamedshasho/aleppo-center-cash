@@ -1772,3 +1772,144 @@ html.yellow-black,html.yellow-black body{background:#080808!important;color:#f5f
 .invoice-preview-row small{font-size:8px;font-weight:700}
 .invoice-preview-total{font-size:13px;font-weight:900}
 
+
+
+/* Modern invoice presentation: clean hierarchy, strong typography, phone-friendly layout. */
+.invoice-preview-page{
+  width:min(920px,calc(100% - 28px));
+  min-height:560px;
+  padding:34px;
+  border:1px solid #e2eae6;
+  border-radius:18px;
+  box-shadow:0 18px 45px rgba(21,48,50,.12);
+}
+.invoice-preview-top{
+  min-height:100px;
+  padding:18px 104px 18px 18px;
+  border:1px solid #e0e9e5;
+  border-radius:16px;
+  background:#f4f8f6;
+  align-items:center;
+}
+.invoice-preview-top h1{font-size:28px;font-weight:900;line-height:1.2;color:#173f47}
+.invoice-preview-top p{margin:8px 0 0;font-size:14px;font-weight:800;color:#526d68}
+.invoice-preview-top small{font-size:12px;font-weight:700;color:#748a85}
+.invoice-preview-logo{
+  width:90px!important;height:90px!important;max-width:90px!important;max-height:90px!important;
+  border:3px solid #fff!important;box-shadow:0 5px 16px rgba(21,48,50,.14);
+}
+.invoice-preview-table{
+  margin-top:18px;
+  border-radius:14px;
+  border:1px solid #dce7e2;
+  box-shadow:0 7px 20px rgba(21,48,50,.06);
+}
+.invoice-preview-head{
+  min-height:44px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.1px;
+}
+.invoice-preview-row{
+  min-height:92px;
+  font-size:12px;
+  font-weight:700;
+}
+.invoice-preview-row > span{padding:10px 8px}
+.invoice-preview-row b{font-size:13px;font-weight:900}
+.invoice-preview-row small{font-size:9px;font-weight:700}
+.invoice-preview-total{
+  margin-top:16px;
+  padding:15px 17px;
+  border-radius:13px;
+  font-size:14px;
+  font-weight:900;
+  box-shadow:0 6px 16px rgba(21,48,50,.05);
+}
+.preview-credit,.preview-debit{font-weight:900}
+.preview-credit{color:#2f896d}
+.preview-debit{color:#b35f50}
+
+@media(max-width:700px){
+  .invoice-preview-modal > header{padding:14px 16px}
+  .invoice-preview-modal > header h2{font-size:19px}
+  .invoice-preview-page{
+    width:calc(100% - 18px);
+    min-height:0;
+    margin:9px auto;
+    padding:12px;
+    border-radius:14px;
+  }
+  .invoice-preview-top{
+    min-height:0;
+    padding:14px 76px 14px 12px;
+    border-radius:13px;
+  }
+  .invoice-preview-top h1{font-size:21px}
+  .invoice-preview-top p{font-size:12px}
+  .invoice-preview-top small{font-size:10px}
+  .invoice-preview-logo{
+    width:62px!important;height:62px!important;max-width:62px!important;max-height:62px!important;
+    right:10px!important;top:10px!important;
+  }
+  .invoice-preview-head{display:none}
+  .invoice-preview-table{
+    margin-top:12px;
+    border:none;
+    box-shadow:none;
+    overflow:visible;
+    background:transparent;
+  }
+  .invoice-preview-row{
+    min-height:0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    padding:9px;
+    margin-bottom:9px;
+    border:1px solid #dce7e2;
+    border-radius:12px;
+    background:#fff!important;
+    box-shadow:0 5px 14px rgba(21,48,50,.06);
+  }
+  .invoice-preview-row > span{
+    min-height:43px;
+    padding:8px 9px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:flex-start;
+    text-align:right;
+    border:1px solid #e8efec;
+    border-radius:8px;
+    background:#f8faf9;
+    font-size:12px;
+  }
+  .invoice-preview-row > span::before{
+    content:"";
+    display:block;
+    margin-bottom:3px;
+    font-size:9px;
+    font-weight:900;
+    color:#78908b;
+  }
+  .invoice-preview-row > span:nth-child(1){grid-column:1 / -1}
+  .invoice-preview-row > span:nth-child(1)::before{content:"القالب"}
+  .invoice-preview-row > span:nth-child(2)::before{content:"الصورة"}
+  .invoice-preview-row > span:nth-child(3)::before{content:"الأمتار"}
+  .invoice-preview-row > span:nth-child(4)::before{content:"المبلغ"}
+  .invoice-preview-row > span:nth-child(5)::before{content:"الحالة"}
+  .invoice-preview-row > span:nth-child(6)::before{content:"التاريخ"}
+  .invoice-preview-row b{font-size:13px}
+  .invoice-preview-row small{font-size:8px}
+  .invoice-preview-total{
+    margin-top:8px;
+    padding:12px;
+    font-size:13px;
+  }
+  .invoice-preview-modal > footer{
+    padding:10px 12px;
+    gap:7px;
+  }
+  .invoice-preview-modal > footer button{flex:1;justify-content:center}
+}
