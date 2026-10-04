@@ -242,7 +242,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
           + '<div style="height:10px;background:' + invoiceAccent + ';border-radius:6px;"></div>'
           + '<div style="position:relative;height:136px;box-sizing:border-box;margin-top:18px;padding:18px 20px;border:1px solid ' + invoiceBorderSoft + ';border-radius:16px;background:' + invoiceAccentSoft + ';">'
           + '<div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);width:30%;text-align:right;z-index:1;"><div style="font-size:32px;font-weight:900;color:' + invoiceAccent + ';line-height:1.2;">فاتورة</div><div style="font-size:18px;font-weight:900;margin-top:5px;color:' + invoiceBodyText + ';">رقم ' + esc(invoiceNumber) + '</div></div>'
-          + (effectiveLogo ? '<div style="position:absolute;left:50%;top:50%;width:96px;height:96px;transform:translate(-50%,-50%);border-radius:50%;border:3px solid ' + invoiceAccent + ';box-sizing:border-box;overflow:hidden;background:' + invoiceBackground + ';z-index:2;"><img src="' + effectiveLogo + '" style="display:block;width:100%;height:100%;object-fit:fill;object-position:50% 50%;border-radius:50%;" /></div>' : "")
+          + (effectiveLogo ? '<div style="position:absolute;left:50%;top:50%;width:102px;height:102px;transform:translate(-50%,-50%);border-radius:50%;border:3px solid ' + invoiceAccent + ';box-sizing:border-box;background:transparent;z-index:2;display:flex;align-items:center;justify-content:center;"><img src="' + effectiveLogo + '" style="display:block;width:96px;height:96px;object-fit:contain;object-position:50% 50%;border-radius:50%;" /></div>' : "")
           + '<div style="position:absolute;left:20px;top:50%;transform:translateY(-50%);width:30%;text-align:left;font-size:13px;font-weight:800;line-height:1.9;color:#617873;z-index:1;">'
           + (customer ? '<div><strong style="color:' + invoiceBodyText + ';">العميل:</strong> ' + esc(customer) + '</div>' : "")
           + '<div><strong style="color:' + invoiceBodyText + ';">التاريخ:</strong> ' + esc(dateText(invoiceDate)) + '</div></div></div>'
@@ -264,6 +264,21 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:18px;padding:14px 16px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
           + '<span>الرصيد الصافي</span><span style="color:' + (theme === "yellow-black" || theme === "dark" ? "#f2c300" : theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
           + '<div style="position:absolute;bottom:16px;left:38px;right:38px;padding-top:8px;border-top:1px solid ' + invoiceBorderSoft + ';text-align:center;font-size:9px;font-weight:800;color:#7f938f;">Aleppo Center Cash • فاتورة مالية</div></div>';
+        const exportImages = Array.from(host.querySelectorAll("img"));
+        await Promise.all(exportImages.map(async (img) => {
+          try {
+            if (img.complete && img.naturalWidth > 0) {
+              if (typeof img.decode === "function") await img.decode();
+              return;
+            }
+            await new Promise<void>((resolve, reject) => {
+              img.addEventListener("load", () => resolve(), { once: true });
+              img.addEventListener("error", () => reject(new Error("تعذر تحميل صورة داخل الفاتورة")), { once: true });
+            });
+          } catch (error) {
+            if (img.src.startsWith("data:image/")) throw error;
+          }
+        }));
         const canvas = await html2canvas(host.firstElementChild as HTMLElement, { scale: 3, backgroundColor: invoiceBackground, logging: false, useCORS: true, imageTimeout: 15000 });
         if (start > 0) pdf.addPage();
         pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297, undefined, "FAST");
