@@ -71,7 +71,7 @@ async function renderTemplateFile(file: File): Promise<TemplatePage[]> {
   return [{ label: "الصورة", image: await fileData(file) }];
 }
 
-export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" | "red" }) {
+export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, settingsLogo, onSaveSettingsLogo }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" | "red" | "yellow-black"; settingsLogo?: string; onSaveSettingsLogo?: (logo: string) => Promise<void> }) {
   const [query, setQuery] = useState("");
   const [accountFilter, setAccountFilter] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
@@ -84,6 +84,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const [pageIndex, setPageIndex] = useState(0);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [logo, setLogo] = useState("");
+  const [logoSource, setLogoSource] = useState<"settings" | "device">("settings");
   const [logoCorner, setLogoCorner] = useState("top-right");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [customer, setCustomer] = useState("");
@@ -105,6 +106,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   const activePosition = activeId === null ? { x: 50, y: 50 } : positions[activeId] || { x: 50, y: 50 };
   const activeFile = templateFiles.find((f) => f.id === templateFileId);
   const activePage = activeFile?.pages[pageIndex];
+  const effectiveLogo = logoSource === "settings" ? (settingsLogo || "") : logo;
 
   const toggle = (id: number) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
   const chooseRow = (id: number) => { setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]); setActiveId(id); };
@@ -166,9 +168,12 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
     if (!chosen.length) return toast.error("اختار دفعة واحدة على الأقل");
     if (!invoiceNumber.trim()) return toast.error("اكتب رقم الفاتورة أولاً");
     setBusy(true);
-    const invoiceAccent = theme === "gold" ? "#b8891f" : theme === "red" ? "#8f1d2c" : "#173f47";
-    const invoiceAccentSoft = theme === "gold" ? "#fbf3d9" : theme === "red" ? "#f7e7e5" : "#f1f6f3";
-    const invoiceBorderSoft = theme === "gold" ? "#ead9a7" : theme === "red" ? "#e7c8c5" : "#dfe9e4";
+    const invoiceAccent = theme === "gold" ? "#b8891f" : theme === "red" ? "#8f1d2c" : theme === "yellow-black" ? "#f2c300" : theme === "dark" ? "#f2c300" : "#173f47";
+    const invoiceText = theme === "yellow-black" || theme === "dark" ? "#111111" : "#ffffff";
+    const invoiceBackground = theme === "yellow-black" || theme === "dark" ? "#0b0b0b" : "#ffffff";
+    const invoiceBodyText = theme === "yellow-black" || theme === "dark" ? "#f5f5f5" : "#18353a";
+    const invoiceAccentSoft = theme === "gold" ? "#fbf3d9" : theme === "red" ? "#f7e7e5" : theme === "yellow-black" || theme === "dark" ? "#1b1b1b" : "#f1f6f3";
+    const invoiceBorderSoft = theme === "gold" ? "#ead9a7" : theme === "red" ? "#e7c8c5" : theme === "yellow-black" || theme === "dark" ? "#3a3a3a" : "#dfe9e4";
     const host = document.createElement("div");
     host.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;";
     document.body.appendChild(host);
@@ -178,7 +183,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
         const batch = chosen.slice(start, start + 10);
         const batchTotals = batch.reduce((sum, row) => ({ ...sum, [row.currency]: (sum[row.currency] || 0) + (row.type === "debit" ? row.amount : -row.amount) }), {} as Record<Currency, number>);
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
-        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;position:relative;">'
+        host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:34px 42px;background:${invoiceBackground};color:${invoiceBodyText};font-family:Cairo,Arial,sans-serif;position:relative;">'
           + '<div style="height:7px;background:' + invoiceAccent + ';border-radius:4px;"></div>'
           + '<div style="text-align:center;margin:18px 70px 0;"><div style="font-size:25px;font-weight:800;color:' + invoiceAccent + ';">فاتورة رقم ' + esc(invoiceNumber) + '</div>'
           + '<div style="font-size:12px;color:#78908b;margin-top:6px;">' + (customer ? esc("العميل: " + customer) : "") + '</div>'
@@ -186,7 +191,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
           + (logo ? '<img src="' + logo + '" style="position:absolute;width:70px;height:70px;object-fit:contain;border-radius:50%;' + (logoCorner.includes("right") ? "right:42px;" : "left:42px;") + (logoCorner.includes("bottom") ? "bottom:42px;" : "top:34px;") + '" />' : "")
           + '<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:24px;border:1px solid #dfe7e2;border-radius:9px;overflow:hidden;font-size:10px;direction:rtl;">'
           + '<colgroup><col style="width:19%"><col style="width:23%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>'
-          + '<thead><tr style="background:' + invoiceAccent + ';color:#fff;font-weight:700;">'
+          + '<thead><tr style="background:' + invoiceAccent + ';color:${invoiceText};font-weight:700;">'
           + '<th style="padding:10px 7px;text-align:right;">اسم القالب</th><th style="padding:10px 7px;text-align:center;">صورة القالب</th><th style="padding:10px 7px;text-align:center;">امتار</th><th style="padding:10px 7px;text-align:center;">السعر</th><th style="padding:10px 7px;text-align:center;">له/عليه</th><th style="padding:10px 7px;text-align:center;">التاريخ</th></tr></thead><tbody>'
           + batch.map((r, i) => {
             const p = positions[r.id] || { x: 50, y: 50 };
@@ -222,7 +227,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
   return <main className="invoice-maker page-enter" dir="rtl">
     <header className="invoice-maker-head">
       <div><button className="text-btn invoice-back" onClick={onBack}><ArrowLeft size={16} /> رجوع</button><div className="eyebrow">ALEPPO CENTER <span>•</span> INVOICE MAKER</div><h1>صانع الفواتير</h1><p>اختار الدفعات مثل Excel، اربط أكثر من ملف قالب، راجع الفاتورة ثم استخرجها.</p></div>
-      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : theme === "red" ? <Heart size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
+      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" || theme === "yellow-black" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : theme === "red" ? <Heart size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
     </header>
 
     <section className="invoice-toolbar surface-card">
@@ -231,7 +236,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme }:
       <div className="invoice-field"><label>العميل</label><input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="اختياري" /></div>
       <div className="invoice-field"><label>التاريخ</label><input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
       <div className="invoice-field"><label>زاوية الشعار</label><select value={logoCorner} onChange={(e) => setLogoCorner(e.target.value)}><option value="top-right">أعلى اليمين</option><option value="top-left">أعلى اليسار</option><option value="bottom-right">أسفل اليمين</option><option value="bottom-left">أسفل اليسار</option></select></div>
-      <button className="secondary-btn invoice-logo-btn" onClick={() => logoRef.current?.click()}><ImageIcon size={16} /> {logo ? "تغيير الشعار" : "اختيار الشعار"}</button><input ref={logoRef} hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => void chooseLogo(e)} />
+      <div className="invoice-logo-source"><label>مصدر الشعار</label><div><button className={logoSource === "settings" ? "active" : ""} onClick={() => setLogoSource("settings")} disabled={!settingsLogo}><ImageIcon size={15} /> من الإعدادات</button><button className={logoSource === "device" ? "active" : ""} onClick={() => setLogoSource("device")}><Upload size={15} /> من الجهاز</button></div></div><button className="secondary-btn invoice-logo-btn" onClick={() => logoRef.current?.click()}><ImageIcon size={16} /> {logo ? "تغيير شعار الجهاز" : "اختيار من الجهاز"}</button><button className="secondary-btn" disabled={!logoSource || !onSaveSettingsLogo || !effectiveLogo} onClick={() => onSaveSettingsLogo?.(effectiveLogo)}>حفظ هذا الشعار في الإعدادات</button><input ref={logoRef} hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => void chooseLogo(e)} />
     </section>
 
     <div className="invoice-maker-grid">
