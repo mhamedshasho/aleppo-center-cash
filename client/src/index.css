@@ -1985,5 +1985,27 @@ body, button, input, select, textarea{font-family:"Noto Sans Arabic","Segoe UI",
 html.yellow-black .invoice-preview-logo,html.yellow-black .settings-logo-preview{border-color:#f2c300!important}
 
 
+
+/* Invoice preview: clearer document workspace, responsive controls, and stable page scaling. */
+.invoice-preview-header-actions{display:flex;align-items:center;gap:10px}
+.invoice-preview-zoom{display:flex;align-items:center;gap:5px;padding:4px;border:1px solid #dfe7e3;border-radius:10px;background:#f7faf8}
+.invoice-preview-zoom span{min-width:42px;text-align:center;font-size:9px;font-weight:800;color:#55706b}
+.invoice-preview-scroll{flex:1;overflow:auto;padding:22px;background:#e9efec;overscroll-behavior:contain}
+.invoice-preview-page{transform-origin:top center!important;transition:transform .16s ease;will-change:transform}
+.invoice-preview-table{min-width:690px}
+.invoice-preview-page{position:relative!important}
+.invoice-preview-logo{border:3px solid var(--primary)!important;box-sizing:border-box!important;object-position:50% 50%!important}
+html.yellow-black .invoice-preview-logo{border-color:#f2c300!important}
+.dark .invoice-preview-scroll{background:#0d1719}
+.dark .invoice-preview-zoom{background:#152326;border-color:#304346}
+.dark .invoice-preview-zoom span{color:#b8cbc6}
+@media(max-width:720px){
+  .invoice-preview-scroll{padding:12px 8px}
+  .invoice-preview-header-actions{gap:5px}
+  .invoice-preview-zoom{gap:2px}
+  .invoice-preview-zoom .text-btn{display:none}
+  .invoice-preview-page{transform-origin:top center!important}
+}
+
 /* Keep the circular logo window centered on the square source image. */
 .invoice-preview-logo{object-position:50% 50%!important;transform-origin:50% 50%!important}
