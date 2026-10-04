@@ -2084,3 +2084,97 @@ html.yellow-black .invoice-preview-logo{border-color:#f2c300!important}
   .invoice-image-stage{height:250px}
   .position-actions{font-size:8px;flex-wrap:wrap}
 }
+
+/* Theme system polish: consistent surfaces, contrast and accents across the whole app. */
+:root{
+  --theme-surface-1:#ffffff;
+  --theme-surface-2:#f7faf8;
+  --theme-surface-3:#eef4f1;
+  --theme-border:#dbe6e1;
+  --theme-accent-soft:#e4f2eb;
+  --theme-shadow:0 10px 30px rgba(23,63,71,.07);
+}
+.dark{
+  --background:#0c1517;
+  --foreground:#e9f2ef;
+  --card:#111e21;
+  --card-foreground:#e9f2ef;
+  --popover:#132124;
+  --popover-foreground:#e9f2ef;
+  --secondary:#1b2b2e;
+  --secondary-foreground:#c8d9d4;
+  --muted:#17272a;
+  --muted-foreground:#9aafaa;
+  --accent:#203c37;
+  --accent-foreground:#dff5e9;
+  --border:#2a3d40;
+  --input:#2a3d40;
+  --ring:#58bd99;
+  --theme-surface-1:#111e21;
+  --theme-surface-2:#152326;
+  --theme-surface-3:#1b2b2e;
+  --theme-border:#2a3d40;
+  --theme-accent-soft:#203c37;
+  --theme-shadow:0 14px 40px rgba(0,0,0,.24);
+}
+.dark body,.dark .app-shell{background:var(--background);color:var(--foreground)}
+.dark .topbar{background:rgba(17,30,33,.92)!important;border-color:var(--theme-border)!important}
+.dark .page-card,.dark .card,.dark .invoice-payments-panel,.dark .invoice-template-card,.dark .invoice-summary-card,.dark .invoice-position-card,.dark .invoice-toolbar{background:var(--theme-surface-1);border-color:var(--theme-border);box-shadow:var(--theme-shadow)}
+.dark .invoice-field input,.dark .invoice-field select,.dark .invoice-search{background:var(--theme-surface-2);color:var(--foreground);border-color:var(--theme-border)}
+.dark .invoice-table th{background:var(--theme-surface-3);color:#b8cbc5}
+.dark .invoice-table td{border-color:var(--theme-border);color:#b7c9c4}
+.dark .invoice-table tbody tr:hover,.dark .invoice-table tbody tr.selected{background:var(--theme-accent-soft)}
+.dark .template-dropzone,.dark .template-preview,.dark .template-target{background:var(--theme-surface-2);border-color:var(--theme-border)}
+.dark .secondary-btn,.dark .text-btn{color:#c4d6d1}
+.dark .secondary-btn{background:var(--theme-surface-2);border-color:var(--theme-border)}
+.dark .primary-btn{box-shadow:0 9px 24px rgba(0,0,0,.24)}
+.dark .invoice-preview-modal{background:#0f1b1e;border-color:var(--theme-border)}
+.dark .invoice-preview-modal>header{background:var(--theme-surface-1);border-color:var(--theme-border)}
+.dark .invoice-preview-scroll{background:#081012}
+.dark .invoice-preview-page{background:#fff;color:#18353a}
+
+html.yellow-black{
+  --primary:#f2c300;
+  --primary-foreground:#111;
+  --background:#0d0d0d;
+  --foreground:#f4f4f4;
+  --card:#151515;
+  --card-foreground:#f4f4f4;
+  --popover:#171717;
+  --popover-foreground:#f4f4f4;
+  --secondary:#242424;
+  --secondary-foreground:#f2c300;
+  --muted:#202020;
+  --muted-foreground:#b8b8b8;
+  --accent:#3a3210;
+  --accent-foreground:#ffe36a;
+  --border:#303030;
+  --input:#353535;
+  --ring:#f2c300;
+  --theme-surface-1:#151515;
+  --theme-surface-2:#1b1b1b;
+  --theme-surface-3:#232323;
+  --theme-border:#353535;
+  --theme-accent-soft:#2b250d;
+  --theme-shadow:0 14px 42px rgba(0,0,0,.32);
+}
+html.yellow-black body,html.yellow-black .app-shell{background:#0d0d0d;color:#f4f4f4}
+html.yellow-black .topbar{background:#121212!important;border-color:#303030!important}
+html.yellow-black .sidebar{background:#080808!important}
+html.yellow-black .invoice-field input,html.yellow-black .invoice-field select,html.yellow-black .invoice-search{background:#111;color:#f4f4f4;border-color:#353535}
+html.yellow-black .invoice-field input:focus,html.yellow-black .invoice-field select:focus{border-color:#f2c300;box-shadow:0 0 0 4px rgba(242,195,0,.12)}
+html.yellow-black .invoice-table th{background:#202020;color:#e6e6e6}
+html.yellow-black .invoice-table td{border-color:#2d2d2d;color:#c8c8c8}
+html.yellow-black .invoice-table tbody tr:hover,html.yellow-black .invoice-table tbody tr.selected{background:#2b250d}
+html.yellow-black .template-dropzone,html.yellow-black .template-preview,html.yellow-black .template-target{background:#151515;border-color:#353535;color:#c5c5c5}
+html.yellow-black .primary-btn{background:#f2c300;color:#111;box-shadow:0 9px 24px rgba(242,195,0,.12)}
+html.yellow-black .primary-btn:hover{background:#ffd633}
+html.yellow-black .secondary-btn{background:#181818;color:#eee;border-color:#353535}
+html.yellow-black .invoice-preview-modal{background:#111;border-color:#353535}
+html.yellow-black .invoice-preview-modal>header{background:#151515;border-color:#353535}
+html.yellow-black .invoice-preview-scroll{background:#080808}
+html.yellow-black .invoice-preview-page{background:#fff;color:#18353a}
+
+/* Accent-aware controls */
+.primary-btn,.main-nav button.active,.invoice-type.credit{border-color:transparent}
+.invoice-field input:focus,.invoice-field select:focus,.invoice-search:focus-within{border-color:var(--ring)}
