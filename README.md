@@ -18,8 +18,8 @@
 ### Current releases
 
 - **Android APK:** [Download APK](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.106/app-release.apk)
-- **Windows Installer:** [Download Installer](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/desktop-v21/Aleppo.Center.Cash.Setup.1.0.3.exe)
-- **Windows Portable:** [Download Portable EXE](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/portable-v7/Aleppo.Center.Cash.Portable.1.0.3.exe)
+- **Windows Installer:** [Download latest Windows Installer](https://github.com/mhamedshasho/aleppo-center-cash/releases?q=desktop)
+- **Windows Portable:** [Download latest Windows Portable](https://github.com/mhamedshasho/aleppo-center-cash/releases?q=portable)
 - **All releases:** [Open GitHub Releases](https://github.com/mhamedshasho/aleppo-center-cash/releases)
 
 > Windows builds are x64. The Installer installs the full Electron desktop application. The Portable build is intended to run without installation.
@@ -45,7 +45,10 @@
 - Encrypted AES-GCM JSON restoration files
 - PDF / PNG reports
 - Responsive desktop and mobile UI
-- Light, Dark, Gold and Red Nostalgia themes
+- Light, Dark, Gold, Red Nostalgia and **Yellow & Black** themes
+- Workspace-shared theme settings across PC/mobile devices
+- Server-saved invoice logo with Settings or Device logo choice in Invoice Maker
+- Invoice PDFs automatically follow the selected theme
 - Android APK and Windows desktop builds
 
 ## 💰 Accounting model
