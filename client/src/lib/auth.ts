@@ -1,3 +1,4 @@
+import { t } from "@/contexts/LanguageContext";
 import { readSetting, writeSetting } from "./localStore";
 
 const SALT = "aleppo-center-cash-v1";
@@ -56,14 +57,14 @@ export function getLoginLockState() {
 
 export async function authenticateKey(value: string): Promise<{ ok: true } | { ok: false; message: string }> {
   const lockState = getLoginLockState();
-  if (lockState.locked) return { ok: false, message: "المحاولات توقفت مؤقتاً. جرّب بعد شوي." };
+  if (lockState.locked) return { ok: false, message: t("المحاولات توقفت مؤقتاً. جرّب بعد شوي.") };
   const ok = await verifyKey(value);
   if (!ok) {
     const state = readAttempts();
     const next = { ...state, count: state.count + 1 };
     if (next.count >= MAX_ATTEMPTS) next.lockedUntil = Date.now() + LOCKOUT_MS;
     writeAttempts(next);
-    return { ok: false, message: next.lockedUntil ? "محاولات كتيرة. الحساب توقف ٣٠ ثانية." : "المفتاح مو صحيح" };
+    return { ok: false, message: next.lockedUntil ? t("محاولات كتيرة. الحساب توقف ٣٠ ثانية.") : t("المفتاح مو صحيح") };
   }
   sessionStorage.removeItem(ATTEMPTS_KEY);
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({ authenticatedAt: Date.now(), expiresAt: Date.now() + SESSION_TTL_MS }));

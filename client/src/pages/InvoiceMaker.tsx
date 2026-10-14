@@ -1,3 +1,4 @@
+import { getDirection, getLanguage, t, tx, useLanguage } from "@/contexts/LanguageContext";
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, PointerEvent } from "react";
 import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Heart, Image as ImageIcon, Moon, Plus, RotateCcw, Search, Sparkles, Sun, Upload, X } from "lucide-react";
@@ -22,7 +23,7 @@ async function saveInvoicePdf(pdf: jsPDF, filename: string) {
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
     const dataUrl = pdf.output("datauristring");
     const base64 = dataUrl.split(",")[1] || "";
-    if (!base64) throw new Error("تعذر تجهيز ملف PDF");
+    if (!base64) throw new Error(t("تعذر تجهيز ملف PDF"));
     await NativeFileSaver.savePdf({ filename, base64 });
     return "android-download";
   }
@@ -30,8 +31,8 @@ async function saveInvoicePdf(pdf: jsPDF, filename: string) {
   return "browser-download";
 }
 
-const money = (n: number, c: Currency) => new Intl.NumberFormat(c === "SYP" ? "ar-SY" : "en-US", { maximumFractionDigits: c === "SYP" ? 0 : 2 }).format(n) + " " + (c === "SYP" ? "ل.س" : "$");
-const dateText = (d: string) => new Intl.DateTimeFormat("ar-SY", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d + "T12:00:00"));
+const money = (n: number, c: Currency) => new Intl.NumberFormat(getLanguage() === "ar" && c === "SYP" ? "ar-SY" : "en-US", { maximumFractionDigits: c === "SYP" ? 0 : 2 }).format(n) + " " + (c === "SYP" ? t("ل.س") : "$");
+const dateText = (d: string) => new Intl.DateTimeFormat(getLanguage() === "ar" ? "ar-SY" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d + "T12:00:00"));
 const esc = (v: string) => v.replace(/[&<>"']/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[x] || x);
 
 const LOGO_CANVAS_SIZE = 200;
@@ -46,7 +47,7 @@ async function normalizeLogo(file: File) {
       canvas.width = LOGO_CANVAS_SIZE;
       canvas.height = LOGO_CANVAS_SIZE;
       const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("تعذر تجهيز الشعار"));
+      if (!ctx) return reject(new Error(t("تعذر تجهيز الشعار")));
       ctx.clearRect(0, 0, LOGO_CANVAS_SIZE, LOGO_CANVAS_SIZE);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
@@ -66,7 +67,7 @@ async function normalizeLogo(file: File) {
       ctx.restore();
       resolve(canvas.toDataURL("image/png"));
     };
-    image.onerror = () => reject(new Error("تعذر قراءة الشعار"));
+    image.onerror = () => reject(new Error(t("تعذر قراءة الشعار")));
     image.src = source;
   });
 }
@@ -74,7 +75,7 @@ async function fileData(file: File) {
   return await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("تعذر قراءة الملف"));
+    r.onerror = () => reject(new Error(t("تعذر قراءة الملف")));
     r.readAsDataURL(file);
   });
 }
@@ -86,18 +87,18 @@ async function loadPdfJs(): Promise<any> {
       const oldScript = document.querySelector<HTMLScriptElement>('script[data-aleppo-pdfjs="1"]');
       if (oldScript) {
         oldScript.addEventListener("load", () => resolve(), { once: true });
-        oldScript.addEventListener("error", () => reject(new Error("تعذر تحميل قارئ PDF")), { once: true });
+        oldScript.addEventListener("error", () => reject(new Error(t("تعذر تحميل قارئ PDF"))), { once: true });
         return;
       }
       const script = document.createElement("script");
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
       script.dataset.aleppoPdfjs = "1";
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error("تعذر تحميل قارئ PDF. تحقق من الإنترنت."));
+      script.onerror = () => reject(new Error(t("تعذر تحميل قارئ PDF. تحقق من الإنترنت.")));
       document.head.appendChild(script);
     });
   }
-  if (!w.pdfjsLib) throw new Error("قارئ PDF غير جاهز");
+  if (!w.pdfjsLib) throw new Error(t("قارئ PDF غير جاهز"));
   w.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   return w.pdfjsLib;
 }
@@ -116,14 +117,15 @@ async function renderTemplateFile(file: File): Promise<TemplatePage[]> {
       const ctx = canvas.getContext("2d");
       if (!ctx) continue;
       await page.render({ canvasContext: ctx, viewport }).promise;
-      result.push({ label: "صفحة " + i, image: canvas.toDataURL("image/png") });
+      result.push({ label: t("صفحة ") + i, image: canvas.toDataURL("image/png") });
     }
     return result;
   }
-  return [{ label: "الصورة", image: await fileData(file) }];
+  return [{ label: t("الصورة"), image: await fileData(file) }];
 }
 
 export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, settingsLogo, onSaveSettingsLogo }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" | "red" | "yellow-black"; settingsLogo?: string; onSaveSettingsLogo?: (logo: string) => Promise<void> }) {
+    useLanguage();
   const [query, setQuery] = useState("");
   const [accountFilter, setAccountFilter] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
@@ -179,9 +181,9 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
       setTemplateFiles((current) => [...current, ...loaded]);
       setTemplateFileId(loaded[0].id);
       setPageIndex(0);
-      toast.success(`تم تحميل ${loaded.length} ملف قالب`);
+      toast.success(tx("تم تحميل {0} ملف قالب", [loaded.length]));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر تحميل القوالب");
+      toast.error(error instanceof Error ? error.message : t("تعذر تحميل القوالب"));
     } finally {
       setBusy(false);
     }
@@ -191,16 +193,16 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    try { setLogo(await normalizeLogo(file)); toast.success("تم قص الشعار كنافذة دائرية مع الحفاظ على كامل الصورة"); } catch { toast.error("تعذر قراءة الشعار"); }
+    try { setLogo(await normalizeLogo(file)); toast.success(t("تم قص الشعار كنافذة دائرية مع الحفاظ على كامل الصورة")); } catch { toast.error(t("تعذر قراءة الشعار")); }
   };
 
   const applyTemplate = () => {
-    if (activeId === null) return toast.error("حدد الدفعة التي تريد وضع الصورة عليها");
-    if (!activePage) return toast.error("اختر ملف قالب وعرضاً أولاً");
+    if (activeId === null) return toast.error(t("حدد الدفعة التي تريد وضع الصورة عليها"));
+    if (!activePage) return toast.error(t("اختر ملف قالب وعرضاً أولاً"));
     setImages((x) => ({ ...x, [activeId]: activePage.image }));
     setImageLabels((x) => ({ ...x, [activeId]: activeFile?.name + " — " + activePage.label }));
     setPositions((x) => ({ ...x, [activeId]: { x: 50, y: 50 } }));
-    toast.success(`تم تعيين القالب للدفعة: ${activeRow?.name || ""}`);
+    toast.success(tx("تم تعيين القالب للدفعة: {0}", [activeRow?.name || ""]));
   };
 
   const resetPosition = () => {
@@ -217,8 +219,8 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
   };
 
   const exportPdf = async () => {
-    if (!chosen.length) return toast.error("اختار دفعة واحدة على الأقل");
-    if (!invoiceNumber.trim()) return toast.error("اكتب رقم الفاتورة أولاً");
+    if (!chosen.length) return toast.error(t("اختار دفعة واحدة على الأقل"));
+    if (!invoiceNumber.trim()) return toast.error(t("اكتب رقم الفاتورة أولاً"));
     setBusy(true);
     const invoiceAccent = theme === "gold" ? "#b8891f" : theme === "red" ? "#8f1d2c" : theme === "yellow-black" ? "#f2c300" : theme === "dark" ? "#f2c300" : "#173f47";
     const invoiceText = theme === "yellow-black" || theme === "dark" ? "#111111" : "#ffffff";
@@ -258,7 +260,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
               + '<td style="padding:4px;vertical-align:middle;text-align:center;border-top:1px solid #e7eeeb;"><div style="height:72px;position:relative;overflow:hidden;"><img src="' + image + '" style="position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);max-width:92px;max-height:68px;object-fit:contain;" /></div></td>'
               + '<td style="padding:7px;font-weight:900;font-size:13px;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(meters[r.id] || "—") + '</td>'
               + '<td style="padding:7px;font-weight:900;font-size:15px;text-align:center;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(money(r.amount, r.currency)) + '</td>'
-              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "yellow-black" || theme === "dark" ? (r.type === "credit" ? "#f2c300" : "#ff7b7b") : theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
+              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "yellow-black" || theme === "dark" ? (r.type === "credit" ? "#f2c300" : "#ff7b7b") : theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? t("له") : t("عليه")) + '</td>'
               + '<td style="padding:7px;font-size:11px;font-weight:800;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:18px;padding:14px 16px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
@@ -273,7 +275,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
             }
             await new Promise<void>((resolve, reject) => {
               img.addEventListener("load", () => resolve(), { once: true });
-              img.addEventListener("error", () => reject(new Error("تعذر تحميل صورة داخل الفاتورة")), { once: true });
+              img.addEventListener("error", () => reject(new Error(t("تعذر تحميل صورة داخل الفاتورة"))), { once: true });
             });
           } catch (error) {
             if (img.src.startsWith("data:image/")) throw error;
@@ -284,10 +286,10 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
         pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297, undefined, "FAST");
       }
       pdf.save("aleppo-center-invoice-" + invoiceNumber + ".pdf");
-      toast.success("تم استخراج الفاتورة PDF");
+      toast.success(t("تم استخراج الفاتورة PDF"));
     } catch (error) {
       console.error(error);
-      toast.error("تعذر إنشاء ملف PDF");
+      toast.error(t("تعذر إنشاء ملف PDF"));
     } finally {
       host.remove();
       setBusy(false);
@@ -296,72 +298,72 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
 
   const previewRows = chosen.slice(0, 8);
 
-  return <main className="invoice-maker page-enter" dir="rtl">
+  return <main className="invoice-maker page-enter" dir={getDirection()}>
     <header className="invoice-maker-head">
-      <div><button className="text-btn invoice-back" onClick={onBack}><ArrowLeft size={16} /> رجوع</button><div className="eyebrow">ALEPPO CENTER <span>•</span> INVOICE MAKER</div><h1>صانع الفواتير</h1><p>اختار الدفعات مثل Excel، اربط أكثر من ملف قالب، راجع الفاتورة ثم استخرجها.</p></div>
-      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" || theme === "yellow-black" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : theme === "red" ? <Heart size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
+      <div><button className="text-btn invoice-back" onClick={onBack}><ArrowLeft size={16} /> {t("رجوع")}</button><div className="eyebrow">ALEPPO CENTER <span>•</span> INVOICE MAKER</div><h1>{t("صانع الفواتير")}</h1><p>{t("اختار الدفعات مثل Excel، اربط أكثر من ملف قالب، راجع الفاتورة ثم استخرجها.")}</p></div>
+      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label={t("تبديل الوضع")}>{theme === "dark" || theme === "yellow-black" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : theme === "red" ? <Heart size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> {t("معاينة")}</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> {t("استخراج PDF")}</button></div>
     </header>
 
     <section className="invoice-toolbar surface-card">
-      <div className="invoice-field invoice-account-field"><label>حساب الفاتورة</label><select value={accountFilter} onChange={(e) => changeAccount(e.target.value)}><option value="">اختر الحساب أولاً</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
-      <div className="invoice-field"><label>رقم الفاتورة</label><input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="مثلاً 28" /></div>
-      <div className="invoice-field"><label>العميل</label><input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="اختياري" /></div>
-      <div className="invoice-field"><label>التاريخ</label><input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
+      <div className="invoice-field invoice-account-field"><label>{t("حساب الفاتورة")}</label><select value={accountFilter} onChange={(e) => changeAccount(e.target.value)}><option value="">{t("اختر الحساب أولاً")}</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
+      <div className="invoice-field"><label>{t("رقم الفاتورة")}</label><input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder={t("مثلاً 28")} /></div>
+      <div className="invoice-field"><label>{t("العميل")}</label><input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder={t("اختياري")} /></div>
+      <div className="invoice-field"><label>{t("التاريخ")}</label><input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
       
-      <div className="invoice-logo-source"><label>مصدر الشعار</label><div><button className={logoSource === "settings" ? "active" : ""} onClick={() => setLogoSource("settings")} disabled={!settingsLogo}><ImageIcon size={15} /> من الإعدادات</button><button className={logoSource === "device" ? "active" : ""} onClick={() => setLogoSource("device")}><Upload size={15} /> من الجهاز</button></div></div><button className="secondary-btn invoice-logo-btn" onClick={() => logoRef.current?.click()}><ImageIcon size={16} /> {logo ? "تغيير شعار الجهاز" : "اختيار من الجهاز"}</button><button className="secondary-btn" disabled={!logoSource || !onSaveSettingsLogo || !effectiveLogo} onClick={() => onSaveSettingsLogo?.(effectiveLogo)}>حفظ هذا الشعار في الإعدادات</button><input ref={logoRef} hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => void chooseLogo(e)} />
+      <div className="invoice-logo-source"><label>{t("مصدر الشعار")}</label><div><button className={logoSource === "settings" ? "active" : ""} onClick={() => setLogoSource("settings")} disabled={!settingsLogo}><ImageIcon size={15} /> {t("من الإعدادات")}</button><button className={logoSource === "device" ? "active" : ""} onClick={() => setLogoSource("device")}><Upload size={15} /> {t("من الجهاز")}</button></div></div><button className="secondary-btn invoice-logo-btn" onClick={() => logoRef.current?.click()}><ImageIcon size={16} /> {logo ? t("تغيير شعار الجهاز") : t("اختيار من الجهاز")}</button><button className="secondary-btn" disabled={!logoSource || !onSaveSettingsLogo || !effectiveLogo} onClick={() => onSaveSettingsLogo?.(effectiveLogo)}>{t("حفظ هذا الشعار في الإعدادات")}</button><input ref={logoRef} hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => void chooseLogo(e)} />
     </section>
 
     <div className="invoice-maker-grid">
       <section className="surface-card invoice-payments-panel">
-        <div className="section-head"><div><h2>الدفعات</h2><p>{selectedAccount ? (chosen.length + " دفعة مختارة من " + filtered.length + " دفعة للحساب " + selectedAccount.name) : "اختر الحساب أولاً لعرض دفعاته"}</p></div><button className="text-btn" onClick={toggleAll}>{chosen.length === filtered.length && filtered.length ? "إلغاء تحديد الكل" : "تحديد الكل"}</button></div>
-        <div className="invoice-search"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={selectedAccount ? "ابحث باسم القالب..." : "اختر الحساب أولاً"} disabled={!selectedAccount} /></div>
-        <div className="invoice-table-wrap"><table className="invoice-table"><thead><tr><th><input type="checkbox" checked={Boolean(filtered.length) && filtered.every((r) => selected.includes(r.id))} onChange={toggleAll} /></th><th>اسم القالب</th><th>امتار</th><th>السعر</th><th>العملة</th><th>له/عليه</th><th>الصورة</th></tr></thead><tbody>{filtered.map((r) => <tr key={r.id} className={selected.includes(r.id) ? "selected" : ""} onClick={() => chooseRow(r.id)}><td><input type="checkbox" checked={selected.includes(r.id)} onChange={() => chooseRow(r.id)} onClick={(e) => e.stopPropagation()} /></td><td><strong>{r.name}</strong><small>{dateText(r.date)}</small></td><td><input className="invoice-meters" inputMode="decimal" value={meters[r.id] || ""} onChange={(e) => setMeters((x) => ({ ...x, [r.id]: e.target.value }))} onClick={(e) => e.stopPropagation()} placeholder="—" /></td><td>{r.amount.toLocaleString("en-US")}</td><td>{r.currency === "SYP" ? "ل.س" : "$"}</td><td><span className={"invoice-type " + r.type}>{r.type === "credit" ? "له" : "عليه"}</span></td><td>{images[r.id] ? <img className="invoice-row-thumb" src={images[r.id]} alt="قالب" /> : <span className="invoice-no-image">—</span>}</td></tr>)}</tbody></table>{!filtered.length && <div className="invoice-empty">{!selectedAccount ? <><Plus size={25} /><strong>اختر الحساب</strong><span>حدد الحساب من الأعلى لعرض دفعاته فقط.</span></> : <><FileText size={25} /><strong>ما في دفعات لهذا الحساب</strong><span>هذا الحساب لا يملك دفعات تطابق البحث.</span></>}</div>}</div>
+        <div className="section-head"><div><h2>{t("الدفعات")}</h2><p>{selectedAccount ? (chosen.length + t(" دفعة مختارة من ") + filtered.length + t(" دفعة للحساب ") + selectedAccount.name) : t("اختر الحساب أولاً لعرض دفعاته")}</p></div><button className="text-btn" onClick={toggleAll}>{chosen.length === filtered.length && filtered.length ? t("إلغاء تحديد الكل") : t("تحديد الكل")}</button></div>
+        <div className="invoice-search"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={selectedAccount ? t("ابحث باسم القالب...") : t("اختر الحساب أولاً")} disabled={!selectedAccount} /></div>
+        <div className="invoice-table-wrap"><table className="invoice-table"><thead><tr><th><input type="checkbox" checked={Boolean(filtered.length) && filtered.every((r) => selected.includes(r.id))} onChange={toggleAll} /></th><th>{t("اسم القالب")}</th><th>{t("امتار")}</th><th>{t("السعر")}</th><th>{t("العملة")}</th><th>{t("له/عليه")}</th><th>{t("الصورة")}</th></tr></thead><tbody>{filtered.map((r) => <tr key={r.id} className={selected.includes(r.id) ? "selected" : ""} onClick={() => chooseRow(r.id)}><td><input type="checkbox" checked={selected.includes(r.id)} onChange={() => chooseRow(r.id)} onClick={(e) => e.stopPropagation()} /></td><td><strong>{r.name}</strong><small>{dateText(r.date)}</small></td><td><input className="invoice-meters" inputMode="decimal" value={meters[r.id] || ""} onChange={(e) => setMeters((x) => ({ ...x, [r.id]: e.target.value }))} onClick={(e) => e.stopPropagation()} placeholder="—" /></td><td>{r.amount.toLocaleString("en-US")}</td><td>{r.currency === "SYP" ? t("ل.س") : "$"}</td><td><span className={"invoice-type " + r.type}>{r.type === "credit" ? t("له") : t("عليه")}</span></td><td>{images[r.id] ? <img className="invoice-row-thumb" src={images[r.id]} alt={t("قالب")} /> : <span className="invoice-no-image">—</span>}</td></tr>)}</tbody></table>{!filtered.length && <div className="invoice-empty">{!selectedAccount ? <><Plus size={25} /><strong>{t("اختر الحساب")}</strong><span>{t("حدد الحساب من الأعلى لعرض دفعاته فقط.")}</span></> : <><FileText size={25} /><strong>{t("ما في دفعات لهذا الحساب")}</strong><span>{t("هذا الحساب لا يملك دفعات تطابق البحث.")}</span></>}</div>}</div>
       </section>
 
       <aside className="invoice-template-panel">
         <section className="surface-card invoice-template-card">
-          <div className="section-head"><div><h2>قوالب العرض</h2><p>حمّل عدة ملفات PDF ثم اختر الملف والصفحة لكل دفعة.</p></div><FileImage size={19} /></div>
-          <button className="template-dropzone" onClick={() => templateRef.current?.click()} disabled={busy}><Upload size={22} /><strong>{templateFiles.length ? "إضافة ملفات قوالب" : "اختيار ملفات القوالب"}</strong><span>PDF متعدد الصفحات أو PNG / JPG — يمكنك اختيار عدة ملفات</span></button>
+          <div className="section-head"><div><h2>{t("قوالب العرض")}</h2><p>{t("حمّل عدة ملفات PDF ثم اختر الملف والصفحة لكل دفعة.")}</p></div><FileImage size={19} /></div>
+          <button className="template-dropzone" onClick={() => templateRef.current?.click()} disabled={busy}><Upload size={22} /><strong>{templateFiles.length ? t("إضافة ملفات قوالب") : t("اختيار ملفات القوالب")}</strong><span>{t("PDF متعدد الصفحات أو PNG / JPG — يمكنك اختيار عدة ملفات")}</span></button>
           <input ref={templateRef} hidden multiple type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => void chooseTemplates(e)} />
           {templateFiles.length > 0 && <>
             <div className="template-library">{templateFiles.map((file) => <button key={file.id} className={"template-file-chip " + (file.id === templateFileId ? "active" : "")} onClick={() => { setTemplateFileId(file.id); setPageIndex(0); }}><FileText size={14} /><span>{file.name}</span><b>{file.pages.length}</b></button>)}</div>
-            <div className="template-page-picker"><label>العرض داخل الملف</label><select value={pageIndex} onChange={(e) => setPageIndex(Number(e.target.value))}>{(activeFile?.pages || []).map((p, i) => <option key={i} value={i}>{p.label}</option>)}</select></div>
-            {activePage && <div className="template-preview"><img src={activePage.image} alt="معاينة القالب" /></div>}
-            <button className="primary-btn full" onClick={applyTemplate} disabled={!activePage}><Check size={17} /> Apply — عيّن الصورة للدفعة المحددة</button>
+            <div className="template-page-picker"><label>{t("العرض داخل الملف")}</label><select value={pageIndex} onChange={(e) => setPageIndex(Number(e.target.value))}>{(activeFile?.pages || []).map((p, i) => <option key={i} value={i}>{p.label}</option>)}</select></div>
+            {activePage && <div className="template-preview"><img src={activePage.image} alt={t("معاينة القالب")} /></div>}
+            <button className="primary-btn full" onClick={applyTemplate} disabled={!activePage}><Check size={17} /> {t("Apply — عيّن الصورة للدفعة المحددة")}</button>
           </>}
-          <div className="template-target"><div className="template-target-label"><label>اختيار الدفعة لوضع الصورة</label><span>{chosen.length} دفعة مختارة</span></div><select value={activeId ?? ""} onChange={(e) => { const id = Number(e.target.value); if (id) chooseTarget(id); }}><option value="">اختر من الدفعات المختارة</option>{chosen.map((r) => <option key={r.id} value={r.id}>{r.name} — {r.amount.toLocaleString("en-US")} {r.currency === "SYP" ? "ل.س" : "$"} — {r.type === "credit" ? "له" : "عليه"}</option>)}</select>{activeRow && selected.includes(activeRow.id) && <span className="template-target-current"><Check size={14} /> يتم تعديل: {activeRow.name}</span>}{!chosen.length && <span className="template-target-empty">حدد دفعة من الجدول أولاً</span>}</div>
+          <div className="template-target"><div className="template-target-label"><label>{t("اختيار الدفعة لوضع الصورة")}</label><span>{chosen.length} {t("دفعة مختارة")}</span></div><select value={activeId ?? ""} onChange={(e) => { const id = Number(e.target.value); if (id) chooseTarget(id); }}><option value="">{t("اختر من الدفعات المختارة")}</option>{chosen.map((r) => <option key={r.id} value={r.id}>{r.name} — {r.amount.toLocaleString("en-US")} {r.currency === "SYP" ? t("ل.س") : "$"} — {r.type === "credit" ? t("له") : t("عليه")}</option>)}</select>{activeRow && selected.includes(activeRow.id) && <span className="template-target-current"><Check size={14} /> {t("يتم تعديل:")} {activeRow.name}</span>}{!chosen.length && <span className="template-target-empty">{t("حدد دفعة من الجدول أولاً")}</span>}</div>
         </section>
 
         {activeRow && images[activeRow.id] && <section className="surface-card invoice-position-card">
-          <div className="section-head"><div><h2>وضع صورة القالب</h2><p>اسحب الصورة داخل الإطار. موضعها يحفظ لهذه الدفعة فقط.</p></div><RotateCcw size={18} /></div>
+          <div className="section-head"><div><h2>{t("وضع صورة القالب")}</h2><p>{t("اسحب الصورة داخل الإطار. موضعها يحفظ لهذه الدفعة فقط.")}</p></div><RotateCcw size={18} /></div>
           <div ref={stageRef} className="invoice-image-stage" onPointerMove={moveImage} onPointerUp={() => setDragging(false)} onPointerCancel={() => setDragging(false)}>
-            <img src={images[activeRow.id]} alt="قالب الدفعة" style={{ left: activePosition.x + "%", top: activePosition.y + "%" }} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDragging(true); }} />
+            <img src={images[activeRow.id]} alt={t("قالب الدفعة")} style={{ left: activePosition.x + "%", top: activePosition.y + "%" }} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDragging(true); }} />
           </div>
-          <div className="position-actions"><span>الموضع: {Math.round(activePosition.x)}% / {Math.round(activePosition.y)}%</span><button className="text-btn" onClick={resetPosition}><RotateCcw size={14} /> إرجاع للمنتصف</button></div>
+          <div className="position-actions"><span>{t("الموضع:")} {Math.round(activePosition.x)}% / {Math.round(activePosition.y)}%</span><button className="text-btn" onClick={resetPosition}><RotateCcw size={14} /> {t("إرجاع للمنتصف")}</button></div>
         </section>}
 
-        <section className="surface-card invoice-summary-card"><div className="section-head"><div><h2>ملخص التصدير</h2><p>راجع الفاتورة قبل استخراجها.</p></div></div><div className="invoice-summary-row"><span>الدفعات</span><strong>{chosen.length}</strong></div>{totals.SYP ? <div className="invoice-summary-row"><span>ليرة سورية</span><strong>{money(totals.SYP, "SYP")}</strong></div> : null}{totals.USD ? <div className="invoice-summary-row"><span>دولار</span><strong>{money(totals.USD, "USD")}</strong></div> : null}</section>
+        <section className="surface-card invoice-summary-card"><div className="section-head"><div><h2>{t("ملخص التصدير")}</h2><p>{t("راجع الفاتورة قبل استخراجها.")}</p></div></div><div className="invoice-summary-row"><span>{t("الدفعات")}</span><strong>{chosen.length}</strong></div>{totals.SYP ? <div className="invoice-summary-row"><span>{t("ليرة سورية")}</span><strong>{money(totals.SYP, "SYP")}</strong></div> : null}{totals.USD ? <div className="invoice-summary-row"><span>{t("دولار")}</span><strong>{money(totals.USD, "USD")}</strong></div> : null}</section>
       </aside>
     </div>
 
     {showPreview && <div className="invoice-preview-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
-      <div className="invoice-preview-modal" dir="rtl">
-        <header className="invoice-preview-header"><div><span className="eyebrow">PREVIEW</span><h2>معاينة الفاتورة</h2><p>هذه المعاينة مصممة لتطابق شكل ملف PDF النهائي.</p></div><div className="invoice-preview-header-actions"><div className="invoice-preview-zoom"><button className="icon-btn bordered" onClick={() => setPreviewZoom((z) => Math.max(.7, +(z - .1).toFixed(1)))}>−</button><span>{Math.round(previewZoom * 100)}%</span><button className="icon-btn bordered" onClick={() => setPreviewZoom((z) => Math.min(1.3, +(z + .1).toFixed(1)))}>+</button><button className="text-btn" onClick={() => setPreviewZoom(1)}>ملاءمة</button></div><button className="icon-btn bordered" onClick={() => setShowPreview(false)}><X size={18} /></button></div></header>
+      <div className="invoice-preview-modal" dir={getDirection()}>
+        <header className="invoice-preview-header"><div><span className="eyebrow">PREVIEW</span><h2>{t("معاينة الفاتورة")}</h2><p>{t("هذه المعاينة مصممة لتطابق شكل ملف PDF النهائي.")}</p></div><div className="invoice-preview-header-actions"><div className="invoice-preview-zoom"><button className="icon-btn bordered" onClick={() => setPreviewZoom((z) => Math.max(.7, +(z - .1).toFixed(1)))}>−</button><span>{Math.round(previewZoom * 100)}%</span><button className="icon-btn bordered" onClick={() => setPreviewZoom((z) => Math.min(1.3, +(z + .1).toFixed(1)))}>+</button><button className="text-btn" onClick={() => setPreviewZoom(1)}>{t("ملاءمة")}</button></div><button className="icon-btn bordered" onClick={() => setShowPreview(false)}><X size={18} /></button></div></header>
         <div className="invoice-preview-scroll"><div className="invoice-preview-page" style={{ transform: `scale(${previewZoom})` }}>
           <div className="invoice-preview-accent"></div>
           <div className="invoice-preview-paper-head">
-            {effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="الشعار" />}
-            <div className="invoice-preview-title"><h1>فاتورة</h1><strong>رقم {invoiceNumber || "—"}</strong></div>
-            <div className="invoice-preview-meta">{customer && <div><b>العميل:</b> {customer}</div>}<div><b>التاريخ:</b> {dateText(invoiceDate)}</div></div>
+            {effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt={t("الشعار")} />}
+            <div className="invoice-preview-title"><h1>{t("فاتورة")}</h1><strong>{t("رقم")} {invoiceNumber || "—"}</strong></div>
+            <div className="invoice-preview-meta">{customer && <div><b>{t("العميل:")}</b> {customer}</div>}<div><b>{t("التاريخ:")}</b> {dateText(invoiceDate)}</div></div>
           </div>
           <div className="invoice-preview-table">
-            <div className="invoice-preview-head"><span>القالب</span><span>الصورة</span><span>الأمتار</span><span>المبلغ</span><span>الحالة</span><span>التاريخ</span></div>
-            {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}
+            <div className="invoice-preview-head"><span>{t("القالب")}</span><span>{t("الصورة")}</span><span>{t("الأمتار")}</span><span>{t("المبلغ")}</span><span>{t("الحالة")}</span><span>{t("التاريخ")}</span></div>
+            {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? t("له") : t("عليه")}</span><span>{dateText(r.date)}</span></div>; })}
           </div>
-          <div className="invoice-preview-total"><span>الرصيد الصافي</span><strong>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
-          <div className="invoice-preview-footer">Aleppo Center Cash • فاتورة مالية</div>
+          <div className="invoice-preview-total"><span>{t("الرصيد الصافي")}</span><strong>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
+          <div className="invoice-preview-footer">{t("Aleppo Center Cash • فاتورة مالية")}</div>
         </div></div>
-        <footer><button className="secondary-btn" onClick={() => setShowPreview(false)}>إغلاق</button><button className="primary-btn" disabled={busy || !chosen.length || !invoiceNumber.trim()} onClick={() => { setShowPreview(false); void exportPdf(); }}><Download size={16} /> اعتماد واستخراج PDF</button></footer>
+        <footer><button className="secondary-btn" onClick={() => setShowPreview(false)}>{t("إغلاق")}</button><button className="primary-btn" disabled={busy || !chosen.length || !invoiceNumber.trim()} onClick={() => { setShowPreview(false); void exportPdf(); }}><Download size={16} /> {t("اعتماد واستخراج PDF")}</button></footer>
       </div>
     </div>}  </main>;
 }

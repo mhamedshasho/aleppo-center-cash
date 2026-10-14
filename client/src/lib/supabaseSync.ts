@@ -1,15 +1,16 @@
+import { t } from "@/contexts/LanguageContext";
 import type { LocalAccount, LocalPayment } from "./localStore";
 import { supabase } from "./supabase";
 
 export class WorkspaceUnavailableError extends Error {
-  constructor(message = "مساحة العمل لم تعد موجودة أو لم تعد متاحة لهذا الحساب") {
+  constructor(message = t("مساحة العمل لم تعد موجودة أو لم تعد متاحة لهذا الحساب")) {
     super(message);
     this.name = "WorkspaceUnavailableError";
   }
 }
 
 export class SyncConflictError extends Error {
-  constructor(message = "تعارض بالتعديل: في جهاز تاني سبقك") {
+  constructor(message = t("تعارض بالتعديل: في جهاز تاني سبقك")) {
     super(message);
     this.name = "SyncConflictError";
   }
@@ -88,7 +89,7 @@ function normalizeLocalRemoteIds(accounts: LocalAccount[]) {
 }
 
 export async function verifyWorkspaceAccess(workspaceId: string, userId: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
 
   const { data: workspace, error: workspaceError } = await supabase
     .from("workspaces")
@@ -114,7 +115,7 @@ export async function verifyWorkspaceAccess(workspaceId: string, userId: string)
 }
 
 export async function pullCloudAccounts(workspaceId: string): Promise<LocalAccount[]> {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   const [accountsResult, paymentsResult] = await Promise.all([
     supabase.from("accounts").select("id, workspace_id, name, owner_name, accent, version").eq("workspace_id", workspaceId).or("is_archived.eq.false,is_archived.is.null").order("updated_at", { ascending: false }),
     supabase.from("payments").select("id, account_id, name, amount_minor, currency, payment_type, occurred_on, version").eq("workspace_id", workspaceId).order("occurred_on", { ascending: false }),
@@ -154,7 +155,7 @@ async function pushAccount(
   account: LocalAccount,
   existing?: CloudAccount,
 ) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   let remoteId = account.remoteId ?? makeRemoteId();
   const payload = {
     workspace_id: workspaceId,
@@ -234,12 +235,12 @@ async function pushAccount(
         remoteId = makeRemoteId();
       }
 
-      throw new SyncConflictError("تعذر إنشاء معرف فريد للحساب بعد عدة محاولات");
+      throw new SyncConflictError(t("تعذر إنشاء معرف فريد للحساب بعد عدة محاولات"));
     }
     return { remoteId: existing.id, version: existing.version };
   }
 
-  if (!existing) throw new SyncConflictError("الحساب لم يعد موجوداً على السحابة");
+  if (!existing) throw new SyncConflictError(t("الحساب لم يعد موجوداً على السحابة"));
 
   // Do not rewrite untouched rows. Rewriting every row on each mutation was
   // causing false version conflicts between devices.
@@ -273,7 +274,7 @@ async function pushPayment(
   payment: LocalPayment,
   existing?: CloudPayment,
 ) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   let remoteId = payment.remoteId ?? makeRemoteId();
   const payload = {
     workspace_id: workspaceId,
@@ -360,12 +361,12 @@ async function pushPayment(
         remoteId = makeRemoteId();
       }
 
-      throw new SyncConflictError("تعذر إنشاء معرف فريد للدفعة بعد عدة محاولات");
+      throw new SyncConflictError(t("تعذر إنشاء معرف فريد للدفعة بعد عدة محاولات"));
     }
     return { remoteId: existing.id, version: existing.version };
   }
 
-  if (!existing) throw new SyncConflictError("الدفعة لم تعد موجودة على السحابة");
+  if (!existing) throw new SyncConflictError(t("الدفعة لم تعد موجودة على السحابة"));
 
   const unchanged =
     existing.account_id === payload.account_id &&
@@ -401,7 +402,7 @@ export async function pushLocalAccounts(
   deletedPaymentIds: { id: string; version?: number }[] = [],
 ) {
   const client = supabase;
-  if (!client) throw new Error("Supabase غير مهيأ بعد");
+  if (!client) throw new Error(t("Supabase غير مهيأ بعد"));
 
   for (const deletion of deletedPaymentIds) {
     console.info("[AleppoCenterCash] deleting payment through owner RPC", deletion);
@@ -517,7 +518,7 @@ export async function pushLocalAccounts(
   });
 }
 export async function deleteAccountFromCloud(workspaceId: string, accountId: string, _expectedVersion?: number) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
 
   const { error } = await supabase.rpc("delete_workspace_account", {
     target_workspace: workspaceId,
@@ -529,7 +530,7 @@ export async function deleteAccountFromCloud(workspaceId: string, accountId: str
 }
 
 export async function deletePaymentFromCloud(workspaceId: string, paymentId: string, _expectedVersion?: number) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
 
   const { error } = await supabase.rpc("delete_workspace_payment", {
     target_workspace: workspaceId,
@@ -541,7 +542,7 @@ export async function deletePaymentFromCloud(workspaceId: string, paymentId: str
 }
 
 export async function resetWorkspaceData(workspaceId: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
 
   const paymentsResult = await supabase.from("payments").delete().eq("workspace_id", workspaceId).select("id");
   if (paymentsResult.error) throw paymentsResult.error;
@@ -552,7 +553,7 @@ export async function resetWorkspaceData(workspaceId: string) {
   const remaining = await supabase.from("accounts").select("id").eq("workspace_id", workspaceId);
   if (remaining.error) throw remaining.error;
   if ((remaining.data ?? []).length > 0) {
-    throw new SyncConflictError("لم يتم حذف كل حسابات مساحة العمل. تأكد أنك المالك.");
+    throw new SyncConflictError(t("لم يتم حذف كل حسابات مساحة العمل. تأكد أنك المالك."));
   }
 
   return {
@@ -562,7 +563,7 @@ export async function resetWorkspaceData(workspaceId: string) {
 }
 
 export async function deleteWorkspaceFromCloud(workspaceId: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
 
   const { error } = await supabase.rpc("delete_my_workspace", { target_workspace: workspaceId });
   if (error) throw error;
@@ -574,7 +575,7 @@ export async function deleteWorkspaceFromCloud(workspaceId: string) {
     .maybeSingle();
 
   if (verifyError) throw verifyError;
-  if (data) throw new SyncConflictError("مساحة العمل ما انحذفت من السحابة.");
+  if (data) throw new SyncConflictError(t("مساحة العمل ما انحذفت من السحابة."));
 }
 
 export function subscribeToWorkspace(workspaceId: string, onChange: () => void) {

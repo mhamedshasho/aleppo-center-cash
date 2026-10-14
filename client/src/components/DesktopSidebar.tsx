@@ -1,3 +1,4 @@
+import { getDirection, t, useLanguage } from "@/contexts/LanguageContext";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
@@ -71,24 +72,25 @@ export default function DesktopSidebar({
   onDeleteAccount,
   onLogout,
 }: Props) {
+    useLanguage();
   return (
-    <aside className="desktop-sidebar" dir="rtl">
+    <aside className="desktop-sidebar" dir={getDirection()}>
       <div className="desktop-brand">
         <div className="desktop-brand-logo"><img src="/grok_1790774221995.jpg" alt="Aleppo Center Cash" /></div>
         <div><strong>Aleppo Center</strong><span>CASH BOOK</span></div>
       </div>
 
-      <button className="desktop-workspace" onClick={onOpenWorkspaceManager} title="إدارة مساحات العمل">
+      <button className="desktop-workspace" onClick={onOpenWorkspaceManager} title={t("إدارة مساحات العمل")}>
         <div className="workspace-avatar">AC</div>
         <div className="desktop-workspace-copy">
-          <span>المساحة الحالية</span>
-          <strong>{workspaceName ?? "مركز حلب"}</strong>
+          <span>{t("المساحة الحالية")}</span>
+          <strong>{workspaceName ?? t("مركز حلب")}</strong>
           <small dir="ltr">{workspaceId ? workspaceId.slice(0, 12) + "…" : "—"}</small>
         </div>
         <ChevronDown size={15} />
       </button>
 
-      <div className="desktop-nav-label">التنقّل</div>
+      <div className="desktop-nav-label">{t("التنقّل")}</div>
       <nav className="desktop-nav">
         {items.map(({ id, label, icon: Icon }) => (
           <button
@@ -97,7 +99,7 @@ export default function DesktopSidebar({
             onClick={() => onNavigate(id)}
           >
             <Icon size={18} />
-            <span>{label}</span>
+            <span>{t(label)}</span>
             {id === "accounts" && accountsCount > 0 && <b>{accountsCount}</b>}
           </button>
         ))}
@@ -107,33 +109,33 @@ export default function DesktopSidebar({
 
       <div className="desktop-cloud-status">
         <ShieldCheck size={16} />
-        <div><strong>سحابي وآمن</strong><span>Supabase</span></div>
+        <div><strong>{t("سحابي وآمن")}</strong><span>Supabase</span></div>
         <Check size={15} />
       </div>
 
       <div className="desktop-profile">
-        <div className="profile-avatar">{email?.[0]?.toUpperCase() ?? "م"}</div>
+        <div className="profile-avatar">{email?.[0]?.toUpperCase() ?? t("م")}</div>
         <div className="desktop-profile-copy">
-          <strong>{workspaceName ?? "مركز حلب"}</strong>
-          <span>{email ?? "حساب المالك"}</span>
+          <strong>{workspaceName ?? t("مركز حلب")}</strong>
+          <span>{email ?? t("حساب المالك")}</span>
         </div>
         <MoreHorizontal size={16} />
       </div>
 
       <div className="desktop-quick-actions">
-        <button onClick={onToggleTheme} title={theme === "dark" ? "الوضع الفاتح" : theme === "gold" ? "الوضع الذهبي" : theme === "red" ? "الثيم الأحمر" : "الوضع الداكن"}>
+        <button onClick={onToggleTheme} title={theme === "dark" ? t("الوضع الفاتح") : theme === "gold" ? t("الوضع الذهبي") : theme === "red" ? t("الثيم الأحمر") : t("الوضع الداكن")}>
           {theme === "dark" ? <Sun size={16} /> : theme === "gold" ? <Sparkles size={16} /> : theme === "red" ? <Heart size={16} /> : <Moon size={16} />}
         </button>
-        <button onClick={onBackup} title="النسخ والاستعادة"><ShieldCheck size={16} /></button>
-        <button onClick={onCopyWorkspace} title="نسخ Workspace ID"><Copy size={16} /></button>
-        <button onClick={onExportFile} title="ملف استعادة JSON"><Download size={16} /></button>
+        <button onClick={onBackup} title={t("النسخ والاستعادة")}><ShieldCheck size={16} /></button>
+        <button onClick={onCopyWorkspace} title={t("نسخ Workspace ID")}><Copy size={16} /></button>
+        <button onClick={onExportFile} title={t("ملف استعادة JSON")}><Download size={16} /></button>
       </div>
 
       <div className="desktop-danger-actions">
-        <button onClick={onCredits}><Heart size={14} /> فريق التطوير</button>
-        <button onClick={onDeleteWorkspace}><Trash2 size={14} /> حذف مساحة العمل</button>
-        <button onClick={onDeleteAccount}><LogOut size={14} /> مسح الجهاز والخروج</button>
-        <button onClick={onLogout}><LogOut size={14} /> تسجيل الخروج</button>
+        <button onClick={onCredits}><Heart size={14} /> {t("فريق التطوير")}</button>
+        <button onClick={onDeleteWorkspace}><Trash2 size={14} /> {t("حذف مساحة العمل")}</button>
+        <button onClick={onDeleteAccount}><LogOut size={14} /> {t("مسح الجهاز والخروج")}</button>
+        <button onClick={onLogout}><LogOut size={14} /> {t("تسجيل الخروج")}</button>
       </div>
     </aside>
   );

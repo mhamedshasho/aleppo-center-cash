@@ -5,6 +5,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import CloudAuthGate from "./components/CloudAuthGate";
 import Home from "./pages/Home";
 import Credits from "./pages/Credits";
@@ -61,9 +62,9 @@ function App() {
     updateDeviceClass(); window.addEventListener("resize", updateDeviceClass, { passive: true });
     return () => window.removeEventListener("resize", updateDeviceClass);
   }, []);
-  return (<ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider>
+  return (<LanguageProvider><ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider>
     <Toaster position="top-right" duration={3200} visibleToasts={3} closeButton expand={false} richColors={false} />
     <Router />
-  </TooltipProvider></ThemeProvider></ErrorBoundary>);
+  </TooltipProvider></ThemeProvider></ErrorBoundary></LanguageProvider>);
 }
 export default App;

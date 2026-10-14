@@ -1,3 +1,4 @@
+import { getDirection, t, tx, useLanguage } from "@/contexts/LanguageContext";
 import { useMemo, useState } from "react";
 import { BookOpen, CheckCircle2, ChevronDown, ChevronLeft, HelpCircle, Search, X } from "lucide-react";
 
@@ -57,17 +58,19 @@ const sections = [
 ];
 
 export default function Manual({ onBack }: { onBack: () => void }) {
+  const { language } = useLanguage();
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const normalizedQuery = query.trim().toLocaleLowerCase("ar");
+  const locale = language === "ar" ? "ar" : "en";
+  const normalizedQuery = query.trim().toLocaleLowerCase(locale);
 
   const filteredSections = useMemo(() => sections.map((section) => ({
     ...section,
     items: section.items.filter(([title, text]) => {
       if (!normalizedQuery) return true;
-      return (title + " " + text + " " + section.title).toLocaleLowerCase("ar").includes(normalizedQuery);
+      return (t(title) + " " + t(text) + " " + t(section.title)).toLocaleLowerCase(locale).includes(normalizedQuery);
     }),
-  })).filter((section) => section.items.length > 0), [normalizedQuery]);
+  })).filter((section) => section.items.length > 0), [normalizedQuery, language]);
 
   const resultCount = filteredSections.reduce((sum, section) => sum + section.items.length, 0);
   const visibleCollapsed = normalizedQuery ? new Set<string>() : collapsed;
@@ -85,38 +88,38 @@ export default function Manual({ onBack }: { onBack: () => void }) {
     setCollapsed(allExpanded ? new Set(filteredSections.map((section) => section.title)) : new Set());
   };
 
-  return <main className="manual-page page-enter" dir="rtl">
+  return <main className="manual-page page-enter" dir={getDirection()}>
     <header className="manual-header">
       <div>
-        <button type="button" className="text-btn" onClick={onBack}><ChevronLeft size={16} /> رجوع</button>
+        <button type="button" className="text-btn" onClick={onBack}><ChevronLeft size={16} /> {t("رجوع")}</button>
         <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> USER MANUAL</div>
-        <h1>دليل استخدام البرنامج</h1>
-        <p>كل ما تحتاجه للبدء، ثم إدارة الحسابات والفواتير والنسخ والاستعادة.</p>
+        <h1>{t("دليل استخدام البرنامج")}</h1>
+        <p>{t("كل ما تحتاجه للبدء، ثم إدارة الحسابات والفواتير والنسخ والاستعادة.")}</p>
       </div>
       <div className="manual-hero-icon"><BookOpen size={30} /></div>
     </header>
     <div className="manual-toolbar surface-card">
       <div className="manual-search">
         <Search size={17} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث داخل دليل الاستخدام..." aria-label="البحث داخل دليل الاستخدام" autoComplete="off" spellCheck={false} />
-        {query && <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث"><X size={15} /></button>}
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("ابحث داخل دليل الاستخدام...")} aria-label={t("البحث داخل دليل الاستخدام")} autoComplete="off" spellCheck={false} />
+        {query && <button type="button" onClick={() => setQuery("")} aria-label={t("مسح البحث")}><X size={15} /></button>}
       </div>
-      <span className="manual-result-count">{query ? `${resultCount} نتيجة` : `${sections.reduce((n, s) => n + s.items.length, 0)} معلومة`}</span>
-      <button type="button" className="manual-toggle-all" onClick={toggleAll} disabled={!filteredSections.length}><ChevronDown size={15} className={allExpanded ? "is-open" : ""} />{allExpanded ? "طي الكل" : "فتح الكل"}</button>
+      <span className="manual-result-count">{query ? tx("{0} نتيجة", [resultCount]) : tx("{0} معلومة", [sections.reduce((n, s) => n + s.items.length, 0)])}</span>
+      <button type="button" className="manual-toggle-all" onClick={toggleAll} disabled={!filteredSections.length}><ChevronDown size={15} className={allExpanded ? "is-open" : ""} />{allExpanded ? t("طي الكل") : t("فتح الكل")}</button>
     </div>
     <div className="manual-layout">
       <aside className="manual-index surface-card">
-        <strong>محتويات الدليل</strong>
-        {filteredSections.map((section, i) => <a href={"#manual-" + i} key={section.title}><span>{String(i + 1).padStart(2, "0")}</span>{section.title}</a>)}
+        <strong>{t("محتويات الدليل")}</strong>
+        {filteredSections.map((section, i) => <a href={"#manual-" + i} key={section.title}><span>{String(i + 1).padStart(2, "0")}</span>{t(section.title)}</a>)}
       </aside>
       <div className="manual-content">
         {filteredSections.map((section, i) => <section className={"manual-section surface-card " + (visibleCollapsed.has(section.title) ? "is-collapsed" : "")} id={"manual-" + i} key={section.title}>
-          <button type="button" className="manual-section-head" onClick={() => toggleSection(section.title)} aria-expanded={!visibleCollapsed.has(section.title)} aria-controls={"manual-content-" + i}><span>{String(i + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2><p>{i === 0 ? "ابدأ من هون إذا أول مرة تستخدم البرنامج." : i === 1 ? "إدارة الحسابات والحركات اليومية." : i === 2 ? "تجهيز الفاتورة واختيار القوالب والصور." : i === 3 ? "حماية بياناتك والرجوع إلى نسخة سابقة." : "خيارات إضافية تساعدك في الاستخدام اليومي."}</p></div><ChevronDown className="manual-section-chevron" size={18} /></button>
-          <div className="manual-items" id={"manual-content-" + i}>{section.items.map(([title, text], itemIndex) => <article style={{ animationDelay: `${Math.min(itemIndex * 35, 210)}ms` }} key={title}><CheckCircle2 size={18} /><div><h3>{title}</h3><p>{text}</p></div></article>)}</div>
+          <button type="button" className="manual-section-head" onClick={() => toggleSection(section.title)} aria-expanded={!visibleCollapsed.has(section.title)} aria-controls={"manual-content-" + i}><span>{String(i + 1).padStart(2, "0")}</span><div><h2>{t(section.title)}</h2><p>{i === 0 ? t("ابدأ من هون إذا أول مرة تستخدم البرنامج.") : i === 1 ? t("إدارة الحسابات والحركات اليومية.") : i === 2 ? t("تجهيز الفاتورة واختيار القوالب والصور.") : i === 3 ? t("حماية بياناتك والرجوع إلى نسخة سابقة.") : t("خيارات إضافية تساعدك في الاستخدام اليومي.")}</p></div><ChevronDown className="manual-section-chevron" size={18} /></button>
+          <div className="manual-items" id={"manual-content-" + i}>{section.items.map(([title, text], itemIndex) => <article style={{ animationDelay: `${Math.min(itemIndex * 35, 210)}ms` }} key={title}><CheckCircle2 size={18} /><div><h3>{t(title)}</h3><p>{t(text)}</p></div></article>)}</div>
         </section>)}
-        {(!query || filteredSections.length > 0) && <section className="manual-help surface-card"><HelpCircle size={21} /><div><strong>إذا واجهتك مشكلة</strong><p>تأكد من اتصال البرنامج بالسحابة، ثم جرّب تحديث الصفحة. إذا استمرت المشكلة، سجّل الخطوات التي سببتها وراجع الحساب أو الحركة المرتبطة بها.</p></div></section>}
+        {(!query || filteredSections.length > 0) && <section className="manual-help surface-card"><HelpCircle size={21} /><div><strong>{t("إذا واجهتك مشكلة")}</strong><p>{t("تأكد من اتصال البرنامج بالسحابة، ثم جرّب تحديث الصفحة. إذا استمرت المشكلة، سجّل الخطوات التي سببتها وراجع الحساب أو الحركة المرتبطة بها.")}</p></div></section>}
       </div>
     </div>
-    {query && filteredSections.length === 0 && <div className="manual-empty surface-card"><Search size={20} /><strong>لا توجد نتائج</strong><span>جرّب كلمة أخرى مثل: فاتورة، حساب، نسخة، أو عملة.</span></div>}
+    {query && filteredSections.length === 0 && <div className="manual-empty surface-card"><Search size={20} /><strong>{t("لا توجد نتائج")}</strong><span>{t("جرّب كلمة أخرى مثل: فاتورة، حساب، نسخة، أو عملة.")}</span></div>}
   </main>;
 }
