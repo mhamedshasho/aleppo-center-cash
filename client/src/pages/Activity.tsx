@@ -1,3 +1,4 @@
+import { getLanguage, t, tx, useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useMemo, useState } from "react";
 import { Activity, RefreshCw, UserRound, WalletCards, CreditCard, Trash2, Pencil, Plus, CalendarDays } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -40,7 +41,7 @@ const entityLabels: Record<string, string> = {
 };
 
 const formatTime = (value: string) =>
-  new Intl.DateTimeFormat("ar-SY", {
+  new Intl.DateTimeFormat(getLanguage() === "ar" ? "ar-SY" : "en-US", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -49,7 +50,7 @@ const formatTime = (value: string) =>
 const formatAmount = (value: unknown, currency?: string) => {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "—";
-  return currency === "USD" ? `$${amount.toLocaleString("en-US")}` : `${amount.toLocaleString("ar-SY")} ل.س`;
+  return currency === "USD" ? `$${amount.toLocaleString("en-US")}` : tx("{0} ل.س", [amount.toLocaleString(getLanguage() === "ar" ? "ar-SY" : "en-US")]);
 };
 
 function readSummary(summary: string) {
@@ -67,30 +68,31 @@ function getTarget(entry: ActivityEntry) {
     const after = data.after as Record<string, unknown>;
     if (entry.entity === "payment") {
       const changes: string[] = [];
-      if (before.name !== after.name) changes.push(`الاسم: ${String(before.name ?? "—")} ← ${String(after.name ?? "—")}`);
+      if (before.name !== after.name) changes.push(tx("الاسم: {0} ← {1}", [String(before.name ?? "—"), String(after.name ?? "—")]));
       if (before.amount_minor !== after.amount_minor || before.currency !== after.currency) {
-        changes.push(`المبلغ: ${formatAmount(before.amount_minor, String(before.currency ?? ""))} ← ${formatAmount(after.amount_minor, String(after.currency ?? ""))}`);
+        changes.push(tx("المبلغ: {0} ← {1}", [formatAmount(before.amount_minor, String(before.currency ?? "")), formatAmount(after.amount_minor, String(after.currency ?? ""))]));
       }
-      if (before.payment_type !== after.payment_type) changes.push(`النوع: ${String(before.payment_type)} ← ${String(after.payment_type)}`);
-      if (before.occurred_on !== after.occurred_on) changes.push(`التاريخ: ${String(before.occurred_on)} ← ${String(after.occurred_on)}`);
-      return changes.join(" · ") || "تم تعديل بيانات الدفعة";
+      if (before.payment_type !== after.payment_type) changes.push(tx("النوع: {0} ← {1}", [String(before.payment_type), String(after.payment_type)]));
+      if (before.occurred_on !== after.occurred_on) changes.push(tx("التاريخ: {0} ← {1}", [String(before.occurred_on), String(after.occurred_on)]));
+      return changes.join(" · ") || t("تم تعديل بيانات الدفعة");
     }
     const changes: string[] = [];
-    if (before.name !== after.name) changes.push(`الاسم: ${String(before.name ?? "—")} ← ${String(after.name ?? "—")}`);
-    if (before.owner_name !== after.owner_name) changes.push(`صاحب الحساب: ${String(before.owner_name ?? "—")} ← ${String(after.owner_name ?? "—")}`);
-    return changes.join(" · ") || "تم تعديل بيانات الحساب";
+    if (before.name !== after.name) changes.push(tx("الاسم: {0} ← {1}", [String(before.name ?? "—"), String(after.name ?? "—")]));
+    if (before.owner_name !== after.owner_name) changes.push(tx("صاحب الحساب: {0} ← {1}", [String(before.owner_name ?? "—"), String(after.owner_name ?? "—")]));
+    return changes.join(" · ") || t("تم تعديل بيانات الحساب");
   }
 
   if (entry.entity === "payment") {
-    return String(data.name ?? "دفعة");
+    return String(data.name ?? t("دفعة"));
   }
   if (entry.entity === "account") {
-    return String(data.name ?? "حساب");
+    return String(data.name ?? t("حساب"));
   }
-  return entry.summary || "تعديل";
+  return entry.summary || t("تعديل");
 }
 
 function ActivityView({ workspaceId, currentUserId }: Props) {
+    useLanguage();
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const PAGE_SIZE = 100;
   const [period, setPeriod] = useState<"all" | "today">("all");
@@ -169,22 +171,22 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
     <section className="activity-page">
       <div className="page-heading">
         <div>
-          <div className="eyebrow"><Activity size={14} /> سجل التعديلات</div>
-          <h1>كل حركة، موثّقة.</h1>
-          <p>أي إضافة أو تعديل أو حذف من قبلك أو من أي عضو تظهر هنا مباشرة من السحابة.</p>
+          <div className="eyebrow"><Activity size={14} /> {t("سجل التعديلات")}</div>
+          <h1>{t("كل حركة، موثّقة.")}</h1>
+          <p>{t("أي إضافة أو تعديل أو حذف من قبلك أو من أي عضو تظهر هنا مباشرة من السحابة.")}</p>
         </div>
         <button className="secondary-btn" onClick={() => void load()} disabled={refreshing}>
-          <RefreshCw size={16} className={refreshing ? "spin" : ""} /> تحديث
+          <RefreshCw size={16} className={refreshing ? "spin" : ""} /> {t("تحديث")}
         </button>
       </div>
 
       <div className="activity-toolbar">
         <div className="activity-tabs">
-          <button className={period === "all" ? "active" : ""} onClick={() => setPeriod("all")}><Activity size={16} /> كل السجل</button>
-          <button className={period === "today" ? "active" : ""} onClick={() => setPeriod("today")}><CalendarDays size={16} /> اليوم</button>
+          <button className={period === "all" ? "active" : ""} onClick={() => setPeriod("all")}><Activity size={16} /> {t("كل السجل")}</button>
+          <button className={period === "today" ? "active" : ""} onClick={() => setPeriod("today")}><CalendarDays size={16} /> {t("اليوم")}</button>
         </div>
         <div className="activity-stats">
-          <span><Activity size={14} /> {counts.total} حركة</span>
+          <span><Activity size={14} /> {counts.total} {t("حركة")}</span>
           <span><Plus size={14} /> {counts.create}</span>
           <span><Pencil size={14} /> {counts.update}</span>
           <span><Trash2 size={14} /> {counts.delete}</span>
@@ -192,10 +194,10 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
       </div>
 
       {loading ? (
-        <div className="activity-empty">جاري تحميل سجل التعديلات من Supabase…</div>
+        <div className="activity-empty">{t("جاري تحميل سجل التعديلات من Supabase…")}</div>
       ) : (
         <div className="activity-feed">
-          {filtered.length === 0 && <div className="activity-empty">لا توجد حركات مسجلة في هذه الفترة.</div>}
+          {filtered.length === 0 && <div className="activity-empty">{t("لا توجد حركات مسجلة في هذه الفترة.")}</div>}
           {filtered.map((entry) => <ActivityRow key={entry.id} entry={entry} currentUserId={currentUserId} />)}
         </div>
       )}
@@ -206,15 +208,15 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
           disabled={page === 0 || refreshing}
           onClick={() => setPage((current) => Math.max(0, current - 1))}
         >
-          السابق
+          {t("السابق")}
         </button>
-        <span>صفحة {page + 1} من {Math.max(1, Math.ceil(totalCount / PAGE_SIZE))} · {totalCount.toLocaleString("ar-SY")} حركة</span>
+        <span>{t("صفحة")} {page + 1} {t("من")} {Math.max(1, Math.ceil(totalCount / PAGE_SIZE))} · {totalCount.toLocaleString(getLanguage() === "ar" ? "ar-SY" : "en-US")} {t("حركة")}</span>
         <button
           className="secondary-btn"
           disabled={(page + 1) * PAGE_SIZE >= totalCount || refreshing}
           onClick={() => setPage((current) => current + 1)}
         >
-          التالي
+          {t("التالي")}
         </button>
       </div>
     </section>
@@ -222,14 +224,15 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
 }
 
 function ActivityRow({ entry, currentUserId }: { entry: ActivityEntry; currentUserId?: string | null }) {
+    useLanguage();
   const icon = entry.action === "create" ? <Plus size={17} /> : entry.action === "update" ? <Pencil size={17} /> : entry.action === "delete" ? <Trash2 size={17} /> : <Activity size={17} />;
-  const actor = currentUserId && entry.user_id === currentUserId ? "أنت" : entry.actor_email || "عضو في مساحة العمل";
+  const actor = currentUserId && entry.user_id === currentUserId ? t("أنت") : entry.actor_email || t("عضو في مساحة العمل");
   return (
     <article className={`activity-row action-${entry.action}`}>
       <div className="activity-icon">{icon}</div>
       <div className="activity-body">
         <div className="activity-main">
-          <strong>{actionLabels[entry.action] ?? entry.action} {entityLabels[entry.entity] ?? entry.entity}</strong>
+          <strong>{t(actionLabels[entry.action] ?? entry.action)} {t(entityLabels[entry.entity] ?? entry.entity)}</strong>
           <span>{getTarget(entry)}</span>
         </div>
         <div className="activity-meta"><UserRound size={13} /> {actor} <span>·</span> {formatTime(entry.created_at)}</div>

@@ -1,3 +1,4 @@
+import { getDirection, t, useLanguage } from "@/contexts/LanguageContext";
 import { Heart, Crown, Sparkles } from "lucide-react";
 
 type Member = {
@@ -21,13 +22,14 @@ const members: Member[] = [
 ];
 
 export default function Credits() {
+    useLanguage();
   return (
-    <main className="credits-shell" dir="rtl">
+    <main className="credits-shell" dir={getDirection()}>
       <div className="credits-card">
         <header className="credits-header">
           <div className="credits-brand">🏪 Aleppo Center Cash</div>
-          <h1>فريق التطوير</h1>
-          <p>اللي بنوا المشروع بكل حب</p>
+          <h1>{t("فريق التطوير")}</h1>
+          <p>{t("اللي بنوا المشروع بكل حب")}</p>
         </header>
         <ul className="credits-list">
           {members.map((m) => (
@@ -39,8 +41,8 @@ export default function Credits() {
                   {m.isMaster && <Crown size={14} className="credits-crown" />}
                   {m.isLeader && <Sparkles size={14} className="credits-sparkle" />}
                 </div>
-                <div className="credits-role">{m.role}</div>
-                <div className="credits-desc">{m.description}</div>
+                <div className="credits-role">{t(m.role)}</div>
+                <div className="credits-desc">{t(m.description)}</div>
               </div>
             </li>
           ))}

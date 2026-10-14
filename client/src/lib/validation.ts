@@ -1,3 +1,4 @@
+import { t } from "@/contexts/LanguageContext";
 import type { LocalAccount, LocalPayment } from "./localStore";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,9 +36,9 @@ export function validateAccounts(value: unknown): value is LocalAccount[] {
 
 export function validatePaymentDraft(draft: { name: string; amount: string; currency: string; type: string; date: string }) {
   const amount = Number(draft.amount);
-  if (!draft.name.trim() || !Number.isFinite(amount) || amount <= 0 || !Number.isSafeInteger(amount)) return "اكتب اسم الدفعة والمبلغ بشكل صحيح";
-  if (draft.currency !== "SYP" && draft.currency !== "USD") return "اختار عملة صحيحة";
-  if (draft.type !== "credit" && draft.type !== "debit") return "اختار نوع الحركة";
-  if (!DATE_PATTERN.test(draft.date) || Number.isNaN(Date.parse(`${draft.date}T12:00:00Z`))) return "اختار تاريخ صحيح";
+  if (!draft.name.trim() || !Number.isFinite(amount) || amount <= 0 || !Number.isSafeInteger(amount)) return t("اكتب اسم الدفعة والمبلغ بشكل صحيح");
+  if (draft.currency !== "SYP" && draft.currency !== "USD") return t("اختار عملة صحيحة");
+  if (draft.type !== "credit" && draft.type !== "debit") return t("اختار نوع الحركة");
+  if (!DATE_PATTERN.test(draft.date) || Number.isNaN(Date.parse(`${draft.date}T12:00:00Z`))) return t("اختار تاريخ صحيح");
   return null;
 }

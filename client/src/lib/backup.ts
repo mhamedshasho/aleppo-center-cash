@@ -1,3 +1,4 @@
+import { t } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
 
 type RestorationSnapshot = {
@@ -60,7 +61,7 @@ async function deriveKey(password: string, salt: Uint8Array, iterations: number)
 }
 
 export async function createCloudBackup(workspaceId: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   const { data, error } = await supabase.functions.invoke("workspace-backup", {
     body: { action: "backup", workspaceId },
   });
@@ -69,7 +70,7 @@ export async function createCloudBackup(workspaceId: string) {
 }
 
 export async function exportRestorationSnapshot(workspaceId: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   const { data, error } = await supabase.functions.invoke("workspace-backup", {
     body: { action: "export", workspaceId },
   });
@@ -114,7 +115,7 @@ export async function restoreEncryptedRestorationFile(
   password: string,
   file: File,
 ) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   if (password.length < 8) throw new Error("restore_password_too_short");
   if (file.size > MAX_RESTORATION_FILE_BYTES) throw new Error("restoration_file_too_large");
 
@@ -177,7 +178,7 @@ export async function restoreEncryptedRestorationFile(
 }
 
 export async function setCloudRestorePassword(workspaceId: string, password: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   const { data, error } = await supabase.functions.invoke("workspace-backup", {
     body: { action: "set_password", workspaceId, password },
   });
@@ -186,7 +187,7 @@ export async function setCloudRestorePassword(workspaceId: string, password: str
 }
 
 export async function restoreCloudBackup(workspaceId: string, password: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   const { data, error } = await supabase.functions.invoke("workspace-backup", {
     body: { action: "restore", workspaceId, password },
   });

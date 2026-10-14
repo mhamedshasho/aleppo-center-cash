@@ -1,3 +1,4 @@
+import { t } from "@/contexts/LanguageContext";
 import { createClient } from "@supabase/supabase-js";
 
 const configuredSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -35,12 +36,12 @@ export async function getSupabaseSession() {
 }
 
 export async function signInWithPassword(email: string, password: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   return supabase.auth.signInWithPassword({ email, password });
 }
 
 export async function signUpWithPassword(email: string, password: string) {
-  if (!supabase) throw new Error("Supabase غير مهيأ بعد");
+  if (!supabase) throw new Error(t("Supabase غير مهيأ بعد"));
   return supabase.auth.signUp({ email, password });
 }
 
