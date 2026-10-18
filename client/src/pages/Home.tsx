@@ -239,19 +239,20 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
   const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
 
   useEffect(() => {
-    if (!cloudWorkspace?.id) return;
+    const client = supabase;
+    if (!cloudWorkspace?.id || !client) return;
     localStorage.setItem("aleppo-shared-workspace-id", cloudWorkspace.id);
     window.dispatchEvent(new Event("aleppo-workspace-context"));
     let active = true;
     const loadBranding = async () => {
-      const { data, error } = await supabase.from("workspace_settings").select("invoice_logo_data,brand_circle_color").eq("workspace_id", cloudWorkspace.id).maybeSingle();
+      const { data, error } = await client.from("workspace_settings").select("invoice_logo_data,brand_circle_color").eq("workspace_id", cloudWorkspace.id).maybeSingle();
       if (!error && active) {
         setSharedInvoiceLogo(typeof data?.invoice_logo_data === "string" ? data.invoice_logo_data : "");
         setLogoCircleColor(typeof data?.brand_circle_color === "string" && /^#[0-9a-fA-F]{6}$/.test(data.brand_circle_color) ? data.brand_circle_color : "#25606a");
       }
     };
     void loadBranding();
-    const channel = supabase.channel("workspace-branding-" + cloudWorkspace.id)
+    const channel = client.channel("workspace-branding-" + cloudWorkspace.id)
       .on("postgres_changes", { event: "*", schema: "public", table: "workspace_settings", filter: "workspace_id=eq." + cloudWorkspace.id }, (payload) => {
         const nextRow = payload.new as { invoice_logo_data?: unknown; brand_circle_color?: unknown } | null;
         if (active) {
@@ -259,22 +260,26 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
           setLogoCircleColor(typeof nextRow?.brand_circle_color === "string" && /^#[0-9a-fA-F]{6}$/.test(nextRow.brand_circle_color) ? nextRow.brand_circle_color : "#25606a");
         }
       }).subscribe();
-    return () => { active = false; void supabase.removeChannel(channel); };
+    return () => { active = false; void client.removeChannel(channel); };
   }, [cloudWorkspace?.id]);
 
   const saveSharedInvoiceLogo = async (logo: string) => {
+    const client = supabase;
     if (!cloudWorkspace?.id) return;
-    const { error } = await supabase.from("workspace_settings").upsert({ workspace_id: cloudWorkspace.id, invoice_logo_data: logo }, { onConflict: "workspace_id" });
+    if (!client) throw new Error("Supabase غير مهيأ بعد");
+    const { error } = await client.from("workspace_settings").upsert({ workspace_id: cloudWorkspace.id, invoice_logo_data: logo }, { onConflict: "workspace_id" });
     if (error) { toast.error("تعذر حفظ شعار الفواتير على الخادم"); throw error; }
     setSharedInvoiceLogo(logo);
   };
 
   const saveLogoCircleColor = async (color: string) => {
+    const client = supabase;
     if (!cloudWorkspace?.id) throw new Error("لا توجد مساحة عمل متصلة");
+    if (!client) throw new Error("Supabase غير مهيأ بعد");
     if (!/^#[0-9a-fA-F]{6}$/.test(color)) throw new Error("لون غير صالح");
     const previousColor = logoCircleColor;
     setLogoCircleColor(color);
-    const { error } = await supabase.from("workspace_settings").upsert({ workspace_id: cloudWorkspace.id, brand_circle_color: color }, { onConflict: "workspace_id" });
+    const { error } = await client.from("workspace_settings").upsert({ workspace_id: cloudWorkspace.id, brand_circle_color: color }, { onConflict: "workspace_id" });
     if (error) {
       setLogoCircleColor(previousColor);
       console.error("[AleppoCenterCash] logo circle color save failed", error);
