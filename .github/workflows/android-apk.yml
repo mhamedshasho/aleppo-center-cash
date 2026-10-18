@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths-ignore:
       - client/src/pages/Home.tsx
+      - client/src/pages/InvoiceMaker.tsx
       - client/src/contexts/ThemeContext.tsx
       - client/src/components/DesktopSidebar.tsx
       - client/src/index.css
