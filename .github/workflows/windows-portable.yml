@@ -10,6 +10,9 @@ on:
       - docs/**
       - .github/workflows/windows-exe.yml
       - client/src/pages/Home.tsx
+      - client/src/App.tsx
+      - client/src/lib/nativeNotifications.ts
+      - client/src/lib/oneSignal.ts
       - client/src/pages/InvoiceMaker.tsx
       - client/src/pages/Manual.tsx
       - client/src/contexts/ThemeContext.tsx
