@@ -1,122 +1,171 @@
 import { useMemo, useState } from "react";
-import { BookOpen, CheckCircle2, ChevronDown, ChevronLeft, HelpCircle, Search, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronLeft, Cloud,
+  FileText, HelpCircle, History, Palette, Search, ShieldCheck, Smartphone,
+  WalletCards, X,
+} from "lucide-react";
 
-const sections = [
+type ManualDestination = "accounts" | "invoice" | "settings" | "activity";
+type ManualItem = { title: string; quick: string; details: string };
+type ManualSection = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+  items: ManualItem[];
+};
+
+const sections: ManualSection[] = [
   {
-    title: "الأساسيات",
+    id: "daily",
+    title: "الحسابات والدفعات",
+    subtitle: "الشغل اليومي بأقل خطوات",
+    icon: WalletCards,
     items: [
-      ["الدخول", "من شاشة الدخول اكتب مفتاح الدخول ثم ادخل إلى مساحة العمل. البيانات المحاسبية في البرنامج مرتبطة بالسحابة."],
-      ["مساحة العمل", "اسم مساحة العمل الظاهر في القائمة الجانبية هو المكان الذي تُحفظ فيه الحسابات والدفعات. يمكن نسخ Workspace ID لمشاركته مع عضو آخر."],
-      ["نظرة عامة", "تعطيك ملخصاً سريعاً عن عدد الحسابات، له، عليه، الرصيد، وآخر الحركات. زر العملة يبدّل بين الليرة السورية والدولار."],
-      ["الحسابات", "من الحسابات أنشئ حساباً لكل زبون أو جهة. افتح أي حساب لرؤية رصيده وسجل حركاته بالكامل."],
-      ["له وعليه", "له تعني: أنت مدين للزبون. عليه تعني: الزبون مدين لك. الرصيد يُحسب من الحركات المسجلة لكل عملة بشكل مستقل."],
-      ["إضافة دفعة", "اختر اسم الحركة والمبلغ والعملة والتاريخ ثم اختر له أو عليه واضغط حفظ. ومن داخل حساب معيّن يتم ربط الدفعة بهذا الحساب مباشرة."],
+      { title: "إنشاء حساب زبون", quick: "افتح «الحسابات» ثم أضف حساباً جديداً.", details: "اكتب اسم الحساب. اسم صاحب الحساب اختياري. افتح الحساب بعد إنشائه لتجد تفاصيله وحركاته." },
+      { title: "إضافة دفعة", quick: "اختر الحساب، ثم أدخل الاسم والمبلغ والعملة والتاريخ ونوع الحركة، واضغط حفظ.", details: "راجع اسم الحساب ونوع الحركة قبل الحفظ حتى تُسجَّل الحركة في المكان الصحيح." },
+      { title: "معنى «له» و«عليه»", quick: "له: أنت مدين للزبون. عليه: الزبون مدين لك.", details: "رصيد الحساب يعتمد على الحركات المسجلة. تأكد من اختيار النوع الصحيح عند إضافة الدفعة." },
+      { title: "تعديل أو حذف حركة", quick: "افتح الحساب واستخدم زر التعديل أو سلة المهملات بجانب الحركة.", details: "الحذف يغيّر رصيد الحساب، لذلك راجع الحركة قبل تأكيد الحذف." },
+      { title: "البحث والعملات", quick: "ابحث باسم الحساب أو الحركة. الليرة والدولار يُعرضان كلٌ على حدة.", details: "لا تجمع قيم SYP وUSD معاً عند مراجعة إجمالي الحساب." },
+      { title: "تصدير تقرير الحساب", quick: "من تفاصيل الحساب يمكنك تصدير تقرير PDF أو PNG.", details: "راجع الحساب المطلوب قبل التصدير للتأكد من أنك تصدّر التقرير الصحيح." },
     ],
   },
   {
-    title: "الحسابات والحركات",
-    items: [
-      ["البحث والترتيب", "في صفحة الحسابات ابحث باسم الحساب أو صاحبه. زر الترتيب يبدّل بين الأحدث والاسم."],
-      ["تعديل الدفعة", "افتح الحساب ثم استخدم زر التعديل بجانب الحركة لتغيير بياناتها."],
-      ["حذف الحركة", "زر سلة المهملات يحذف الحركة بعد التأكيد. انتبه لأن الحذف يغيّر رصيد الحساب."],
-      ["العملات", "الليرة السورية والدولار منفصلان في الحسابات والتقارير. لا يتم جمع العملتين معاً."],
-      ["سجل التعديلات", "يعرض الإضافات والتعديلات والحذف والتصدير والاستعادة المرتبطة بمساحة العمل."],
-    ],
-  },
-  {
+    id: "invoice",
     title: "صانع الفواتير",
+    subtitle: "من اختيار الدفعات إلى PDF",
+    icon: FileText,
     items: [
-      ["اختيار الدفعات", "افتح صانع الفواتير وحدد الدفعات التي تريد إدخالها بالفاتورة مثل Excel. يمكنك البحث وتحديد أكثر من دفعة."],
-      ["قوالب PDF", "حمّل عدة ملفات PDF دفعة واحدة. إذا كان الملف متعدد الصفحات، اختر الصفحة المطلوبة من قائمة العرض."],
-      ["تطبيق القالب", "حدد الدفعة أولاً، ثم اختر ملف القالب والصفحة واضغط Apply. صورة القالب تُحفظ لهذه الدفعة داخل عملية إعداد الفاتورة."],
-      ["تحريك الصورة", "بعد تطبيق القالب اسحب الصورة داخل إطار التموضع. زر إرجاع للمنتصف يعيدها إلى مركز الإطار."],
-      ["حقل امتار", "لكل دفعة حقل امتار مستقل. اكتب الرقم الذي تريد ظهوره في الفاتورة."],
-      ["المعاينة", "اضغط معاينة قبل الاستخراج لمراجعة رقم الفاتورة والدفعات والصور والامتار والشعار."],
-      ["رقم الفاتورة والشعار", "اكتب رقم الفاتورة بنفسك. يمكنك اختيار شعار وتحديد زاويته، ويظهر الشعار بشكل دائري."],
-      ["استخراج PDF", "بعد المراجعة اضغط اعتماد واستخراج PDF. الفاتورة تُنشأ من الدفعات التي اخترتها."],
+      { title: "ابدأ الفاتورة", quick: "افتح «صانع الفواتير»، اختر الحساب وحدّد الدفعات المطلوبة.", details: "يمكنك البحث ضمن دفعات الحساب وتحديد أكثر من دفعة، مثل تحديد الصفوف في Excel." },
+      { title: "اختيار تصميم الفاتورة", quick: "اختر كلاسيكي أو ذهبي أو أحمر أو داكن أو أصفر وأسود من أعلى صانع الفواتير.", details: "تصميم الفاتورة مستقل عن ثيم التطبيق الرئيسي. اختيار تصميم الفاتورة يُحفظ لمساحة العمل ويُستخدم في المعاينة وملف PDF." },
+      { title: "الشعار وخلفيته", quick: "استخدم شعار الفواتير المحفوظ بالإعدادات أو اختر صورة من جهازك.", details: "خلفية دائرة الشعار تُضبط من الإعدادات ضمن «المظهر والفاتورة». اللون يخص شعار الفاتورة، ولا يغيّر شعار التطبيق." },
+      { title: "إضافة قالب PDF أو صورة", quick: "حمّل ملف PDF أو صورة، ثم اختر الصفحة المطلوبة واضغط «تطبيق».", details: "يمكن تحميل عدة ملفات. حدّد الدفعة المستهدفة أولاً، ثم اختر الملف والصفحة المناسبة لتلك الدفعة." },
+      { title: "الصورة والأمتار", quick: "اكتب الأمتار لكل دفعة، واسحب صورة القالب لموضعها المناسب.", details: "موضع الصورة مرتبط بالدفعة المحددة. زر «إرجاع للمنتصف» يعيد الصورة إلى وسط الإطار." },
+      { title: "المعاينة والتنزيل", quick: "اكتب رقم الفاتورة، راجع المعاينة، ثم اضغط «اعتماد واستخراج PDF».", details: "لاستخراج الفاتورة يجب اختيار دفعة واحدة على الأقل وإدخال رقم الفاتورة. راجع العميل والتاريخ والشعار والدفعات قبل الاعتماد." },
     ],
   },
   {
+    id: "backup",
     title: "النسخ والاستعادة",
+    subtitle: "احتفظ بنسخة قبل أن تحتاجها",
+    icon: ShieldCheck,
     items: [
-      ["النسخة السحابية", "يمكن إنشاء نسخة سحابية لمساحة العمل من قائمة الحساب. النسخة تحفظ بيانات العمل على السحابة."],
-      ["ملف الاستعادة", "يمكن تنزيل ملف JSON مشفر بكلمة مرور استعادة. هذا الملف مخصص لاستعادة بيانات مساحة العمل."],
-      ["الاستعادة", "أدخل كلمة مرور الاستعادة ثم اختر ملف JSON أو استعد آخر نسخة سحابية. الاستعادة تستبدل الحالة الحالية بالنسخة المختارة."],
-      ["الأمان", "ملف الاستعادة المحلي مشفر، ولا يحتوي كلمة مرور تسجيل الدخول أو مفاتيح Supabase."],
+      { title: "نسخة سحابية", quick: "من الإعدادات افتح «البيانات والنسخ» لخيارات النسخ.", details: "النسخة السحابية مرتبطة بمساحة العمل. تأكد من ظهور اتصال السحابة قبل تنفيذ عملية النسخ." },
+      { title: "ملف استعادة", quick: "يمكنك تنزيل ملف JSON مشفّر والاحتفاظ به خارج التطبيق.", details: "استخدم كلمة مرور الاستعادة عند إعداد الملف. احتفظ بالملف وكلمة مروره في مكان آمن." },
+      { title: "استعادة البيانات", quick: "اختر ملف الاستعادة أو النسخة السحابية ثم أدخل كلمة المرور المطلوبة.", details: "الاستعادة تستبدل البيانات الحالية بمحتوى النسخة المختارة. لا تبدأها قبل التأكد من اختيار النسخة الصحيحة." },
+      { title: "متى أعمل نسخة؟", quick: "اعمل نسخة دورية، وخصوصاً قبل الاستعادة أو أي تغييرات كبيرة.", details: "لا تحتفظ بملف النسخة وحده إذا كانت كلمة مروره مطلوبة؛ احتفظ بمعلومات الاستعادة اللازمة معه." },
     ],
   },
   {
-    title: "الإضافيات والإعدادات",
+    id: "settings",
+    title: "الثيمات ومساحة العمل",
+    subtitle: "ضبط شكل التطبيق والاتصال",
+    icon: Palette,
     items: [
-      ["الوضع الداكن", "من قائمة المستخدم بدّل بين الوضع الفاتح والداكن. التصميم يحافظ على وضوح الجداول والنماذج في الوضعين."],
-      ["التصدير", "من تفاصيل الحساب يمكنك استخراج تقرير PDF أو PNG للحساب."],
-      ["الاتصال", "شريط الحالة يوضح اتصال البرنامج بـ Supabase. الحسابات السحابية تعتمد على الاتصال بالسحابة لحفظ البيانات."],
-      ["الأعضاء", "عضو مساحة العمل يمكنه استخدام وظائف مساحة العمل وفق صلاحياتها الحالية، بما فيها إدارة الحسابات والحركات."],
+      { title: "ثيم التطبيق الرئيسي", quick: "من الإعدادات > «المظهر والفاتورة» اختر فاتحاً أو داكناً أو ذهبياً أو أحمر قديماً أو Yellow & Black.", details: "هذه الخيارات تغيّر واجهة التطبيق. لا تغيّر تصميم الفاتورة الذي تختاره من داخل صانع الفواتير." },
+      { title: "مساحة العمل والأعضاء", quick: "تأكد من اسم مساحة العمل الحالية قبل إضافة أو مراجعة الحركات.", details: "الحسابات والدفعات مرتبطة بمساحة العمل. يمكن نسخ Workspace ID من إعدادات مساحة العمل لمشاركته عند الحاجة إلى الانضمام إليها." },
+      { title: "حالة الاتصال", quick: "راقب حالة Supabase أعلى الصفحة.", details: "الحسابات السحابية تحتاج اتصالاً بالسحابة لحفظ التغييرات ومزامنتها. إذا انقطع الاتصال، تحقق منه قبل متابعة العمل الحساس." },
+      { title: "سجل التعديلات", quick: "افتح «التعديلات» لمراجعة الحركات المسجلة في مساحة العمل.", details: "يعرض السجل الإضافات والتعديلات والحذف والتصدير والاستعادة التي يسجلها التطبيق." },
+      { title: "الإشعارات", quick: "افتح الإشعارات لمراجعة التنبيهات المتاحة.", details: "يمكنك تمييز الإشعارات كمقروءة من قسم الإشعارات ضمن الإعدادات." },
     ],
   },
 ];
 
-export default function Manual({ onBack }: { onBack: () => void }) {
+const quickActions: { title: string; description: string; icon: LucideIcon; destination: ManualDestination; action: string }[] = [
+  { title: "الحسابات", description: "افتح حساب زبون أو راجع رصيده", icon: WalletCards, destination: "accounts", action: "فتح الحسابات" },
+  { title: "صانع الفواتير", description: "اختر الدفعات وصمّم PDF", icon: FileText, destination: "invoice", action: "إنشاء فاتورة" },
+  { title: "الإعدادات", description: "الثيمات والشعار والنسخ", icon: Palette, destination: "settings", action: "فتح الإعدادات" },
+];
+
+export default function Manual({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (destination: ManualDestination) => void }) {
   const [query, setQuery] = useState("");
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const normalizedQuery = query.trim().toLocaleLowerCase("ar");
 
   const filteredSections = useMemo(() => sections.map((section) => ({
     ...section,
-    items: section.items.filter(([title, text]) => {
-      if (!normalizedQuery) return true;
-      return (title + " " + text + " " + section.title).toLocaleLowerCase("ar").includes(normalizedQuery);
-    }),
+    items: section.items.filter((item) => !normalizedQuery || (section.title + " " + item.title + " " + item.quick + " " + item.details).toLocaleLowerCase("ar").includes(normalizedQuery)),
   })).filter((section) => section.items.length > 0), [normalizedQuery]);
 
   const resultCount = filteredSections.reduce((sum, section) => sum + section.items.length, 0);
-  const visibleCollapsed = normalizedQuery ? new Set<string>() : collapsed;
-  const allExpanded = filteredSections.length > 0 && filteredSections.every((section) => !visibleCollapsed.has(section.title));
+  const allExpanded = filteredSections.length > 0 && filteredSections.every((section) => expandedSections.has(section.id));
+  const toggleSection = (id: string) => setExpandedSections((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const toggleItem = (id: string) => setExpandedItems((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
-  const toggleSection = (title: string) => {
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(title)) next.delete(title); else next.add(title);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    setCollapsed(allExpanded ? new Set(filteredSections.map((section) => section.title)) : new Set());
-  };
-
-  return <main className="manual-page page-enter" dir="rtl">
-    <header className="manual-header">
-      <div>
-        <button type="button" className="text-btn" onClick={onBack}><ChevronLeft size={16} /> رجوع</button>
-        <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> USER MANUAL</div>
-        <h1>دليل استخدام البرنامج</h1>
-        <p>كل ما تحتاجه للبدء، ثم إدارة الحسابات والفواتير والنسخ والاستعادة.</p>
+  return <main className="manual-page manual-fast-page page-enter" dir="rtl">
+    <header className="manual-fast-header">
+      <button type="button" className="text-btn manual-back" onClick={onBack}><ChevronLeft size={16} /> رجوع</button>
+      <div className="manual-fast-title-row">
+        <div className="manual-fast-icon"><BookOpen size={25} /></div>
+        <div><div className="eyebrow">ALEPPO CENTER CASH <span>•</span> QUICK GUIDE</div><h1>دليل الاستخدام</h1><p>مو لازم تقرأ كل شيء. اختر المهمة وشوف الخطوات المختصرة.</p></div>
       </div>
-      <div className="manual-hero-icon"><BookOpen size={30} /></div>
+      <div className="manual-fast-rule"><CheckCircle2 size={16} /><span>للاستخدام اليومي: حساب ← دفعة ← مراجعة الرصيد</span></div>
     </header>
+
+    <section className="manual-shortcuts" aria-label="اختصارات سريعة">
+      {quickActions.map((item, index) => { const Icon = item.icon; return <button type="button" className="manual-shortcut surface-card" key={item.destination} onClick={() => onNavigate?.(item.destination)}>
+        <span className="manual-shortcut-number">{String(index + 1).padStart(2, "0")}</span>
+        <span className="manual-shortcut-icon"><Icon size={19} /></span>
+        <span className="manual-shortcut-copy"><strong>{item.title}</strong><small>{item.description}</small><em>{item.action} <ChevronLeft size={13} /></em></span>
+      </button>; })}
+    </section>
+
     <div className="manual-toolbar surface-card">
-      <div className="manual-search">
-        <Search size={17} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث داخل دليل الاستخدام..." aria-label="البحث داخل دليل الاستخدام" autoComplete="off" spellCheck={false} />
+      <div className="manual-search"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="اكتب كلمة: فاتورة، دفعة، نسخة..." aria-label="البحث داخل دليل الاستخدام" autoComplete="off" spellCheck={false} />
         {query && <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث"><X size={15} /></button>}
       </div>
-      <span className="manual-result-count">{query ? `${resultCount} نتيجة` : `${sections.reduce((n, s) => n + s.items.length, 0)} معلومة`}</span>
-      <button type="button" className="manual-toggle-all" onClick={toggleAll} disabled={!filteredSections.length}><ChevronDown size={15} className={allExpanded ? "is-open" : ""} />{allExpanded ? "طي الكل" : "فتح الكل"}</button>
+      <span className="manual-result-count">{query ? `${resultCount} نتيجة` : `${sections.reduce((sum, section) => sum + section.items.length, 0)} إجابة قصيرة`}</span>
+      <button type="button" className="manual-toggle-all" onClick={() => setExpandedSections(allExpanded ? new Set() : new Set(filteredSections.map((section) => section.id))} disabled={!filteredSections.length}><ChevronDown size={15} className={allExpanded ? "is-open" : ""} />{allExpanded ? "طي الأقسام" : "فتح الأقسام"}</button>
     </div>
-    <div className="manual-layout">
-      <aside className="manual-index surface-card">
-        <strong>محتويات الدليل</strong>
-        {filteredSections.map((section, i) => <a href={"#manual-" + i} key={section.title}><span>{String(i + 1).padStart(2, "0")}</span>{section.title}</a>)}
-      </aside>
-      <div className="manual-content">
-        {filteredSections.map((section, i) => <section className={"manual-section surface-card " + (visibleCollapsed.has(section.title) ? "is-collapsed" : "")} id={"manual-" + i} key={section.title}>
-          <button type="button" className="manual-section-head" onClick={() => toggleSection(section.title)} aria-expanded={!visibleCollapsed.has(section.title)} aria-controls={"manual-content-" + i}><span>{String(i + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2><p>{i === 0 ? "ابدأ من هون إذا أول مرة تستخدم البرنامج." : i === 1 ? "إدارة الحسابات والحركات اليومية." : i === 2 ? "تجهيز الفاتورة واختيار القوالب والصور." : i === 3 ? "حماية بياناتك والرجوع إلى نسخة سابقة." : "خيارات إضافية تساعدك في الاستخدام اليومي."}</p></div><ChevronDown className="manual-section-chevron" size={18} /></button>
-          <div className="manual-items" id={"manual-content-" + i}>{section.items.map(([title, text], itemIndex) => <article style={{ animationDelay: `${Math.min(itemIndex * 35, 210)}ms` }} key={title}><CheckCircle2 size={18} /><div><h3>{title}</h3><p>{text}</p></div></article>)}</div>
-        </section>)}
-        {(!query || filteredSections.length > 0) && <section className="manual-help surface-card"><HelpCircle size={21} /><div><strong>إذا واجهتك مشكلة</strong><p>تأكد من اتصال البرنامج بالسحابة، ثم جرّب تحديث الصفحة. إذا استمرت المشكلة، سجّل الخطوات التي سببتها وراجع الحساب أو الحركة المرتبطة بها.</p></div></section>}
+
+    <section className="manual-howto surface-card">
+      <div className="manual-howto-title"><span><Smartphone size={18} /></span><div><h2>ابدأ في 3 خطوات</h2><p>الطريقة اليومية بدون شرح طويل</p></div></div>
+      <div className="manual-howto-steps">
+        <div><b>1</b><span><strong>افتح الحساب</strong><small>أنشئ حساب الزبون أو اختر حساباً موجوداً.</small></span></div>
+        <div><b>2</b><span><strong>سجّل الحركة</strong><small>اسم ومبلغ وعملة وتاريخ، ثم «له» أو «عليه».</small></span></div>
+        <div><b>3</b><span><strong>راجع الرصيد</strong><small>تأكد من الحساب والعملة واتجاه الحركة.</small></span></div>
       </div>
+    </section>
+
+    <div className="manual-fast-groups">
+      {filteredSections.map((section, index) => {
+        const Icon = section.icon;
+        const isOpen = Boolean(normalizedQuery) || expandedSections.has(section.id);
+        return <section className={"manual-fast-group surface-card " + (isOpen ? "is-open" : "")} id={"manual-" + section.id} key={section.id}>
+          <button type="button" className="manual-fast-group-head" onClick={() => toggleSection(section.id)} aria-expanded={isOpen}>
+            <span className="manual-fast-group-icon"><Icon size={19} /></span>
+            <span className="manual-fast-group-copy"><strong>{section.title}</strong><small>{section.subtitle}</small></span>
+            <span className="manual-fast-count">{section.items.length}</span>
+            <ChevronDown size={18} className="manual-fast-chevron" />
+          </button>
+          {isOpen && <div className="manual-fast-answers">{section.items.map((item, itemIndex) => {
+            const key = section.id + ":" + item.title;
+            const itemOpen = Boolean(normalizedQuery) || expandedItems.has(key);
+            return <article className={"manual-fast-answer " + (itemOpen ? "is-open" : "")} key={key}>
+              <button type="button" className="manual-fast-answer-head" onClick={() => toggleItem(key)} aria-expanded={itemOpen}>
+                <span className="manual-answer-number">{String(itemIndex + 1).padStart(2, "0")}</span>
+                <span className="manual-answer-copy"><strong>{item.title}</strong><small>{item.quick}</small></span>
+                <ChevronDown size={16} className="manual-fast-answer-chevron" />
+              </button>
+              {itemOpen && <p className="manual-fast-answer-details">{item.details}</p>}
+            </article>;
+          })}</div>}
+        </section>;
+      })}
     </div>
-    {query && filteredSections.length === 0 && <div className="manual-empty surface-card"><Search size={20} /><strong>لا توجد نتائج</strong><span>جرّب كلمة أخرى مثل: فاتورة، حساب، نسخة، أو عملة.</span></div>}
+
+    {query && filteredSections.length === 0 && <div className="manual-empty surface-card"><Search size={20} /><strong>ما لقيت نتيجة</strong><span>جرّب كلمة أقصر مثل: حساب، له، شعار، فاتورة أو نسخة.</span></div>}
+
+    <footer className="manual-fast-footer surface-card"><span className="manual-footer-icon"><HelpCircle size={19} /></span><div><strong>ما لقيت اللي تحتاجه؟</strong><p>اكتب كلمة في البحث فوق. وإذا ظهر خطأ، تحقّق من اتصال Supabase ودوّن الخطوة التي سببت المشكلة.</p></div><span className="manual-footer-cloud"><Cloud size={17} /></span></footer>
   </main>;
 }
