@@ -720,6 +720,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
 
     let active = true;
     const client = supabase;
+    setNotifications([]);
 
     const loadNotifications = async () => {
       const { data, error } = await client
