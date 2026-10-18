@@ -8,6 +8,7 @@ type NativeNotification = {
 
 const REMINDER_BASE_ID = 700000;
 const REMINDER_COUNT = 48; // Keep the queue compact; reschedule it whenever the app opens.
+const LEGACY_REMINDER_COUNT = 84;
 const NOTIFICATION_CHANNEL_ID = "aleppo-center-cash-alerts-v2";
 
 async function getLocalNotifications() {
@@ -54,6 +55,18 @@ export async function showNativeNotification(notification: NativeNotification) {
   if (!notifications) return;
 
   try {
+    // Ensure the channel exists even if an action fires before app startup
+    // has finished initializing notifications.
+    await notifications.createChannel({
+      id: NOTIFICATION_CHANNEL_ID,
+      name: "إشعارات Aleppo Center Cash",
+      description: "تنبيهات الحسابات والدفعات والتحديثات والتذكير",
+      importance: 5,
+      visibility: 1,
+      sound: "default",
+      vibration: true,
+    }).catch((error) => console.warn("[AleppoCenterCash] notification channel setup failed", error));
+
     const permission = await notifications.checkPermissions();
     if (permission.display !== "granted") return;
 
@@ -81,7 +94,7 @@ export async function scheduleUsageReminders() {
   const permission = await notifications.checkPermissions();
   if (permission.display !== "granted") return;
 
-  const ids = Array.from({ length: 84 }, (_, index) => REMINDER_BASE_ID + index); // Also clear old v1 schedules.
+  const ids = Array.from({ length: LEGACY_REMINDER_COUNT }, (_, index) => REMINDER_BASE_ID + index); // Clear old v1 schedules as well.
   await notifications.cancel({ notifications: ids.map((id) => ({ id })) }).catch(() => undefined);
 
   const now = Date.now();
