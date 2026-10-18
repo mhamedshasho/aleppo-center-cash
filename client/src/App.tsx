@@ -54,7 +54,43 @@ function Router() {
   </Switch></WouterRouter>);
 }
 function App() {
-  useEffect(() => { void initializeOneSignal(); void initializeNativeNotifications().then((ready) => { if (ready) { void scheduleUsageReminders(); void checkForAppUpdateNotification(); } }); }, []);
+  useEffect(() => {
+    let active = true;
+
+    const initializeNotifications = async () => {
+      // These SDKs request the same Android 13+ notification permission.
+      // Run them sequentially so their permission dialogs cannot race.
+      try {
+        await initializeOneSignal();
+      } catch (error) {
+        console.warn("[AleppoCenterCash] OneSignal initialization failed", error);
+      }
+
+      if (!active) return;
+
+      try {
+        const ready = await initializeNativeNotifications();
+        if (!ready || !active) return;
+
+        try {
+          await scheduleUsageReminders();
+        } catch (error) {
+          console.warn("[AleppoCenterCash] usage reminders could not be scheduled", error);
+        }
+
+        void checkForAppUpdateNotification().catch((error) => {
+          console.warn("[AleppoCenterCash] update notification check failed", error);
+        });
+      } catch (error) {
+        console.warn("[AleppoCenterCash] native notification setup failed", error);
+      }
+    };
+
+    void initializeNotifications();
+    return () => {
+      active = false;
+    };
+  }, []);
   useEffect(() => {
     const root = document.documentElement;
     const updateDeviceClass = () => { const isPhone = window.innerWidth <= 820; root.classList.toggle("device-phone", isPhone); root.classList.toggle("device-pc", !isPhone); };
