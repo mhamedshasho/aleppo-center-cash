@@ -157,6 +157,42 @@ const makeNotification = (entry: AuditNotificationRow, read: boolean): Notificat
   };
 };
 
+const notificationMatchesAuditRow = (
+  notification: NotificationItem,
+  entry: AuditNotificationRow,
+  maxAgeMs = 15000,
+) => {
+  if (notification.remoteId === entry.id) return true;
+  if (notification.remoteId) return false;
+  if (
+    notification.action !== entry.action ||
+    notification.entity !== entry.entity ||
+    notification.detail !== notificationTargetName(entry)
+  ) return false;
+
+  const age = Math.abs(new Date(notification.createdAt).getTime() - new Date(entry.created_at).getTime());
+  return Number.isFinite(age) && age <= maxAgeMs;
+};
+
+const mergeLoadedNotifications = (current: NotificationItem[], entries: AuditNotificationRow[]) => {
+  const loaded = entries.map((entry) => {
+    const previous = current.find((notification) => notificationMatchesAuditRow(notification, entry));
+    return makeNotification(entry, previous?.read ?? true);
+  });
+  const recentLocal = current.filter((notification) =>
+    !notification.remoteId &&
+    Date.now() - new Date(notification.createdAt).getTime() <= 60000 &&
+    !loaded.some((remote) => notification.action === remote.action &&
+      notification.entity === remote.entity &&
+      notification.detail === remote.detail &&
+      Math.abs(new Date(notification.createdAt).getTime() - new Date(remote.createdAt).getTime()) <= 15000),
+  );
+
+  return [...recentLocal, ...loaded]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 12);
+};
+
 // Before the database audit triggers were the single source of truth, the
 // client also inserted a simple {"name": "..."} audit row for account/payment
 // changes. Pair those legacy rows with their trigger-generated counterparts
@@ -270,6 +306,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const notificationWrapperRef = useRef<HTMLDivElement | null>(null);
   const [backupPassword, setBackupPassword] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
   const [mutationBusy, setMutationBusy] = useState(false);
@@ -390,6 +427,25 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
   const markNotificationsRead = () => {
     setNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
   };
+
+  useEffect(() => {
+    if (!showNotifications) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const wrapper = notificationWrapperRef.current;
+      if (wrapper && !wrapper.contains(event.target as Node)) setShowNotifications(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowNotifications(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showNotifications]);
 
   useEffect(() => {
     let active = true;
@@ -674,8 +730,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
         .limit(24);
 
       if (!error && active) {
-        const uniqueEntries = dedupeLegacyAuditRows((data ?? []) as AuditNotificationRow[]).slice(0, 12);
-        setNotifications(uniqueEntries.map((entry) => makeNotification(entry, true)));
+        const uniqueEntries = dedupeLegacyAuditRows((data ?? []) as AuditNotificationRow[]).slice(0, 24);
+        setNotifications((current) => mergeLoadedNotifications(current, uniqueEntries));
       }
     };
 
@@ -686,13 +742,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_log", filter: "workspace_id=eq." + cloudWorkspace.id }, (payload) => {
         const entry = payload.new as AuditNotificationRow;
         const incoming = makeNotification(entry, false);
-        if ((entry.entity === "payment" || entry.entity === "account") && entry.user_id !== cloudUser.id) {
-          void showNativeNotification({
-            title: incoming.title,
-            body: incoming.detail,
-            id: 500000 + Number(entry.id),
-          }).catch((error) => console.error("[AleppoCenterCash] realtime native notification failed", error));
-        }
+        // Cross-device OS alerts are delivered by OneSignal. Do not also schedule
+        // a local notification for this Realtime event or Android shows it twice.
         setNotifications((current) => {
           const duplicateIndex = current.findIndex((notification) =>
             notification.remoteId === incoming.remoteId ||
@@ -1499,20 +1550,26 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setShowMobileNav(true)} aria-label="فتح القائمة"><Menu size={21} /></button>
           <div className="breadcrumb"><span>مركز حلب</span><span className="breadcrumb-separator">/</span><strong>{view === "dashboard" ? "نظرة عامة" : view === "accounts" ? "الحسابات" : view === "activity" ? "التعديلات" : view === "invoice" ? "صانع الفواتير" : view === "manual" ? "دليل الاستخدام" : view === "updates" ? "التحديثات" : view === "settings" ? "الإعدادات" : selectedAccount?.name}</strong></div>
-          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><div className="notification-wrapper">
-            <button className="icon-btn" onClick={() => { const next = !showNotifications; setShowNotifications(next); if (next) markNotificationsRead(); }} aria-label="الإشعارات" aria-expanded={showNotifications} aria-haspopup="true">
+          <div className="topbar-actions"><div className={`saved-state sync-${syncState}`} title="حالة اتصال Supabase">{syncState === "synced" ? <Wifi size={15} /> : <WifiOff size={15} />}<span className="saved-dot" /> {syncState === "syncing" ? "جاري الاتصال بـ Supabase…" : syncState === "synced" ? "متصل بـ Supabase" : syncState === "offline" ? "غير متصل بـ Supabase" : syncState === "conflict" ? "تعارض في السحابة" : "فحص اتصال Supabase…"}</div><div className="notification-wrapper" ref={notificationWrapperRef}>
+            <button className="icon-btn" onClick={() => setShowNotifications((current) => !current)} aria-label="الإشعارات" aria-expanded={showNotifications} aria-haspopup="true">
               <Bell size={18} />
               {unreadNotificationCount > 0 && <span className="notification-dot" />}
             </button>
             {showNotifications && (
               <div className="notification-panel" role="dialog" aria-label="الإشعارات">
                 <div className="notification-panel-head">
-                  <div><strong>الإشعارات</strong><span>{notifications.length ? notifications.length + " إشعار محفوظ" : "ما في إشعارات لسا"}</span></div>
-                  {unreadNotificationCount > 0 && <button onClick={markNotificationsRead}>تحديد الكل كمقروء</button>}
+                  <div className="notification-panel-title">
+                    <strong>الإشعارات</strong>
+                    <span>{unreadNotificationCount > 0 ? unreadNotificationCount + " غير مقروء" : notifications.length ? notifications.length + " إشعار محفوظ" : "ما في إشعارات لسا"}</span>
+                  </div>
+                  <div className="notification-panel-actions">
+                    {unreadNotificationCount > 0 && <button onClick={markNotificationsRead}>قراءة الكل</button>}
+                    <button className="notification-close" onClick={() => setShowNotifications(false)} aria-label="إغلاق الإشعارات" title="إغلاق"><X size={16} /></button>
+                  </div>
                 </div>
                 <div className="notification-list">
                   {notifications.length === 0 ? (
-                    <div className="notification-empty"><Bell size={20} /><strong>ما في إشعارات جديدة</strong><span>أي إضافة أو تعديل أو حذف رح يظهر هون.</span></div>
+                    <div className="notification-empty"><Bell size={22} /><strong>ما في إشعارات لسا</strong><span>رح تظهر هون إضافات الحسابات وتعديلات الدفعات والتنبيهات المهمة.</span></div>
                   ) : (
                     notifications.map((notification) => (
                       <button key={notification.id} className={"notification-item " + (notification.read ? "" : "unread")} onClick={() => { markNotificationsRead(); setShowNotifications(false); setView("activity"); }}>
