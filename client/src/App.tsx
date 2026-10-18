@@ -60,8 +60,9 @@ function App() {
     const initializeNotifications = async () => {
       // These SDKs request the same Android 13+ notification permission.
       // Run them sequentially so their permission dialogs cannot race.
+      let oneSignalReady = false;
       try {
-        await initializeOneSignal();
+        oneSignalReady = await initializeOneSignal();
       } catch (error) {
         console.warn("[AleppoCenterCash] OneSignal initialization failed", error);
       }
@@ -69,7 +70,9 @@ function App() {
       if (!active) return;
 
       try {
-        const ready = await initializeNativeNotifications();
+        // OneSignal asks for Android's shared notification permission first.
+        // Ask through the local plugin only if OneSignal could not initialize.
+        const ready = await initializeNativeNotifications({ requestPermission: !oneSignalReady });
         if (!ready || !active) return;
 
         try {
