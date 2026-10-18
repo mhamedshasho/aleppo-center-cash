@@ -127,9 +127,24 @@ const parseNotificationSummary = (summary: string) => {
   }
 };
 
-const makeNotification = (entry: { id: number; action: string; entity: string; summary: string; created_at: string }, read: boolean): NotificationItem => {
+type AuditNotificationRow = {
+  id: number;
+  action: string;
+  entity: string;
+  summary: string;
+  created_at: string;
+  user_id?: string | null;
+  entity_id?: string | null;
+};
+
+const notificationTargetName = (entry: Pick<AuditNotificationRow, "action" | "entity" | "summary">) => {
   const data = parseNotificationSummary(entry.summary);
-  const detail = String(data.name ?? data.label ?? (entry.entity === "backup" ? "نسخة احتياطية" : notificationEntityLabels[entry.entity] ?? entry.entity));
+  const after = data.after && typeof data.after === "object" ? data.after as Record<string, unknown> : null;
+  return String(data.name ?? after?.name ?? data.label ?? (entry.entity === "backup" ? "نسخة احتياطية" : notificationEntityLabels[entry.entity] ?? entry.entity));
+};
+
+const makeNotification = (entry: AuditNotificationRow, read: boolean): NotificationItem => {
+  const detail = notificationTargetName(entry);
   return {
     id: "remote-" + entry.id,
     remoteId: entry.id,
@@ -140,6 +155,49 @@ const makeNotification = (entry: { id: number; action: string; entity: string; s
     createdAt: entry.created_at,
     read,
   };
+};
+
+// Before the database audit triggers were the single source of truth, the
+// client also inserted a simple {"name": "..."} audit row for account/payment
+// changes. Pair those legacy rows with their trigger-generated counterparts
+// so old duplicate notifications do not keep appearing after the fix.
+const isLegacyClientAuditRow = (entry: AuditNotificationRow) => {
+  if (!["account", "payment"].includes(entry.entity) || !["create", "update", "delete"].includes(entry.action)) return false;
+  const data = parseNotificationSummary(entry.summary);
+  return Object.keys(data).length === 1 && typeof data.name === "string";
+};
+
+const dedupeLegacyAuditRows = (entries: AuditNotificationRow[]) => {
+  const removed = new Set<number>();
+  const matchedTriggerRows = new Set<number>();
+
+  for (const legacy of entries.filter(isLegacyClientAuditRow)) {
+    const legacyName = notificationTargetName(legacy);
+    const legacyTime = new Date(legacy.created_at).getTime();
+    const matches = entries
+      .filter((candidate) => {
+        if (candidate.id === legacy.id || isLegacyClientAuditRow(candidate) || matchedTriggerRows.has(candidate.id)) return false;
+        if (candidate.action !== legacy.action || candidate.entity !== legacy.entity) return false;
+        if (legacy.user_id && candidate.user_id && legacy.user_id !== candidate.user_id) return false;
+        if (legacy.entity_id && candidate.entity_id && legacy.entity_id !== candidate.entity_id) return false;
+        if (notificationTargetName(candidate) !== legacyName) return false;
+        const difference = Math.abs(new Date(candidate.created_at).getTime() - legacyTime);
+        return Number.isFinite(difference) && difference <= 60000;
+      })
+      .sort((a, b) =>
+        Math.abs(new Date(a.created_at).getTime() - legacyTime) -
+        Math.abs(new Date(b.created_at).getTime() - legacyTime),
+      );
+
+    if (matches[0]) {
+      removed.add(legacy.id);
+      matchedTriggerRows.add(matches[0].id);
+    }
+  }
+
+  return entries
+    .filter((entry) => !removed.has(entry.id))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 };
 
 const initialAccounts: Account[] = [];
@@ -610,13 +668,14 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
     const loadNotifications = async () => {
       const { data, error } = await client
         .from("audit_log")
-        .select("id,action,entity,summary,created_at")
+        .select("id,action,entity,summary,created_at,user_id,entity_id")
         .eq("workspace_id", cloudWorkspace.id)
         .order("created_at", { ascending: false })
-        .limit(12);
+        .limit(24);
 
       if (!error && active) {
-        setNotifications(((data ?? []) as Array<{ id: number; action: string; entity: string; summary: string; created_at: string }>).map((entry) => makeNotification(entry, true)));
+        const uniqueEntries = dedupeLegacyAuditRows((data ?? []) as AuditNotificationRow[]).slice(0, 12);
+        setNotifications(uniqueEntries.map((entry) => makeNotification(entry, true)));
       }
     };
 
@@ -625,7 +684,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
     const channel = supabase
       .channel("notifications-" + cloudWorkspace.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_log", filter: "workspace_id=eq." + cloudWorkspace.id }, (payload) => {
-        const entry = payload.new as { id: number; action: string; entity: string; summary: string; created_at: string; user_id?: string | null };
+        const entry = payload.new as AuditNotificationRow;
         const incoming = makeNotification(entry, false);
         if ((entry.entity === "payment" || entry.entity === "account") && entry.user_id !== cloudUser.id) {
           void showNativeNotification({
@@ -741,6 +800,22 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
   ) => {
     pushClientNotification(action, entity, label);
     if (!supabase || !cloudWorkspace || !cloudUser) return;
+
+    // Account/payment rows are audited by Supabase triggers. Inserting another
+    // audit_log row here produced two reports for one mutation.
+    if (entity === "account" || entity === "payment") {
+      void sendRemoteNotification({
+        workspaceId: cloudWorkspace.id,
+        action,
+        entity,
+        title: (notificationActionLabels[action] ?? action) + " " + (notificationEntityLabels[entity] ?? entity),
+        body: label,
+      });
+      return;
+    }
+
+    // Backup import/export does not have a database row trigger, so it remains
+    // explicitly recorded by the client.
     const { error } = await supabase.from("audit_log").insert({
       workspace_id: cloudWorkspace.id,
       user_id: cloudUser.id,
@@ -752,17 +827,6 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
     });
     if (error) {
       console.error("[AleppoCenterCash] audit insert failed", error);
-      return;
-    }
-
-    if (entity === "account" || entity === "payment") {
-      void sendRemoteNotification({
-        workspaceId: cloudWorkspace.id,
-        action,
-        entity,
-        title: (notificationActionLabels[action] ?? action) + " " + (notificationEntityLabels[entity] ?? entity),
-        body: label,
-      });
     }
   };
 
