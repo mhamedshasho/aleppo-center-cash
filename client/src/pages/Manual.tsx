@@ -125,7 +125,7 @@ export default function Manual({ onBack, onNavigate }: { onBack: () => void; onN
         {query && <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث"><X size={15} /></button>}
       </div>
       <span className="manual-result-count">{query ? `${resultCount} نتيجة` : `${sections.reduce((sum, section) => sum + section.items.length, 0)} إجابة قصيرة`}</span>
-      <button type="button" className="manual-toggle-all" onClick={() => setExpandedSections(allExpanded ? new Set() : new Set(filteredSections.map((section) => section.id))} disabled={!filteredSections.length}><ChevronDown size={15} className={allExpanded ? "is-open" : ""} />{allExpanded ? "طي الأقسام" : "فتح الأقسام"}</button>
+      <button type="button" className="manual-toggle-all" onClick={() => { if (normalizedQuery) { setQuery(""); return; } setExpandedSections(allExpanded ? new Set() : new Set(filteredSections.map((section) => section.id))); }} disabled={!filteredSections.length}><ChevronDown size={15} className={allExpanded ? "is-open" : ""} />{normalizedQuery ? "مسح البحث" : allExpanded ? "طي الأقسام" : "فتح الأقسام"}</button>
     </div>
 
     <section className="manual-howto surface-card">
