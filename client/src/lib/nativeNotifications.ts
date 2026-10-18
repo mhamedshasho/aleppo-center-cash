@@ -7,53 +7,71 @@ type NativeNotification = {
 };
 
 const REMINDER_BASE_ID = 700000;
+const REMINDER_COUNT = 48; // Stay below Android's pending local-notification limit.
+const NOTIFICATION_CHANNEL_ID = "aleppo-center-cash-alerts-v2";
 
 async function getLocalNotifications() {
   if (!Capacitor.isNativePlatform()) return null;
-  const module = await import("@capacitor/local-notifications");
-  return module.LocalNotifications;
+  try {
+    const module = await import("@capacitor/local-notifications");
+    return module.LocalNotifications;
+  } catch (error) {
+    console.error("[AleppoCenterCash] local notifications plugin could not load", error);
+    return null;
+  }
 }
 
 export async function initializeNativeNotifications() {
   const notifications = await getLocalNotifications();
   if (!notifications) return false;
 
-  const permission = await notifications.checkPermissions();
-  if (permission.display !== "granted") {
-    const requested = await notifications.requestPermissions();
-    if (requested.display !== "granted") return false;
+  try {
+    // Use a fresh channel ID so Android can apply the high-importance settings
+    // even if an older install already created the previous channel at low priority.
+    await notifications.createChannel({
+      id: NOTIFICATION_CHANNEL_ID,
+      name: "إشعارات Aleppo Center Cash",
+      description: "تنبيهات الحسابات والدفعات والتحديثات والتذكير",
+      importance: 5,
+      visibility: 1,
+      sound: "default",
+      vibration: true,
+    }).catch((error) => console.warn("[AleppoCenterCash] notification channel setup failed", error));
+
+    let permission = await notifications.checkPermissions();
+    if (permission.display !== "granted") {
+      permission = await notifications.requestPermissions();
+    }
+    return permission.display === "granted";
+  } catch (error) {
+    console.error("[AleppoCenterCash] native notification initialization failed", error);
+    return false;
   }
-
-  await notifications.createChannel({
-    id: "aleppo-center-cash",
-    name: "Aleppo Center Cash",
-    description: "إشعارات الحسابات والتحديثات والتذكير",
-    importance: 5,
-    visibility: 1,
-    sound: "default",
-    vibration: true,
-  }).catch(() => undefined);
-
-  return true;
 }
 
 export async function showNativeNotification(notification: NativeNotification) {
   const notifications = await getLocalNotifications();
   if (!notifications) return;
 
-  const permission = await notifications.checkPermissions();
-  if (permission.display !== "granted") return;
+  try {
+    const permission = await notifications.checkPermissions();
+    if (permission.display !== "granted") return;
 
-  await notifications.schedule({
-    notifications: [{
-      id: notification.id ?? Math.floor(Date.now() % 2000000000),
-      title: notification.title,
-      body: notification.body,
-      channelId: "aleppo-center-cash",
-      sound: "default",
-      extra: { source: "aleppo-center-cash" },
-    }],
-  });
+    await notifications.schedule({
+      notifications: [{
+        id: notification.id ?? Math.floor(Date.now() % 2000000000),
+        title: notification.title,
+        body: notification.body,
+        channelId: NOTIFICATION_CHANNEL_ID,
+        sound: "default",
+        extra: { source: "aleppo-center-cash" },
+      }],
+    });
+  } catch (error) {
+    // A denied permission or OEM-specific notification failure must not break
+    // the account/payment operation that triggered this notification.
+    console.error("[AleppoCenterCash] displaying native notification failed", error);
+  }
 }
 
 export async function scheduleUsageReminders() {
@@ -63,15 +81,15 @@ export async function scheduleUsageReminders() {
   const permission = await notifications.checkPermissions();
   if (permission.display !== "granted") return;
 
-  const ids = Array.from({ length: 84 }, (_, index) => REMINDER_BASE_ID + index);
+  const ids = Array.from({ length: 84 }, (_, index) => REMINDER_BASE_ID + index); // Also clear old v1 schedules.
   await notifications.cancel({ notifications: ids.map((id) => ({ id })) }).catch(() => undefined);
 
   const now = Date.now();
-  const reminders = ids.map((id, index) => ({
+  const reminders = ids.slice(0, REMINDER_COUNT).map((id, index) => ({
     id,
     title: "Aleppo Center Cash",
     body: "تذكير سريع: افتح البرنامج وتابع حساباتك وحركاتك.",
-    channelId: "aleppo-center-cash",
+    channelId: NOTIFICATION_CHANNEL_ID,
     sound: "default",
     schedule: {
       at: new Date(now + (index + 1) * 2 * 60 * 60 * 1000),
