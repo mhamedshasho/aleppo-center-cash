@@ -10,6 +10,8 @@ on:
       - docs/**
       - .github/workflows/windows-exe.yml
       - client/src/pages/Home.tsx
+      - client/src/contexts/ThemeContext.tsx
+      - client/src/components/DesktopSidebar.tsx
       - .github/workflows/android-apk.yml
       - .github/workflows/windows-portable.yml
   workflow_dispatch:
