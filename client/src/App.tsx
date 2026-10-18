@@ -56,6 +56,16 @@ function Router() {
 function App() {
   useEffect(() => {
     let active = true;
+    let localNotificationsReady = false;
+
+    const refreshReminders = () => {
+      if (!active || !localNotificationsReady || document.visibilityState !== "visible") return;
+      void scheduleUsageReminders().catch((error) => {
+        console.warn("[AleppoCenterCash] reminder refresh failed", error);
+      });
+    };
+
+    document.addEventListener("visibilitychange", refreshReminders);
 
     const initializeNotifications = async () => {
       // These SDKs request the same Android 13+ notification permission.
@@ -74,6 +84,7 @@ function App() {
         // Ask through the local plugin only if OneSignal could not initialize.
         const ready = await initializeNativeNotifications({ requestPermission: !oneSignalReady });
         if (!ready || !active) return;
+        localNotificationsReady = true;
 
         try {
           await scheduleUsageReminders();
@@ -92,6 +103,7 @@ function App() {
     void initializeNotifications();
     return () => {
       active = false;
+      document.removeEventListener("visibilitychange", refreshReminders);
     };
   }, []);
   useEffect(() => {
