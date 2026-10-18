@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, PointerEvent } from "react";
-import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Heart, Image as ImageIcon, Moon, Palette, Plus, RotateCcw, Search, Sparkles, Sun, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Image as ImageIcon, Palette, Plus, RotateCcw, Search, Upload, X } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import html2canvas from "html2canvas";
