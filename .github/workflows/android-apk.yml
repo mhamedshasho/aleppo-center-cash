@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths-ignore:
       - client/src/pages/Home.tsx
+      - client/src/contexts/ThemeContext.tsx
+      - client/src/components/DesktopSidebar.tsx
       - .github/workflows/android-apk.yml
       - .github/workflows/windows-exe.yml
       - .github/workflows/windows-portable.yml
