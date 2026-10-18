@@ -123,7 +123,7 @@ async function renderTemplateFile(file: File): Promise<TemplatePage[]> {
   return [{ label: "الصورة", image: await fileData(file) }];
 }
 
-export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, settingsLogo, onSaveSettingsLogo }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" | "red" | "yellow-black"; settingsLogo?: string; onSaveSettingsLogo?: (logo: string) => Promise<void> }) {
+export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, settingsLogo, onSaveSettingsLogo, invoiceLogoCircleColor = "#25606a" }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" | "red" | "yellow-black"; settingsLogo?: string; onSaveSettingsLogo?: (logo: string) => Promise<void>; invoiceLogoCircleColor?: string }) {
   const [query, setQuery] = useState("");
   const [accountFilter, setAccountFilter] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
@@ -242,7 +242,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
           + '<div style="height:10px;background:' + invoiceAccent + ';border-radius:6px;"></div>'
           + '<div style="position:relative;height:136px;box-sizing:border-box;margin-top:18px;padding:18px 20px;border:1px solid ' + invoiceBorderSoft + ';border-radius:16px;background:' + invoiceAccentSoft + ';">'
           + '<div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);width:30%;text-align:right;z-index:1;"><div style="font-size:32px;font-weight:900;color:' + invoiceAccent + ';line-height:1.2;">فاتورة</div><div style="font-size:18px;font-weight:900;margin-top:5px;color:' + invoiceBodyText + ';">رقم ' + esc(invoiceNumber) + '</div></div>'
-          + (effectiveLogo ? '<div style="position:absolute;left:50%;top:50%;width:102px;height:102px;transform:translate(-50%,-50%);border-radius:50%;border:3px solid ' + invoiceAccent + ';box-sizing:border-box;background:transparent;z-index:2;display:flex;align-items:center;justify-content:center;"><img src="' + effectiveLogo + '" style="display:block;width:96px;height:96px;object-fit:contain;object-position:50% 50%;border-radius:50%;" /></div>' : "")
+          + (effectiveLogo ? '<div style="position:absolute;left:50%;top:50%;width:102px;height:102px;transform:translate(-50%,-50%);border-radius:50%;border:3px solid ' + invoiceAccent + ';box-sizing:border-box;background:' + invoiceLogoCircleColor + ';z-index:2;display:flex;align-items:center;justify-content:center;"><img src="' + effectiveLogo + '" style="display:block;width:96px;height:96px;object-fit:contain;object-position:50% 50%;border-radius:50%;" /></div>' : "")
           + '<div style="position:absolute;left:20px;top:50%;transform:translateY(-50%);width:30%;text-align:left;font-size:13px;font-weight:800;line-height:1.9;color:#617873;z-index:1;">'
           + (customer ? '<div><strong style="color:' + invoiceBodyText + ';">العميل:</strong> ' + esc(customer) + '</div>' : "")
           + '<div><strong style="color:' + invoiceBodyText + ';">التاريخ:</strong> ' + esc(dateText(invoiceDate)) + '</div></div></div>'
@@ -350,7 +350,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
         <div className="invoice-preview-scroll"><div className="invoice-preview-page" style={{ transform: `scale(${previewZoom})` }}>
           <div className="invoice-preview-accent"></div>
           <div className="invoice-preview-paper-head">
-            {effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="الشعار" />}
+            {effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="شعار الفاتورة" style={{ backgroundColor: invoiceLogoCircleColor }} />}
             <div className="invoice-preview-title"><h1>فاتورة</h1><strong>رقم {invoiceNumber || "—"}</strong></div>
             <div className="invoice-preview-meta">{customer && <div><b>العميل:</b> {customer}</div>}<div><b>التاريخ:</b> {dateText(invoiceDate)}</div></div>
           </div>
