@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, PointerEvent } from "react";
-import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Heart, Image as ImageIcon, Moon, Plus, RotateCcw, Search, Sparkles, Sun, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, Download, Eye, FileImage, FileText, Heart, Image as ImageIcon, Moon, Palette, Plus, RotateCcw, Search, Sparkles, Sun, Upload, X } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import html2canvas from "html2canvas";
@@ -14,6 +14,51 @@ type Row = Payment & { accountId: number; accountName: string };
 type TemplatePage = { label: string; image: string };
 type TemplateFile = { id: string; name: string; pages: TemplatePage[] };
 type Position = { x: number; y: number };
+type InvoiceTheme = "light" | "dark" | "gold" | "red" | "yellow-black";
+type InvoicePalette = {
+  accent: string; text: string; background: string; bodyText: string; accentSoft: string;
+  borderSoft: string; rowBackground: string; rowAltBackground: string; rowBorder: string;
+  totalAccent: string; credit: string; debit: string; metaText: string; footerText: string;
+};
+const invoiceThemeOptions: { id: InvoiceTheme; label: string; color: string }[] = [
+  { id: "light", label: "كلاسيكي", color: "#173f47" },
+  { id: "gold", label: "ذهبي", color: "#b8891f" },
+  { id: "red", label: "أحمر", color: "#8f1d2c" },
+  { id: "dark", label: "داكن", color: "#242424" },
+  { id: "yellow-black", label: "أصفر وأسود", color: "#f2c300" },
+];
+const invoicePalettes: Record<InvoiceTheme, InvoicePalette> = {
+  light: {
+    accent: "#173f47", text: "#ffffff", background: "#ffffff", bodyText: "#18353a",
+    accentSoft: "#f1f6f3", borderSoft: "#dfe9e4", rowBackground: "#ffffff",
+    rowAltBackground: "#fbfcfb", rowBorder: "#e7eeeb", totalAccent: "#2f896d",
+    credit: "#4d9b7b", debit: "#b66d52", metaText: "#617873", footerText: "#7f938f",
+  },
+  gold: {
+    accent: "#b8891f", text: "#ffffff", background: "#ffffff", bodyText: "#18353a",
+    accentSoft: "#fbf3d9", borderSoft: "#ead9a7", rowBackground: "#ffffff",
+    rowAltBackground: "#fbfcfb", rowBorder: "#ead9a7", totalAccent: "#a87812",
+    credit: "#9f7417", debit: "#b66d52", metaText: "#786b4d", footerText: "#8a7b56",
+  },
+  red: {
+    accent: "#8f1d2c", text: "#ffffff", background: "#ffffff", bodyText: "#18353a",
+    accentSoft: "#f7e7e5", borderSoft: "#e7c8c5", rowBackground: "#ffffff",
+    rowAltBackground: "#fcf7f6", rowBorder: "#e7c8c5", totalAccent: "#2f896d",
+    credit: "#4d9b7b", debit: "#b66d52", metaText: "#806568", footerText: "#8c7779",
+  },
+  dark: {
+    accent: "#f2c300", text: "#111111", background: "#0b0b0b", bodyText: "#f5f5f5",
+    accentSoft: "#1b1b1b", borderSoft: "#3a3a3a", rowBackground: "#111111",
+    rowAltBackground: "#171717", rowBorder: "#303030", totalAccent: "#f2c300",
+    credit: "#f2c300", debit: "#ff7b7b", metaText: "#b0b0b0", footerText: "#8a8a8a",
+  },
+  "yellow-black": {
+    accent: "#f2c300", text: "#111111", background: "#0b0b0b", bodyText: "#f5f5f5",
+    accentSoft: "#1b1b1b", borderSoft: "#3a3a3a", rowBackground: "#111111",
+    rowAltBackground: "#171717", rowBorder: "#303030", totalAccent: "#f2c300",
+    credit: "#f2c300", debit: "#ff7b7b", metaText: "#b0b0b0", footerText: "#8a8a8a",
+  },
+};
 
 type NativeFileSaverPlugin = { savePdf(options: { filename: string; base64: string }): Promise<{ uri: string }> };
 const NativeFileSaver = registerPlugin<NativeFileSaverPlugin>("NativeFileSaver");
@@ -123,7 +168,7 @@ async function renderTemplateFile(file: File): Promise<TemplatePage[]> {
   return [{ label: "الصورة", image: await fileData(file) }];
 }
 
-export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, settingsLogo, onSaveSettingsLogo, invoiceLogoCircleColor = "#25606a" }: { accounts: Account[]; onBack: () => void; onToggleTheme: () => void; theme: "light" | "dark" | "gold" | "red" | "yellow-black"; settingsLogo?: string; onSaveSettingsLogo?: (logo: string) => Promise<void>; invoiceLogoCircleColor?: string }) {
+export default function InvoiceMaker({ accounts, onBack, settingsLogo, onSaveSettingsLogo, invoiceLogoCircleColor = "#25606a", invoiceTheme, onSaveInvoiceTheme }: { accounts: Account[]; onBack: () => void; settingsLogo?: string; onSaveSettingsLogo?: (logo: string) => Promise<void>; invoiceLogoCircleColor?: string; invoiceTheme: InvoiceTheme; onSaveInvoiceTheme: (theme: InvoiceTheme) => Promise<void> }) {
   const [query, setQuery] = useState("");
   const [accountFilter, setAccountFilter] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
@@ -159,6 +204,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
   const activeFile = templateFiles.find((f) => f.id === templateFileId);
   const activePage = activeFile?.pages[pageIndex];
   const effectiveLogo = logoSource === "settings" ? (settingsLogo || "") : logo;
+  const invoicePalette = invoicePalettes[invoiceTheme] || invoicePalettes.light;
 
   const toggle = (id: number) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
   const chooseRow = (id: number) => { setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]); setActiveId(id); };
@@ -220,12 +266,7 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
     if (!chosen.length) return toast.error("اختار دفعة واحدة على الأقل");
     if (!invoiceNumber.trim()) return toast.error("اكتب رقم الفاتورة أولاً");
     setBusy(true);
-    const invoiceAccent = theme === "gold" ? "#b8891f" : theme === "red" ? "#8f1d2c" : theme === "yellow-black" ? "#f2c300" : theme === "dark" ? "#f2c300" : "#173f47";
-    const invoiceText = theme === "yellow-black" || theme === "dark" ? "#111111" : "#ffffff";
-    const invoiceBackground = theme === "yellow-black" || theme === "dark" ? "#0b0b0b" : "#ffffff";
-    const invoiceBodyText = theme === "yellow-black" || theme === "dark" ? "#f5f5f5" : "#18353a";
-    const invoiceAccentSoft = theme === "gold" ? "#fbf3d9" : theme === "red" ? "#f7e7e5" : theme === "yellow-black" || theme === "dark" ? "#1b1b1b" : "#f1f6f3";
-    const invoiceBorderSoft = theme === "gold" ? "#ead9a7" : theme === "red" ? "#e7c8c5" : theme === "yellow-black" || theme === "dark" ? "#3a3a3a" : "#dfe9e4";
+    const { accent: invoiceAccent, text: invoiceText, background: invoiceBackground, bodyText: invoiceBodyText, accentSoft: invoiceAccentSoft, borderSoft: invoiceBorderSoft, rowBackground, rowAltBackground, rowBorder, totalAccent } = invoicePalette;
     const host = document.createElement("div");
     host.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;";
     document.body.appendChild(host);
@@ -234,9 +275,6 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
       for (let start = 0; start < chosen.length; start += 10) {
         const batch = chosen.slice(start, start + 10);
         const batchTotals = batch.reduce((sum, row) => ({ ...sum, [row.currency]: (sum[row.currency] || 0) + (row.type === "debit" ? row.amount : -row.amount) }), {} as Record<Currency, number>);
-        const rowBackground = theme === "yellow-black" || theme === "dark" ? "#111111" : "#ffffff";
-        const rowAltBackground = theme === "yellow-black" || theme === "dark" ? "#171717" : "#fbfcfb";
-        const rowBorder = theme === "yellow-black" || theme === "dark" ? "#303030" : "#e7eeeb";
         const batchTotalText = [batchTotals.SYP ? money(batchTotals.SYP, "SYP") : "", batchTotals.USD ? money(batchTotals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0";
         host.innerHTML = '<div dir="rtl" style="width:794px;height:1123px;box-sizing:border-box;padding:30px 38px;background:' + invoiceBackground + ';color:' + invoiceBodyText + ';font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;font-weight:800;position:relative;">'
           + '<div style="height:10px;background:' + invoiceAccent + ';border-radius:6px;"></div>'
@@ -258,11 +296,11 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
               + '<td style="padding:4px;vertical-align:middle;text-align:center;border-top:1px solid #e7eeeb;"><div style="height:72px;position:relative;overflow:hidden;"><img src="' + image + '" style="position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);max-width:92px;max-height:68px;object-fit:contain;" /></div></td>'
               + '<td style="padding:7px;font-weight:900;font-size:13px;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(meters[r.id] || "—") + '</td>'
               + '<td style="padding:7px;font-weight:900;font-size:15px;text-align:center;vertical-align:middle;word-break:break-word;border-top:1px solid #e7eeeb;">' + esc(money(r.amount, r.currency)) + '</td>'
-              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (theme === "yellow-black" || theme === "dark" ? (r.type === "credit" ? "#f2c300" : "#ff7b7b") : theme === "gold" ? (r.type === "credit" ? "#9f7417" : "#b66d52") : (r.type === "credit" ? "#4d9b7b" : "#b66d52")) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
+              + '<td style="padding:7px;font-weight:800;text-align:center;vertical-align:middle;color:' + (r.type === "credit" ? invoicePalette.credit : invoicePalette.debit) + ';border-top:1px solid #e7eeeb;">' + (r.type === "credit" ? "له" : "عليه") + '</td>'
               + '<td style="padding:7px;font-size:11px;font-weight:800;color:#718883;text-align:center;vertical-align:middle;border-top:1px solid #e7eeeb;">' + esc(dateText(r.date)) + '</td></tr>';
           }).join("")
           + '</tbody></table><div style="display:flex;justify-content:space-between;gap:16px;margin-top:18px;padding:14px 16px;background:' + invoiceAccentSoft + ';border:1px solid ' + invoiceBorderSoft + ';border-radius:9px;font-weight:800;">'
-          + '<span>الرصيد الصافي</span><span style="color:' + (theme === "yellow-black" || theme === "dark" ? "#f2c300" : theme === "gold" ? "#a87812" : "#2f896d") + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
+          + '<span>الرصيد الصافي</span><span style="color:' + totalAccent + ';text-align:left;">' + esc(batchTotalText) + '</span></div>'
           + '<div style="position:absolute;bottom:16px;left:38px;right:38px;padding-top:8px;border-top:1px solid ' + invoiceBorderSoft + ';text-align:center;font-size:9px;font-weight:800;color:#7f938f;">Aleppo Center Cash • فاتورة مالية</div></div>';
         const exportImages = Array.from(host.querySelectorAll("img"));
         await Promise.all(exportImages.map(async (img) => {
@@ -299,8 +337,17 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
   return <main className="invoice-maker page-enter" dir="rtl">
     <header className="invoice-maker-head">
       <div><button className="text-btn invoice-back" onClick={onBack}><ArrowLeft size={16} /> رجوع</button><div className="eyebrow">ALEPPO CENTER <span>•</span> INVOICE MAKER</div><h1>صانع الفواتير</h1><p>اختار الدفعات مثل Excel، اربط أكثر من ملف قالب، راجع الفاتورة ثم استخرجها.</p></div>
-      <div className="invoice-head-actions"><button className="icon-btn bordered" onClick={onToggleTheme} aria-label="تبديل الوضع">{theme === "dark" || theme === "yellow-black" ? <Sun size={18} /> : theme === "gold" ? <Sparkles size={18} /> : theme === "red" ? <Heart size={18} /> : <Moon size={18} />}</button><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
+      <div className="invoice-head-actions"><button className="secondary-btn" disabled={!chosen.length} onClick={() => setShowPreview(true)}><Eye size={17} /> معاينة</button><button className="primary-btn" disabled={busy || !chosen.length} onClick={() => void exportPdf()}><Download size={17} /> استخراج PDF</button></div>
     </header>
+
+    <section className="invoice-theme-card surface-card" aria-label="تصميم الفاتورة">
+      <div className="invoice-theme-heading"><div className="invoice-theme-heading-icon"><Palette size={19} /></div><div><h2>تصميم الفاتورة</h2><p>اختيار هذا التصميم يغيّر الفاتورة فقط، وليس مظهر التطبيق. يُحفظ تلقائياً لمساحة العمل.</p></div><span className="invoice-theme-current">{invoiceThemeOptions.find((option) => option.id === invoiceTheme)?.label || "كلاسيكي"}</span></div>
+      <div className="invoice-theme-options" role="group" aria-label="اختر تصميم الفاتورة">
+        {invoiceThemeOptions.map((option) => <button key={option.id} type="button" aria-pressed={invoiceTheme === option.id} className={"invoice-theme-option " + (invoiceTheme === option.id ? "active" : "")} onClick={() => { if (option.id !== invoiceTheme) void onSaveInvoiceTheme(option.id).catch(() => undefined); }}>
+          <span className="invoice-theme-swatch" style={{ backgroundColor: option.color }}><span /></span><span className="invoice-theme-option-label">{option.label}</span>{invoiceTheme === option.id && <Check size={16} className="invoice-theme-option-check" />}
+        </button>)}
+      </div>
+    </section>
 
     <section className="invoice-toolbar surface-card">
       <div className="invoice-field invoice-account-field"><label>حساب الفاتورة</label><select value={accountFilter} onChange={(e) => changeAccount(e.target.value)}><option value="">اختر الحساب أولاً</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
@@ -347,19 +394,19 @@ export default function InvoiceMaker({ accounts, onBack, onToggleTheme, theme, s
     {showPreview && <div className="invoice-preview-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
       <div className="invoice-preview-modal" dir="rtl">
         <header className="invoice-preview-header"><div><span className="eyebrow">PREVIEW</span><h2>معاينة الفاتورة</h2><p>هذه المعاينة مصممة لتطابق شكل ملف PDF النهائي.</p></div><div className="invoice-preview-header-actions"><div className="invoice-preview-zoom"><button className="icon-btn bordered" onClick={() => setPreviewZoom((z) => Math.max(.7, +(z - .1).toFixed(1)))}>−</button><span>{Math.round(previewZoom * 100)}%</span><button className="icon-btn bordered" onClick={() => setPreviewZoom((z) => Math.min(1.3, +(z + .1).toFixed(1)))}>+</button><button className="text-btn" onClick={() => setPreviewZoom(1)}>ملاءمة</button></div><button className="icon-btn bordered" onClick={() => setShowPreview(false)}><X size={18} /></button></div></header>
-        <div className="invoice-preview-scroll"><div className="invoice-preview-page" style={{ transform: `scale(${previewZoom})` }}>
-          <div className="invoice-preview-accent"></div>
-          <div className="invoice-preview-paper-head">
-            {effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="شعار الفاتورة" style={{ backgroundColor: invoiceLogoCircleColor }} />}
-            <div className="invoice-preview-title"><h1>فاتورة</h1><strong>رقم {invoiceNumber || "—"}</strong></div>
-            <div className="invoice-preview-meta">{customer && <div><b>العميل:</b> {customer}</div>}<div><b>التاريخ:</b> {dateText(invoiceDate)}</div></div>
+        <div className="invoice-preview-scroll"><div className={"invoice-preview-page invoice-preview-theme-" + invoiceTheme} style={{ transform: `scale(${previewZoom})`, backgroundColor: invoicePalette.background, color: invoicePalette.bodyText }}>
+          <div className="invoice-preview-accent" style={{ backgroundColor: invoicePalette.accent }}></div>
+          <div className="invoice-preview-paper-head" style={{ backgroundColor: invoicePalette.accentSoft, borderColor: invoicePalette.borderSoft }}>
+            {effectiveLogo && <img className="invoice-preview-logo" src={effectiveLogo} alt="شعار الفاتورة" style={{ backgroundColor: invoiceLogoCircleColor, borderColor: invoicePalette.accent }} />}
+            <div className="invoice-preview-title" style={{ color: invoicePalette.bodyText }}><h1 style={{ color: invoicePalette.accent }}>فاتورة</h1><strong style={{ color: invoicePalette.bodyText }}>رقم {invoiceNumber || "—"}</strong></div>
+            <div className="invoice-preview-meta" style={{ color: invoicePalette.metaText }}>{customer && <div><b style={{ color: invoicePalette.bodyText }}>العميل:</b> {customer}</div>}<div><b style={{ color: invoicePalette.bodyText }}>التاريخ:</b> {dateText(invoiceDate)}</div></div>
           </div>
-          <div className="invoice-preview-table">
-            <div className="invoice-preview-head"><span>القالب</span><span>الصورة</span><span>الأمتار</span><span>المبلغ</span><span>الحالة</span><span>التاريخ</span></div>
-            {previewRows.map((r) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}
+          <div className="invoice-preview-table" style={{ backgroundColor: invoicePalette.background, borderColor: invoicePalette.borderSoft }}>
+            <div className="invoice-preview-head" style={{ backgroundColor: invoicePalette.accent, color: invoicePalette.text }}><span>القالب</span><span>الصورة</span><span>الأمتار</span><span>المبلغ</span><span>الحالة</span><span>التاريخ</span></div>
+            {previewRows.map((r, index) => { const p = positions[r.id] || { x: 50, y: 50 }; return <div className="invoice-preview-row" key={r.id} style={{ backgroundColor: index % 2 ? invoicePalette.rowBackground : invoicePalette.rowAltBackground, borderColor: invoicePalette.rowBorder, color: invoicePalette.bodyText }}><span><b>{r.name}</b>{imageLabels[r.id] && <small>{imageLabels[r.id]}</small>}</span><span className="preview-image-cell">{images[r.id] ? <img src={images[r.id]} alt="" style={{ left: p.x + "%", top: p.y + "%" }} /> : <em>—</em>}</span><span>{meters[r.id] || "—"}</span><span>{money(r.amount, r.currency)}</span><span style={{ color: r.type === "credit" ? invoicePalette.credit : invoicePalette.debit }} className={r.type === "credit" ? "preview-credit" : "preview-debit"}>{r.type === "credit" ? "له" : "عليه"}</span><span>{dateText(r.date)}</span></div>; })}
           </div>
-          <div className="invoice-preview-total"><span>الرصيد الصافي</span><strong>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
-          <div className="invoice-preview-footer">Aleppo Center Cash • فاتورة مالية</div>
+          <div className="invoice-preview-total" style={{ backgroundColor: invoicePalette.accentSoft, borderColor: invoicePalette.borderSoft }}><span>الرصيد الصافي</span><strong style={{ color: invoicePalette.totalAccent }}>{[totals.SYP ? money(totals.SYP, "SYP") : "", totals.USD ? money(totals.USD, "USD") : ""].filter(Boolean).join("   |   ") || "0"}</strong></div>
+          <div className="invoice-preview-footer" style={{ color: invoicePalette.footerText, borderColor: invoicePalette.borderSoft }}>Aleppo Center Cash • فاتورة مالية</div>
         </div></div>
         <footer><button className="secondary-btn" onClick={() => setShowPreview(false)}>إغلاق</button><button className="primary-btn" disabled={busy || !chosen.length || !invoiceNumber.trim()} onClick={() => { setShowPreview(false); void exportPdf(); }}><Download size={16} /> اعتماد واستخراج PDF</button></footer>
       </div>
