@@ -35,24 +35,25 @@ export function ThemeProvider({ children, defaultTheme = "light", switchable = f
   });
 
   useEffect(() => {
-    if (!switchable || !workspaceId || !supabase) return;
+    const client = supabase;
+    if (!switchable || !workspaceId || !client) return;
     let active = true;
 
     const load = async () => {
-      const { data, error } = await supabase.from("workspace_settings").select("theme").eq("workspace_id", workspaceId).maybeSingle();
+      const { data, error } = await client.from("workspace_settings").select("theme").eq("workspace_id", workspaceId).maybeSingle();
       if (error) {
         console.warn("[AleppoCenterCash] shared theme load failed", error);
         return;
       }
       if (active && isTheme(data?.theme)) setThemeState(data.theme);
       if (!data) {
-        const { error: insertError } = await supabase.from("workspace_settings").insert({ workspace_id: workspaceId, theme });
+        const { error: insertError } = await client.from("workspace_settings").insert({ workspace_id: workspaceId, theme });
         if (insertError && insertError.code !== "23505") console.warn("[AleppoCenterCash] shared theme initialize failed", insertError);
       }
     };
 
     void load();
-    const channel = supabase.channel("workspace-theme-" + workspaceId)
+    const channel = client.channel("workspace-theme-" + workspaceId)
       .on("postgres_changes", { event: "*", schema: "public", table: "workspace_settings", filter: "workspace_id=eq." + workspaceId }, (payload) => {
         const next = (payload.new as { theme?: unknown } | null)?.theme;
         if (active && isTheme(next)) setThemeState(next);
@@ -61,15 +62,16 @@ export function ThemeProvider({ children, defaultTheme = "light", switchable = f
 
     return () => {
       active = false;
-      void supabase.removeChannel(channel);
+      void client.removeChannel(channel);
     };
   }, [workspaceId, switchable]);
 
   const setTheme = (nextTheme: Theme) => {
     setThemeState(nextTheme);
     if (switchable && typeof localStorage !== "undefined") localStorage.setItem("theme", nextTheme);
-    if (switchable && workspaceId && supabase) {
-      void supabase.from("workspace_settings").upsert({ workspace_id: workspaceId, theme: nextTheme }, { onConflict: "workspace_id" })
+    const client = supabase;
+    if (switchable && workspaceId && client) {
+      void client.from("workspace_settings").upsert({ workspace_id: workspaceId, theme: nextTheme }, { onConflict: "workspace_id" })
         .then(({ error }) => { if (error) console.warn("[AleppoCenterCash] shared theme save failed", error); });
     }
   };
