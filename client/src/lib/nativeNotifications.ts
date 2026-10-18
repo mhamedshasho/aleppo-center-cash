@@ -7,7 +7,7 @@ type NativeNotification = {
 };
 
 const REMINDER_BASE_ID = 700000;
-const REMINDER_COUNT = 48; // Stay below Android's pending local-notification limit.
+const REMINDER_COUNT = 48; // Keep the queue compact; reschedule it whenever the app opens.
 const NOTIFICATION_CHANNEL_ID = "aleppo-center-cash-alerts-v2";
 
 async function getLocalNotifications() {
@@ -21,7 +21,7 @@ async function getLocalNotifications() {
   }
 }
 
-export async function initializeNativeNotifications() {
+export async function initializeNativeNotifications(options: { requestPermission?: boolean } = {}) {
   const notifications = await getLocalNotifications();
   if (!notifications) return false;
 
@@ -39,7 +39,7 @@ export async function initializeNativeNotifications() {
     }).catch((error) => console.warn("[AleppoCenterCash] notification channel setup failed", error));
 
     let permission = await notifications.checkPermissions();
-    if (permission.display !== "granted") {
+    if (permission.display !== "granted" && options.requestPermission !== false) {
       permission = await notifications.requestPermissions();
     }
     return permission.display === "granted";
