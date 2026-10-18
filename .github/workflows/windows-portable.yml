@@ -12,6 +12,7 @@ on:
       - client/src/pages/Home.tsx
       - client/src/contexts/ThemeContext.tsx
       - client/src/components/DesktopSidebar.tsx
+      - client/src/index.css
       - .github/workflows/android-apk.yml
       - .github/workflows/windows-portable.yml
   workflow_dispatch:
