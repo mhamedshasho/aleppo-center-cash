@@ -8,7 +8,7 @@ type NativeNotification = {
 
 const REMINDER_BASE_ID = 700000;
 const REMINDER_COUNT = 48; // Keep the queue compact; reschedule it whenever the app opens.
-const LEGACY_REMINDER_COUNT = 84;
+const LEGACY_REMINDER_COUNT = 84; // Clear every reminder ID created by the older scheduler.
 const NOTIFICATION_CHANNEL_ID = "aleppo-center-cash-alerts-v2";
 
 async function getLocalNotifications() {
