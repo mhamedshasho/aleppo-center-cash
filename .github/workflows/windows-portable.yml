@@ -9,6 +9,9 @@ on:
       - README.md
       - docs/**
       - .github/workflows/windows-exe.yml
+      - client/src/pages/Home.tsx
+      - .github/workflows/android-apk.yml
+      - .github/workflows/windows-portable.yml
   workflow_dispatch:
 
 permissions:
