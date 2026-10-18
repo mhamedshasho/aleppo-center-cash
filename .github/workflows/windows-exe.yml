@@ -16,6 +16,7 @@ on:
       - .github/workflows/windows-exe.yml
       - '!client/src/pages/Home.tsx'
       - '!client/src/pages/InvoiceMaker.tsx'
+      - '!client/src/pages/Manual.tsx'
       - '!client/src/contexts/ThemeContext.tsx'
       - '!client/src/components/DesktopSidebar.tsx'
       - '!client/src/index.css'
