@@ -2210,3 +2210,31 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
     transform:translate(-50%,-50%)!important;
   }
 }
+
+
+/* Settings refresh: quick navigation, cleaner density, and responsive controls. */
+.settings-page{width:100%;max-width:1540px;margin-inline:auto;padding-bottom:clamp(24px,4vw,48px)}
+.settings-quick-nav{position:sticky;top:8px;z-index:20;display:flex;align-items:center;gap:7px;overflow-x:auto;padding:9px;margin:0 0 16px;border:1px solid var(--border);border-radius:15px;background:color-mix(in srgb,var(--card, #fff) 92%,transparent);backdrop-filter:blur(14px);scrollbar-width:thin}
+.settings-quick-nav a{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;color:var(--foreground);font-size:13px;font-weight:800;padding:9px 13px;border-radius:10px;background:var(--muted,rgba(120,144,139,.08));transition:background .15s ease,color .15s ease}
+.settings-quick-nav a:hover,.settings-quick-nav a:focus-visible{background:var(--primary, #25606a);color:#fff;outline:none}
+.settings-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.settings-section{min-width:0;scroll-margin-top:90px;padding:clamp(15px,1.6vw,22px);border-radius:17px;transition:border-color .16s ease,box-shadow .16s ease}
+.settings-section:hover{border-color:color-mix(in srgb,var(--primary,#25606a) 30%,var(--border))}
+.settings-section-head{gap:12px}
+.settings-section-head>div:first-child{min-width:0}
+.settings-section-head p{max-width:62ch}
+.settings-theme-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.settings-theme-option{min-width:0;min-height:44px;justify-content:center;gap:7px;padding:9px 8px;border-radius:11px}
+.settings-theme-option strong{font-size:12px;white-space:normal;text-align:center}
+.settings-branding-row{align-items:center;gap:12px}
+.settings-branding-row .settings-row-copy{flex-basis:150px}
+.settings-color-picker{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:7px 12px;border:1px solid var(--border);border-radius:11px;font-size:13px;font-weight:800;cursor:pointer}
+.settings-color-picker input{width:25px;height:25px;padding:0;border:0;background:transparent;cursor:pointer}
+.settings-color-picker input::-webkit-color-swatch-wrapper{padding:0}
+.settings-color-picker input::-webkit-color-swatch{border:1px solid rgba(0,0,0,.15);border-radius:7px}
+.settings-save-color{min-height:42px;white-space:nowrap}
+.settings-info strong{overflow-wrap:anywhere;text-align:left}
+.settings-copy,.settings-workspace-manager-button{min-height:40px}
+@media(min-width:1200px){.settings-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.settings-section{padding:20px}.settings-quick-nav{margin-bottom:18px}}
+@media(max-width:820px){.settings-page{padding-inline:0}.settings-quick-nav{top:4px;gap:5px;padding:7px;margin-bottom:12px;border-radius:12px}.settings-quick-nav a{padding:9px 11px;font-size:12px}.settings-grid{grid-template-columns:1fr;gap:11px}.settings-section{padding:15px;border-radius:14px}.settings-section-head{margin-bottom:12px}.settings-section-head h2{font-size:16px}.settings-section-head p{font-size:12px}.settings-theme-options{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-theme-option{min-height:46px}.settings-branding-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center}.settings-branding-row .settings-row-copy{min-width:0;flex-basis:auto}.settings-branding-row label,.settings-branding-row .settings-color-picker,.settings-branding-row .settings-save-color,.settings-branding-row .secondary-btn{grid-column:1/-1;width:100%;justify-content:center}.settings-branding-row .settings-color-picker{display:flex}.settings-branding-row .settings-save-color{margin-top:0}.settings-info{align-items:flex-start}.settings-info strong{max-width:62%;font-size:12px}.settings-section .settings-row-copy strong{font-size:14px}.settings-section .settings-row-copy span{font-size:12px}}
+@media(max-width:380px){.settings-section{padding:12px}.settings-theme-options{gap:6px}.settings-theme-option{padding:8px 5px}.settings-quick-nav a{padding:8px 9px}}
