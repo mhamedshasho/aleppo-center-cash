@@ -71,6 +71,7 @@ export default function CloudAuthGate() {
   const [workspacePassword, setWorkspacePassword] = useState("");
   const [showWorkspacePassword, setShowWorkspacePassword] = useState(false);
   const [pendingLockConfig, setPendingLockConfig] = useState<WorkspaceLockConfig | null>(null);
+  const [pendingLockConfigWorkspaceId, setPendingLockConfigWorkspaceId] = useState<string | null>(null);
   const [pendingLockLoading, setPendingLockLoading] = useState(false);
   const [pendingLockError, setPendingLockError] = useState(false);
   const [lockConfigRetry, setLockConfigRetry] = useState(0);
@@ -231,12 +232,15 @@ export default function CloudAuthGate() {
   useEffect(() => {
     if (!session || !supabase || !pendingWorkspace) {
       setPendingLockConfig(null);
+      setPendingLockConfigWorkspaceId(null);
       setPendingLockLoading(false);
       setPendingLockError(false);
       return;
     }
 
     let active = true;
+    setPendingLockConfig(null);
+    setPendingLockConfigWorkspaceId(null);
     setPendingLockLoading(true);
     setPendingLockError(false);
     setWorkspacePassword("");
@@ -249,11 +253,13 @@ export default function CloudAuthGate() {
         if (error) throw error;
         if (!active) return;
         setPendingLockConfig(parseWorkspaceLockConfig(data));
+        setPendingLockConfigWorkspaceId(pendingWorkspace.id);
         setPendingLockError(false);
       } catch (error) {
         console.error("[AleppoCenterCash] workspace lock config load failed", error);
         if (!active) return;
         setPendingLockConfig(null);
+        setPendingLockConfigWorkspaceId(null);
         setPendingLockError(true);
         toast.error("تعذر تحميل طريقة دخول مساحة العمل من الخادم. لن نتجاوز القفل.");
       } finally {
@@ -292,6 +298,7 @@ export default function CloudAuthGate() {
           updated_at: typeof nextRow.updated_at === "string" ? nextRow.updated_at : null,
         };
         setPendingLockConfig(nextConfig);
+        setPendingLockConfigWorkspaceId(workspaceId);
         setPendingLockError(false);
         setWorkspacePassword("");
         setShowWorkspacePassword(false);
@@ -400,7 +407,7 @@ export default function CloudAuthGate() {
   };
 
   const enterWorkspace = async () => {
-    if (!supabase || !session || !pendingWorkspace || !workspacePassword || pendingLockLoading || pendingLockError) return;
+    if (!supabase || !session || !pendingWorkspace || !workspacePassword || pendingLockLoading || pendingLockError || !pendingLockConfig || pendingLockConfigWorkspaceId !== pendingWorkspace.id) return;
     const targetWorkspace = pendingWorkspace;
     const lockConfig = pendingLockConfig;
     workspaceUnlockInProgressRef.current = true;
@@ -574,7 +581,9 @@ export default function CloudAuthGate() {
   );
   if (session && workspaceLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نتحقق من مساحة المحل…</div>;
 
-  if (session && pendingWorkspace && pendingLockLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نحمّل طريقة قفل مساحة العمل من الخادم…</div>;
+  if (session && pendingWorkspace && (pendingLockLoading || pendingLockConfigWorkspaceId !== pendingWorkspace.id) && !pendingLockError) {
+    return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نحمّل طريقة قفل مساحة العمل من الخادم…</div>;
+  }
 
   if (session && pendingWorkspace && pendingLockError) {
     return (
