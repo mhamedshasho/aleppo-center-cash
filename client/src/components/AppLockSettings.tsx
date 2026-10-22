@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { Check, Grid3X3, KeyRound, LockKeyhole, ShieldCheck, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -68,7 +69,7 @@ export function PatternLockPad({ value, onChange, label }: { value: string; onCh
     setNodes(next);
   };
 
-  const nearestNode = (event: React.PointerEvent<SVGSVGElement>) => {
+  const nearestNode = (event: ReactPointerEvent<SVGSVGElement>) => {
     const svg = svgRef.current;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
@@ -83,7 +84,7 @@ export function PatternLockPad({ value, onChange, label }: { value: string; onCh
     return nearest?.id ?? null;
   };
 
-  const handlePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+  const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     const node = nearestNode(event);
     if (node === null) return;
     event.preventDefault();
@@ -92,13 +93,13 @@ export function PatternLockPad({ value, onChange, label }: { value: string; onCh
     setNodes([node]);
   };
 
-  const handlePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!drawingRef.current) return;
     const node = nearestNode(event);
     if (node !== null) addNode(node);
   };
 
-  const finishDrawing = (event: React.PointerEvent<SVGSVGElement>) => {
+  const finishDrawing = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!drawingRef.current) return;
     const node = nearestNode(event);
     if (node !== null) addNode(node);
