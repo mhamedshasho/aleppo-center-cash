@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Building2, Eye, EyeOff, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
 import type { WorkspaceOption } from "@/components/WorkspaceManager";
-import { PatternLockPad, WorkspaceLockInput, type WorkspaceLockType } from "@/components/WorkspaceLockInput";
+import { PatternLockPad, type WorkspaceLockType } from "@/components/WorkspaceLockInput";
 import { toast } from "sonner";
 import Home from "@/pages/Home";
 import { isValidEmail, normalizeEmail } from "@/lib/validation";
