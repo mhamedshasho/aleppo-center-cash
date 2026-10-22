@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Building2, Eye, EyeOff, KeyRound, Loader2, LogIn, UserPlus } from "lucide-react";
 import type { WorkspaceOption } from "@/components/WorkspaceManager";
+import { PatternLockPad, WorkspaceLockInput, type WorkspaceLockType } from "@/components/WorkspaceLockInput";
 import { toast } from "sonner";
 import Home from "@/pages/Home";
 import { isValidEmail, normalizeEmail } from "@/lib/validation";
@@ -15,6 +16,17 @@ import {
 
 type Mode = "login" | "signup";
 type WorkspaceState = { id: string; name: string; slug: string; role: "owner" | "member" } | null;
+type WorkspaceLockConfig = { configured: boolean; lock_type: WorkspaceLockType; updated_at?: string | null };
+
+function parseWorkspaceLockConfig(value: unknown): WorkspaceLockConfig {
+  if (value && typeof value === "object") {
+    const data = value as Partial<WorkspaceLockConfig>;
+    if (data.configured === true && (data.lock_type === "password" || data.lock_type === "pin" || data.lock_type === "pattern")) {
+      return { configured: true, lock_type: data.lock_type, updated_at: data.updated_at ?? null };
+    }
+  }
+  return { configured: false, lock_type: "password" };
+}
 
 let signupCooldownUntilMemory = 0;
 
@@ -58,6 +70,10 @@ export default function CloudAuthGate() {
   const [pendingWorkspace, setPendingWorkspace] = useState<WorkspaceState>(null);
   const [workspacePassword, setWorkspacePassword] = useState("");
   const [showWorkspacePassword, setShowWorkspacePassword] = useState(false);
+  const [pendingLockConfig, setPendingLockConfig] = useState<WorkspaceLockConfig | null>(null);
+  const [pendingLockLoading, setPendingLockLoading] = useState(false);
+  const [pendingLockError, setPendingLockError] = useState(false);
+  const [lockConfigRetry, setLockConfigRetry] = useState(0);
   const workspaceUnlockInProgressRef = useRef(false);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -210,6 +226,90 @@ export default function CloudAuthGate() {
     };
   }, [session, routeSlug]);
 
+  // Load the shared lock mode from Supabase for the currently selected workspace.
+  // Its secret hash never leaves the database; only the mode is returned here.
+  useEffect(() => {
+    if (!session || !supabase || !pendingWorkspace) {
+      setPendingLockConfig(null);
+      setPendingLockLoading(false);
+      setPendingLockError(false);
+      return;
+    }
+
+    let active = true;
+    setPendingLockLoading(true);
+    setPendingLockError(false);
+    setWorkspacePassword("");
+
+    const loadLock = async () => {
+      try {
+        const { data, error } = await supabase!.rpc("get_workspace_lock_config", {
+          target_workspace: pendingWorkspace.id,
+        });
+        if (error) throw error;
+        if (!active) return;
+        setPendingLockConfig(parseWorkspaceLockConfig(data));
+        setPendingLockError(false);
+      } catch (error) {
+        console.error("[AleppoCenterCash] workspace lock config load failed", error);
+        if (!active) return;
+        setPendingLockConfig(null);
+        setPendingLockError(true);
+        toast.error("تعذر تحميل طريقة دخول مساحة العمل من الخادم. لن نتجاوز القفل.");
+      } finally {
+        if (active) setPendingLockLoading(false);
+      }
+    };
+
+    void loadLock();
+    return () => {
+      active = false;
+    };
+  }, [session?.user.id, pendingWorkspace?.id, lockConfigRetry]);
+
+  // When the owner changes the shared lock, return every currently open member
+  // session to the workspace gate so nobody remains on the old access method.
+  useEffect(() => {
+    if (!session || !supabase) return;
+    const watchedWorkspace = workspace ?? pendingWorkspace;
+    if (!watchedWorkspace) return;
+
+    const workspaceId = watchedWorkspace.id;
+    const channel = supabase
+      .channel("workspace-lock-enforcement-" + workspaceId)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "workspace_lock_modes",
+        filter: "workspace_id=eq." + workspaceId,
+      }, (payload) => {
+        const nextRow = payload.new as { lock_type?: unknown; updated_at?: unknown } | null;
+        if (!nextRow || (nextRow.lock_type !== "password" && nextRow.lock_type !== "pin" && nextRow.lock_type !== "pattern")) return;
+
+        const nextConfig: WorkspaceLockConfig = {
+          configured: true,
+          lock_type: nextRow.lock_type,
+          updated_at: typeof nextRow.updated_at === "string" ? nextRow.updated_at : null,
+        };
+        setPendingLockConfig(nextConfig);
+        setPendingLockError(false);
+        setWorkspacePassword("");
+        setShowWorkspacePassword(false);
+
+        if (workspace?.id === workspaceId) {
+          workspaceUnlockInProgressRef.current = false;
+          setPendingWorkspace(workspace);
+          setWorkspace(null);
+          toast.info("تم تغيير قفل مساحة العمل. أدخل طريقة الدخول الجديدة للمتابعة.");
+        }
+      })
+      .subscribe();
+
+    return () => {
+      void supabase?.removeChannel(channel);
+    };
+  }, [session?.user.id, workspace?.id, pendingWorkspace?.id]);
+
   const submitAuth = async () => {
     const cleanEmail = normalizeEmail(email);
 
@@ -300,24 +400,55 @@ export default function CloudAuthGate() {
   };
 
   const enterWorkspace = async () => {
-    if (!supabase || !session || !pendingWorkspace || !workspacePassword) return;
+    if (!supabase || !session || !pendingWorkspace || !workspacePassword || pendingLockLoading || pendingLockError) return;
     const targetWorkspace = pendingWorkspace;
+    const lockConfig = pendingLockConfig;
     workspaceUnlockInProgressRef.current = true;
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: session.user.email ?? "",
-        password: workspacePassword,
-      });
-      if (error) throw error;
+      if (lockConfig?.configured) {
+        const { data, error } = await supabase.rpc("verify_workspace_lock", {
+          target_workspace: targetWorkspace.id,
+          provided_credential: workspacePassword,
+        });
+        if (error) throw error;
+        const result = data as { ok?: boolean; locked?: boolean; retry_after_seconds?: number } | null;
+        if (!result?.ok) {
+          workspaceUnlockInProgressRef.current = false;
+          const seconds = Number(result?.retry_after_seconds ?? 0);
+          if (result?.locked && seconds > 0) {
+            toast.error("محاولات كثيرة. انتظر " + seconds + " ثانية ثم جرّب مجدداً.");
+          } else {
+            toast.error("قفل مساحة العمل غير صحيح.");
+          }
+          return;
+        }
+      } else {
+        // Legacy workspaces remain usable until the owner creates a shared lock.
+        // This is a one-time re-check of the signed-in user's own Supabase password.
+        const { error } = await supabase.auth.signInWithPassword({
+          email: session.user.email ?? "",
+          password: workspacePassword,
+        });
+        if (error) {
+          workspaceUnlockInProgressRef.current = false;
+          toast.error("كلمة مرور حسابك غير صحيحة. يمكن لمالك المساحة إعداد قفل مشترك من الإعدادات.");
+          return;
+        }
+      }
+
       setWorkspacePassword("");
       setShowWorkspacePassword(false);
+      setPendingLockLoading(false);
+      setPendingLockError(false);
+      workspaceUnlockInProgressRef.current = false;
       setWorkspace(targetWorkspace);
       setPendingWorkspace(null);
       toast.success("تم فتح مساحة العمل");
     } catch (error) {
       workspaceUnlockInProgressRef.current = false;
-      toast.error("كلمة مرور الحساب غير صحيحة.");
+      console.error("[AleppoCenterCash] workspace unlock failed", error);
+      toast.error(pendingLockConfig?.configured ? "تعذر التحقق من قفل مساحة العمل. تحقق من الاتصال ثم جرّب." : "تعذر التحقق من كلمة مرور الحساب.");
     } finally {
       setBusy(false);
     }
@@ -443,6 +574,22 @@ export default function CloudAuthGate() {
   );
   if (session && workspaceLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نتحقق من مساحة المحل…</div>;
 
+  if (session && pendingWorkspace && pendingLockLoading) return <div className="cloud-loading"><Loader2 className="spin" size={22} /> عم نحمّل طريقة قفل مساحة العمل من الخادم…</div>;
+
+  if (session && pendingWorkspace && pendingLockError) {
+    return (
+      <main className="login-shell" dir="rtl">
+        <section className="login-card">
+          <div className="brand-mark large"><KeyRound size={30} /></div>
+          <h1>تعذر تحميل<br /><em>قفل المساحة</em></h1>
+          <p className="login-copy">لن نتجاوز قفل مساحة العمل بدون التحقق من إعداد الخادم.</p>
+          <button className="primary-btn full" onClick={() => setLockConfigRetry((value) => value + 1)}><KeyRound size={17} /> إعادة المحاولة <ArrowLeft size={17} /></button>
+          <button className="text-btn auth-signout" onClick={() => { if (supabase) void supabase.auth.signOut(); }}>مو أنت؟ سجّل خروج</button>
+        </section>
+      </main>
+    );
+  }
+
   if (session && pendingWorkspace) {
     return (
       <main className="login-shell" dir="rtl">
@@ -451,14 +598,48 @@ export default function CloudAuthGate() {
           <div className="brand-mark large"><KeyRound size={30} strokeWidth={1.8} /></div>
           <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> WORKSPACE</div>
           <h1>مساحة<br /><em>{pendingWorkspace.name}</em></h1>
-          <p className="login-copy">هذا رابط مساحة عمل مستقلة. لفتحها، اكتب كلمة مرور حسابك.</p>
-          <div className="key-input-wrap password-input-wrap"><input id="workspace-password" type={showWorkspacePassword ? "text" : "password"} value={workspacePassword} onChange={(event) => setWorkspacePassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }} placeholder="كلمة مرور حسابك" dir="ltr" autoComplete="current-password" autoFocus /><button type="button" className="password-toggle" aria-label={showWorkspacePassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} aria-pressed={showWorkspacePassword} onClick={() => setShowWorkspacePassword((visible) => !visible)}>{showWorkspacePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
-          <button className="primary-btn full" disabled={busy || !workspacePassword} onClick={() => void enterWorkspace()}>
+          <p className="login-copy">
+            {pendingLockConfig?.configured
+              ? pendingLockConfig.lock_type === "pin"
+                ? "أدخل رمز PIN المشترك المكوّن من ٤ أرقام لفتح مساحة العمل."
+                : pendingLockConfig.lock_type === "pattern"
+                  ? "ارسم نمط الدخول المشترك الذي اختاره مالك المساحة."
+                  : "أدخل كلمة مرور مساحة العمل المشتركة."
+              : "لم يضع المالك قفلاً مشتركاً بعد. أدخل كلمة مرور حسابك للمتابعة، ثم يمكن للمالك تغيير طريقة دخول المساحة للجميع من الإعدادات."}
+          </p>
+          <label className="field-label" htmlFor="workspace-password">
+            {pendingLockConfig?.configured
+              ? pendingLockConfig.lock_type === "pin" ? "رمز PIN للمساحة" : pendingLockConfig.lock_type === "pattern" ? "نمط الشاشة للمساحة" : "كلمة مرور المساحة"
+              : "كلمة مرور حسابك"}
+          </label>
+          {pendingLockConfig?.configured && pendingLockConfig.lock_type === "pattern" ? (
+            <PatternLockPad value={workspacePassword} onChange={setWorkspacePassword} label="ارسم نمط المساحة" />
+          ) : (
+            <div className="key-input-wrap password-input-wrap">
+              <input
+                id="workspace-password"
+                type={showWorkspacePassword ? "text" : "password"}
+                value={workspacePassword}
+                onChange={(event) => setWorkspacePassword(pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? event.target.value.replace(/\\D/g, "").slice(0, 4) : event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }}
+                placeholder={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "أدخل ٤ أرقام" : pendingLockConfig?.configured ? "أدخل قفل المساحة" : "كلمة مرور حسابك"}
+                dir={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "ltr" : "auto"}
+                inputMode={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "numeric" : "text"}
+                maxLength={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? 4 : 128}
+                autoComplete="off"
+                autoFocus
+              />
+              {pendingLockConfig?.configured && pendingLockConfig.lock_type === "password" && (
+                <button type="button" className="password-toggle" aria-label={showWorkspacePassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} aria-pressed={showWorkspacePassword} onClick={() => setShowWorkspacePassword((visible) => !visible)}>{showWorkspacePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+              )}
+            </div>
+          )}
+          <button className="primary-btn full" disabled={busy || !workspacePassword || pendingLockLoading} onClick={() => void enterWorkspace()}>
             {busy ? <Loader2 className="spin" size={17} /> : <KeyRound size={17} />}
-            دخول إلى مساحة العمل
+            {pendingLockConfig?.configured ? "فتح مساحة العمل" : "دخول إلى مساحة العمل"}
             <ArrowLeft size={17} />
           </button>
-          <div className="privacy-note"><KeyRound size={16} /> الرابط يحدد مساحة العمل، وكلمة مرور الحساب تسمح بالدخول</div>
+          <div className="privacy-note"><KeyRound size={16} /> {pendingLockConfig?.configured ? "طريقة الدخول مشتركة ومحفوظة على الخادم لجميع أعضاء هذه المساحة." : "كلمة مرور الحساب مؤقتاً حتى يضبط المالك قفل المساحة المشترك."}</div>
           <button className="text-btn auth-signout" onClick={() => { if (supabase) void supabase.auth.signOut(); }}>مو أنت؟ سجّل خروج</button>
         </section>
       </main>
