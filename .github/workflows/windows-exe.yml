@@ -14,7 +14,6 @@ on:
       - patches/**
       - client/public/icon.jpg
       - .github/workflows/windows-exe.yml
-      - '!client/src/pages/Home.tsx'
       - '!client/src/App.tsx'
       - '!client/src/lib/nativeNotifications.ts'
       - '!client/src/lib/oneSignal.ts'
