@@ -620,7 +620,7 @@ export default function CloudAuthGate() {
                 id="workspace-password"
                 type={showWorkspacePassword ? "text" : "password"}
                 value={workspacePassword}
-                onChange={(event) => setWorkspacePassword(pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? event.target.value.replace(/\\D/g, "").slice(0, 4) : event.target.value)}
+                onChange={(event) => setWorkspacePassword(pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? event.target.value.replace(/\D/g, "").slice(0, 4) : event.target.value)}
                 onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }}
                 placeholder={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "أدخل ٤ أرقام" : pendingLockConfig?.configured ? "أدخل قفل المساحة" : "كلمة مرور حسابك"}
                 dir={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "ltr" : "auto"}
