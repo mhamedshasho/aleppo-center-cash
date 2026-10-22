@@ -2923,3 +2923,8 @@ html.gold .app-lock-option-icon { background: #f3ead0; }
 html.red .app-lock-option.active { background: #fff1f1; }
 html.yellow-black .app-lock-option.active { background: #201d0b; }
 html.yellow-black .app-lock-option-icon { background: #29240b; }
+
+
+@media (min-width: 821px) {
+  .settings-quick-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
