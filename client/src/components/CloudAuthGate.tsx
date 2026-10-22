@@ -225,7 +225,7 @@ export default function CloudAuthGate() {
     return () => {
       active = false;
     };
-  }, [session, routeSlug]);
+  }, [session?.user.id, routeSlug]);
 
   // Load the shared lock mode from Supabase for the currently selected workspace.
   // Its secret hash never leaves the database; only the mode is returned here.
