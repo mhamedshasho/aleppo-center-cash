@@ -182,7 +182,7 @@ const lockOptions: { type: AppLockType; title: string; description: string; icon
   { type: "pattern", title: "نمط الشاشة", description: "ارسم نمطاً بين النقاط", icon: Smartphone },
 ];
 
-export default function AppLockSettings({ onConfigured }: { onConfigured?: (type: AppLockType) => void }) {
+export default function AppLockSettings({ onConfigured, onLockNow }: { onConfigured?: (type: AppLockType) => void; onLockNow?: () => void }) {
   const [currentType, setCurrentType] = useState<AppLockType | null>(() => getConfiguredAppLockType());
   const [targetType, setTargetType] = useState<AppLockType>(() => getConfiguredAppLockType() ?? "password");
   const [currentCredential, setCurrentCredential] = useState("");
@@ -291,6 +291,7 @@ export default function AppLockSettings({ onConfigured }: { onConfigured?: (type
         {busy ? "جارٍ حفظ القفل…" : currentType ? "حفظ القفل الجديد" : "تفعيل القفل"}
         <Check size={17} />
       </button>
+      {currentType && <button type="button" className="secondary-btn full app-lock-lock-now" onClick={onLockNow}><LockKeyhole size={16} /> قفل التطبيق الآن للتجربة</button>}
       <p className="app-lock-footnote">لأمان أفضل، لا تستخدم 1234 أو تاريخ ميلادك. يتم حفظ بصمة مشتقة من القفل، وليس القفل نفسه.</p>
     </div>
   );
