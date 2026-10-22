@@ -629,7 +629,7 @@ export default function CloudAuthGate() {
                 autoComplete="off"
                 autoFocus
               />
-              {pendingLockConfig?.configured && pendingLockConfig.lock_type === "password" && (
+              {(!pendingLockConfig?.configured || pendingLockConfig.lock_type === "password") && (
                 <button type="button" className="password-toggle" aria-label={showWorkspacePassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} aria-pressed={showWorkspacePassword} onClick={() => setShowWorkspacePassword((visible) => !visible)}>{showWorkspacePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
               )}
             </div>
