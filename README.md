@@ -8,7 +8,8 @@
 <p align="center">
   <a href="https://aleppo-center-cash.vercel.app/">Web App</a> •
   <a href="https://github.com/mhamedshasho/aleppo-center-cash/releases">Releases</a> •
-  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions">GitHub Actions</a>
+  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions">GitHub Actions</a> •
+  <a href="https://github.com/mhamedshasho/redro-to-list">Redro To-Do</a>
 </p>
 
 ---
@@ -121,6 +122,10 @@ pnpm desktop:portable
 ```
 
 The desktop build uses a relative asset base so the Electron app can load its Vite assets correctly from the local `file://` page.
+
+## 🔗 Another Redro project
+
+Need a lightweight personal task manager alongside your accounting workspace? Try [Redro To-Do](https://github.com/mhamedshasho/redro-to-list), a mobile-first task list with offline support and local-only data storage.
 
 ## 📚 Documentation
 
