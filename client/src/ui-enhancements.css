@@ -2435,16 +2435,33 @@ html.gold .workspace-limit-reached {
 html.dark,
 html.gold,
 html.red {
-  --theme-page: var(--background);
-  --theme-surface: var(--card);
-  --theme-surface-strong: var(--popover);
-  --theme-border: var(--border);
-  --theme-text: var(--foreground);
-  --theme-muted: var(--muted-foreground);
-  --theme-accent: var(--primary);
-  --theme-accent-soft: var(--accent);
+  /* Red + charcoal: replacing the previous pale red theme */
+  --primary: #d52f43;
+  --primary-foreground: #fff7f7;
+  --background: #171719;
+  --foreground: #f4edef;
+  --card: #232326;
+  --card-foreground: #f4edef;
+  --popover: #252528;
+  --popover-foreground: #f4edef;
+  --secondary: #34272b;
+  --secondary-foreground: #f1cbd1;
+  --muted: #292629;
+  --muted-foreground: #b6a7ab;
+  --accent: #48252d;
+  --accent-foreground: #ffdce1;
+  --border: #423438;
+  --input: #49363b;
+  --ring: #ef465a;
+  --theme-page: #171719;
+  --theme-surface: #232326;
+  --theme-surface-strong: #2b292d;
+  --theme-border: #423438;
+  --theme-text: #f4edef;
+  --theme-muted: #b6a7ab;
+  --theme-accent: #ed394e;
+  --theme-accent-soft: #48252d;
 }
-
 html.dark {
   --background: #0d1719;
   --foreground: #e5f0ed;
@@ -3292,4 +3309,133 @@ html.red .preview-debit {
   height: 100%;
   object-fit: contain;
   display: block;
+}
+
+
+/* Red + charcoal theme refinements */
+html.red .sidebar {
+  color: #f5ecee !important;
+  background: #201d20 !important;
+}
+html.red .sidebar::before {
+  opacity: .22;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(218, 43, 65, .38), transparent 36%),
+    radial-gradient(circle at 100% 90%, rgba(115, 39, 53, .28), transparent 38%) !important;
+}
+html.red .brand-lockup .brand-mark {
+  color: #fff !important;
+  background: #d52f43 !important;
+}
+html.red .brand-lockup span,
+html.red .nav-group-label,
+html.red .sidebar-profile span,
+html.red .workspace-switcher span {
+  color: #c09da4 !important;
+}
+html.red .workspace-switcher {
+  background: #2b2428 !important;
+  border-color: #493238 !important;
+}
+html.red .workspace-avatar {
+  color: #fff !important;
+  background: #a9283a !important;
+}
+html.red .main-nav button {
+  color: #c6b3b8 !important;
+}
+html.red .main-nav button:hover {
+  color: #fff !important;
+  background: #30262a !important;
+}
+html.red .main-nav button.active {
+  color: #fff !important;
+  background: #48252d !important;
+  box-shadow: inset 3px 0 0 #f04a5d !important;
+}
+html.red .main-nav button svg,
+html.red .sidebar-profile > svg {
+  color: #e36b7b !important;
+}
+html.red .local-card {
+  background: rgba(213, 47, 67, .12) !important;
+  border-color: rgba(213, 47, 67, .28) !important;
+}
+html.red .local-card-icon,
+html.red .check-icon {
+  color: #ff8391 !important;
+}
+html.red .local-card strong {
+  color: #ffe8eb !important;
+}
+html.red .local-card span {
+  color: #c49ba3 !important;
+}
+html.red .profile-avatar {
+  color: #fff !important;
+  background: #8f2939 !important;
+}
+html.red .profile-menu {
+  background: rgba(36, 30, 33, .97) !important;
+  border-color: #493238 !important;
+}
+html.red .profile-menu-item {
+  color: #f4edef !important;
+}
+html.red .profile-menu-item:hover:not(:disabled) {
+  background: #38252b !important;
+}
+html.red .profile-menu-item strong {
+  color: #f4edef !important;
+}
+html.red .notification-panel {
+  background: #242225 !important;
+  border-color: #493238 !important;
+}
+html.red .notification-panel-head,
+html.red .notification-item,
+html.red .notification-footer {
+  border-color: #423438 !important;
+}
+html.red .notification-panel-title strong,
+html.red .notification-copy strong {
+  color: #f4edef !important;
+}
+html.red .notification-panel-title span,
+html.red .notification-copy span,
+html.red .notification-copy small {
+  color: #b6a7ab !important;
+}
+html.red .notification-panel-actions > button:not(.notification-close) {
+  color: #ffdce1 !important;
+  background: #48252d !important;
+}
+html.red .notification-close {
+  color: #f4edef !important;
+  background: #2b292d !important;
+  border-color: #493238 !important;
+}
+html.red .settings-theme-option.active,
+html.red .settings-theme-option.red-option {
+  color: #fff !important;
+  background: #48252d !important;
+  border-color: #ed394e !important;
+}
+html.red .settings-switch.on {
+  background: #d52f43 !important;
+}
+html.red .secondary-btn {
+  color: #ffdce1 !important;
+  background: #38252b !important;
+  border-color: #59353d !important;
+}
+html.red .settings-info,
+html.red .empty-state {
+  color: #f4edef !important;
+}
+html.red .notification-item.unread {
+  background: #34242a !important;
+}
+html.red .notification-item:hover {
+  background: #30272b !important;
 }
