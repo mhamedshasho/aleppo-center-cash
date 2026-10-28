@@ -16,7 +16,6 @@ on:
       - client/src/pages/Manual.tsx
       - client/src/contexts/ThemeContext.tsx
       - client/src/components/DesktopSidebar.tsx
-      - client/src/index.css
       - .github/workflows/android-apk.yml
       - .github/workflows/windows-portable.yml
       - supabase/migrations/**
