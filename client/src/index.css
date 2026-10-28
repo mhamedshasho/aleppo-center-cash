@@ -2928,3 +2928,117 @@ html.yellow-black .app-lock-option-icon { background: #29240b; }
 @media (min-width: 821px) {
   .settings-quick-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
+
+
+/* RED + CHARCOAL: a complete dark application theme */
+html.red {
+  color-scheme: dark;
+  --primary: #e63946;
+  --primary-foreground: #ffffff;
+  --background: #171719;
+  --foreground: #f5f2f2;
+  --card: #222225;
+  --card-foreground: #f5f2f2;
+  --popover: #222225;
+  --popover-foreground: #f5f2f2;
+  --secondary: #2b2b2f;
+  --secondary-foreground: #f5f2f2;
+  --muted: #29292d;
+  --muted-foreground: #aaa5a7;
+  --accent: #3a2024;
+  --accent-foreground: #ff7b84;
+  --border: #3a383c;
+  --input: #353338;
+  --ring: #e63946;
+  --sidebar: #111113;
+  --sidebar-foreground: #f5f2f2;
+}
+html.red, html.red body, html.red .app-shell { background: #171719 !important; color: #f5f2f2 !important; }
+html.red .main-area { background: #171719 !important; }
+html.red .topbar { background: rgba(23,23,25,.96) !important; border-color: #353337 !important; }
+html.red .sidebar { background: #111113 !important; color: #f5f2f2 !important; border-color: #302e32 !important; }
+html.red .brand-lockup .brand-mark, html.red .brand-mark.large { background: #e63946 !important; color: #fff !important; }
+html.red .workspace-switcher, html.red .profile-menu, html.red .notification-panel { background: #202023 !important; border-color: #3a383c !important; color: #f5f2f2 !important; }
+html.red .workspace-avatar { background: #482126 !important; color: #ff727d !important; }
+html.red .main-nav button { color: #c0b9bc !important; }
+html.red .main-nav button:hover, html.red .profile-menu-item:hover:not(:disabled) { background: #292326 !important; color: #fff !important; }
+html.red .main-nav button.active { background: #321d21 !important; color: #ff6b76 !important; box-shadow: inset 3px 0 0 #e63946 !important; }
+html.red .main-nav button.active svg, html.red .main-nav button svg { color: #ff6b76 !important; }
+html.red .main-nav button b { background: rgba(230,57,70,.16) !important; color: #ff727d !important; }
+html.red .local-card { background: rgba(230,57,70,.09) !important; border-color: rgba(230,57,70,.3) !important; }
+html.red .icon-btn:hover, html.red .round-icon-btn:hover { background: #332226 !important; color: #ff727d !important; }
+html.red .notification-item, html.red .notification-footer { background: #202023 !important; border-color: #38363a !important; color: #eee !important; }
+html.red .notification-item:hover, html.red .notification-item.unread { background: #302024 !important; }
+html.red .page-heading h1, html.red .surface-card h2, html.red .surface-card h3, html.red .stat-card strong, html.red .section-head h2, html.red .account-card-copy h3, html.red .settings-section-head h2, html.red .modal-head h2 { color: #f7f3f4 !important; }
+html.red .page-heading p, html.red .surface-card p, html.red .stat-card span, html.red .section-head p, html.red .settings-section-head p, html.red .settings-row-copy span { color: #aaa5a7 !important; }
+html.red .eyebrow, html.red .heading-count { color: #ff727d !important; }
+html.red .heading-count { background: rgba(230,57,70,.13) !important; }
+html.red .surface-card, html.red .stat-card, html.red .card, html.red .invoice-toolbar, html.red .invoice-payments-panel, html.red .invoice-template-card, html.red .invoice-summary-card, html.red .account-card, html.red .activity-toolbar, html.red .activity-row, html.red .manual-section, html.red .manual-index, html.red .updates-releases, html.red .updates-commits, html.red .settings-section, html.red .settings-copy, html.red .modal-card { background: #222225 !important; border-color: #3a383c !important; color: #eee !important; box-shadow: 0 10px 30px rgba(0,0,0,.2) !important; }
+html.red .manual-items article, html.red .invoice-row, html.red .invoice-payment-row { background: #1a1a1d !important; border-color: #3a383c !important; color: #eee !important; }
+html.red .manual-items article:hover, html.red .account-card:hover, html.red .surface-card:hover, html.red .stat-card:hover { background: #292326 !important; border-color: #7b343b !important; }
+html.red .manual-items article>svg, html.red .manual-section-head>span, html.red .activity-entity-icon { color: #ff727d !important; }
+html.red .manual-section-head>span { background: rgba(230,57,70,.13) !important; }
+html.red .manual-search, html.red .search-box, html.red .toolbar { background: #19191c !important; border-color: #3a383c !important; color: #f4f1f2 !important; }
+html.red .manual-search:focus-within, html.red .search-box:focus-within, html.red input:focus, html.red select:focus, html.red textarea:focus { border-color: #e63946 !important; box-shadow: 0 0 0 3px rgba(230,57,70,.14) !important; }
+html.red input, html.red select, html.red textarea, html.red .key-input-wrap, html.red .modal-form input, html.red .modal-form select { background: #19191c !important; border-color: #3d3a3e !important; color: #f5f2f2 !important; }
+html.red input::placeholder, html.red textarea::placeholder { color: #817b7e !important; }
+html.red .primary-btn, html.red .settings-theme-option.active, html.red .currency-switch button.active, html.red .filter-btn.active, html.red .activity-tabs button.active, html.red .payment-filters button.active { background: #e63946 !important; color: #fff !important; border-color: #e63946 !important; }
+html.red .primary-btn:hover { background: #f04a56 !important; }
+html.red .secondary-btn, html.red .text-btn, html.red .round-icon-btn, html.red .settings-action, html.red .settings-copy { color: #ff727d !important; border-color: #40363a !important; }
+html.red .secondary-btn:hover, html.red .text-btn:hover, html.red .settings-action:hover, html.red .settings-copy:hover { background: #302024 !important; border-color: #77323a !important; }
+html.red .danger-btn, html.red .delete-btn:hover { color: #ff727d !important; }
+html.red .payment-row, html.red .mini-account { border-color: #39373b !important; color: #eee !important; }
+html.red .payment-row:hover, html.red .mini-account:hover { background: #292326 !important; }
+html.red .payment-copy strong, html.red .mini-account strong { color: #e9e2e4 !important; }
+html.red .payment-type.credit { background: #19352a !important; color: #74d6a5 !important; }
+html.red .payment-type.debit { background: #3b2528 !important; color: #ff9b84 !important; }
+html.red .payment-amount.credit { color: #74d6a5 !important; }
+html.red .payment-amount.debit { color: #ff9b84 !important; }
+html.red .stat-icon, html.red .settings-section-icon, html.red .settings-row-icon { background: rgba(230,57,70,.13) !important; color: #ff727d !important; }
+html.red .hero-summary { background: linear-gradient(115deg,#191719,#242124 58%,#3b1d23) !important; border: 1px solid #4a2b30 !important; box-shadow: 0 18px 35px rgba(0,0,0,.3) !important; }
+html.red .summary-kicker, html.red .summary-meta, html.red .summary-breakdown span { color: #bdb5b8 !important; }
+html.red .big-total, html.red .summary-breakdown strong { color: #fff !important; }
+html.red .positive-pill { background: rgba(230,57,70,.16) !important; color: #ff858d !important; }
+html.red .orbit-ring { border-color: rgba(230,57,70,.3) !important; }
+html.red .orbit-core { color: #ff727d !important; border-color: rgba(230,57,70,.45) !important; background: rgba(230,57,70,.08) !important; }
+html.red .currency-switch { background: #19191c !important; border-color: #3a383c !important; }
+html.red .currency-switch button { color: #aaa5a7 !important; }
+html.red .settings-row { border-color: #3a383c !important; }
+html.red .settings-switch.on { background: #e63946 !important; }
+html.red .settings-switch.on i { background: #fff !important; }
+html.red .login-shell { background: #171719 !important; color: #f5f2f2 !important; }
+html.red .login-shell::before { opacity: .13 !important; background-image: radial-gradient(#e63946 1px,transparent 1px) !important; }
+html.red .login-card { background: rgba(31,29,32,.97) !important; border-color: #42383b !important; box-shadow: 0 28px 90px rgba(0,0,0,.5) !important; }
+html.red .login-card h1, html.red .login-card h1 em { color: #f7f3f4 !important; }
+html.red .login-copy, html.red .field-label { color: #bdb5b8 !important; }
+html.red .key-input-wrap:focus-within { border-color: #e63946 !important; }
+html.red .empty-search, html.red .empty-state { background: #19191c !important; border-color: #3a383c !important; color: #eee !important; }
+html.red [data-sonner-toast] { background: #222225 !important; color: #f5f2f2 !important; border-color: #3a383c !important; }
+html.red .badge, html.red .tag, html.red [class*="badge"] { border-color: rgba(230,57,70,.3) !important; }
+html.red ::-webkit-scrollbar { width: 9px; height: 9px; }
+html.red ::-webkit-scrollbar-track { background: #171719; }
+html.red ::-webkit-scrollbar-thumb { background: #444045; border-radius: 99px; border: 2px solid #171719; }
+html.red ::-webkit-scrollbar-thumb:hover { background: #e63946; }
+html.red .red-option.active { background: #e63946 !important; color: #fff !important; border-color: #e63946 !important; }
+html.red .app-lock-option.active { background: #302024 !important; border-color: #e63946 !important; }
+html.red .app-lock-option-icon { background: #3a2024 !important; color: #ff727d !important; }
+@media (max-width: 820px) {
+  html.red .mobile-nav, html.red .mobile-bottom-nav { background: #111113 !important; border-color: #353337 !important; }
+  html.red .mobile-nav button.active, html.red .mobile-bottom-nav button.active { color: #ff727d !important; background: #292326 !important; }
+}
+html.red .invoice-maker { color: #f5f2f2; }
+html.red .invoice-maker-head h1 { color: #f5f2f2; }
+html.red .invoice-maker-head p { color: #aaa5a7; }
+html.red .invoice-field label { color: #bdb5b8; }
+html.red .invoice-field input, html.red .invoice-field select { background: #19191c !important; color: #f5f2f2 !important; border-color: #3d3a3e !important; }
+html.red .invoice-field input:focus, html.red .invoice-field select:focus { border-color: #e63946 !important; }
+html.red .invoice-preview { background: #19191c !important; border-color: #3a383c !important; }
+html.red .invoice-logo-source>div { background: #19191c; border-color: #3a383c; }
+html.red .invoice-logo-source button { color: #bdb5b8; }
+html.red .invoice-logo-source button.active { background: #e63946; color: #fff; }
+html.red .invoice-preview-logo, html.red .settings-logo-preview { border-color: #e63946 !important; }
+html.red .notification-panel-title strong, html.red .notification-copy strong { color: #f5f2f2 !important; }
+html.red .notification-panel-title span, html.red .notification-copy span, html.red .notification-copy small { color: #aaa5a7 !important; }
+html.red .notification-panel-actions > button:not(.notification-close) { background: #302024 !important; color: #ff727d !important; }
+html.red .notification-close { color: #aaa5a7 !important; }
+html.red .notification-footer { background: #202023 !important; color: #ff727d !important; }
