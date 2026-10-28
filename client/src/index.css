@@ -3165,3 +3165,5 @@ html.red :is(.invoice-preview,.invoice-preview-page,.invoice-paper-preview) {
 @media (prefers-reduced-motion: reduce) {
   html.red *, html.red *::before, html.red *::after { scroll-behavior: auto !important; }
 }
+
+/* Theme parity: rebuild web, Android, and Windows packages from the same global palette. */
