@@ -3042,3 +3042,126 @@ html.red .notification-panel-title span, html.red .notification-copy span, html.
 html.red .notification-panel-actions > button:not(.notification-close) { background: #302024 !important; color: #ff727d !important; }
 html.red .notification-close { color: #aaa5a7 !important; }
 html.red .notification-footer { background: #202023 !important; color: #ff727d !important; }
+
+
+/* Red + charcoal: global surface and design-token coverage for the entire app.
+   Keep invoice document/PDF colors independent; this styles the app UI and previews only. */
+html.red {
+  color-scheme: dark;
+  --primary: #e63946;
+  --primary-foreground: #ffffff;
+  --background: #171719;
+  --foreground: #f5f2f2;
+  --card: #222225;
+  --card-foreground: #f5f2f2;
+  --popover: #202023;
+  --popover-foreground: #f5f2f2;
+  --secondary: #302024;
+  --secondary-foreground: #ffb4ba;
+  --muted: #29272b;
+  --muted-foreground: #aaa5a7;
+  --accent: #3a2024;
+  --accent-foreground: #ff727d;
+  --destructive: #ff727d;
+  --destructive-foreground: #1a1113;
+  --border: #3a383c;
+  --input: #3d3a3e;
+  --ring: #e63946;
+  --sidebar: #111113;
+  --sidebar-foreground: #f5f2f2;
+}
+html.red body,
+html.red #root { background: #171719; color: #f5f2f2; }
+html.red .app-shell,
+html.red .main-area,
+html.red main,
+html.red .page-enter,
+html.red .page-content,
+html.red .content-area { background-color: #171719; color: #f5f2f2; }
+html.red :is(.surface-card,.card,.panel,.dialog,.modal-card,.popover-content,.dropdown-menu,
+  .settings-section,.settings-card,.workspace-card,.workspace-manager,.workspace-dialog,
+  .account-detail,.account-card,.payment-card,.report-card,.invoice-card,.manual-card,
+  .notification-panel,.notification-popover,.search-results,.command-menu,.calendar-popover,
+  .select-content,[role="dialog"],[role="menu"],[data-radix-popper-content-wrapper] > *) {
+  background-color: #222225;
+  color: #f5f2f2;
+  border-color: #3a383c;
+}
+html.red :is(h1,h2,h3,h4,h5,h6,label,.title,.card-title,.section-title,.table-title,
+  .settings-row-copy strong,.settings-info strong,.form-label,.dialog-title) { color: #f5f2f2; }
+html.red :is(p,small,.description,.subtitle,.muted,.text-muted,.settings-row-copy span,
+  .settings-info span,.helper-text,.empty-description) { color: #aaa5a7; }
+html.red :is(input,textarea,select,[contenteditable="true"],.input,.textarea,.select-trigger,
+  .search-input,.date-input) {
+  background-color: #19191c;
+  color: #f5f2f2;
+  border-color: #3d3a3e;
+}
+html.red :is(input,textarea,select,[contenteditable="true"],.input,.textarea,.select-trigger):focus,
+html.red :is(input,textarea,select,[contenteditable="true"],.input,.textarea,.select-trigger):focus-visible {
+  outline-color: #e63946;
+  border-color: #e63946;
+  box-shadow: 0 0 0 3px rgba(230,57,70,.14);
+}
+html.red :is(button,.button,[role="button"]).secondary,
+html.red :is(.secondary-btn,.outline-btn,.ghost-btn,.tab-button,.settings-row,.settings-copy) {
+  border-color: #40363a;
+}
+html.red :is(.tabs,.tab-list,.segmented-control,.filter-tabs,.table-toolbar,.toolbar,
+  .pagination,.table-pagination,.invoice-toolbar,.settings-quick-nav) {
+  background-color: #1c1b1e;
+  border-color: #3a383c;
+  color: #d8d0d3;
+}
+html.red :is(.active,[aria-selected="true"],[data-state="active"]) {
+  --tw-ring-color: #e63946;
+}
+html.red :is(table,thead,tbody,tr,th,td,.table,.table-row,.table-header,.table-cell) {
+  border-color: #3a383c;
+}
+html.red :is(th,.table-header) { background-color: #292326; color: #f5f2f2; }
+html.red :is(td,.table-cell,.table-row) { color: #e9e2e4; }
+html.red :is(tr:hover,tbody tr:hover,.table-row:hover) { background-color: #302024; }
+html.red :is(.dropdown-item,.menu-item,.command-item,.popover-item) { color: #e9e2e4; }
+html.red :is(.dropdown-item,.menu-item,.command-item,.popover-item):hover {
+  background-color: #302024;
+  color: #ff858d;
+}
+html.red :is(.badge,.chip,.tag,.status-pill) { border-color: #563138; }
+html.red :is(.progress,.progress-track,.slider-track) { background-color: #40383c; }
+html.red :is(.progress-bar,.slider-range) { background-color: #e63946; }
+html.red :is(.divider,.separator,hr) { border-color: #3a383c; background-color: #3a383c; }
+html.red :is(.toast,.sonner-toast,[data-sonner-toast]) {
+  background-color: #222225;
+  color: #f5f2f2;
+  border-color: #3a383c;
+}
+html.red :is(.mobile-nav,.mobile-bottom-nav,.mobile-drawer) {
+  background-color: #111113;
+  border-color: #353337;
+  color: #f5f2f2;
+}
+html.red :is(.mobile-nav button.active,.mobile-bottom-nav button.active,
+  .mobile-drawer button.active) { color: #ff727d; background-color: #292326; }
+html.red :is(.chart-container,.recharts-cartesian-grid line,.recharts-text,.chart-label) { color: #c8c0c3; }
+html.red :is(.recharts-cartesian-grid line) { stroke: #40383c; }
+html.red :is(.app-lock-settings,.workspace-access-settings,.pattern-lock-field) {
+  color: #f5f2f2;
+}
+html.red :is(.app-lock-option,.app-lock-credential-block,.app-lock-security-note,
+  .app-lock-current-badge,.pattern-lock-footer) {
+  background-color: #1c1b1e;
+  border-color: #3a383c;
+  color: #e9e2e4;
+}
+html.red .pattern-lock-dot { fill: #3a383c; stroke: #aaa5a7; }
+html.red .pattern-lock-dot.selected { fill: #e63946; stroke: #ff727d; }
+html.red .pattern-lock-line { stroke: #e63946; }
+html.red :is(.invoice-preview,.invoice-preview-page,.invoice-paper-preview) {
+  background-color: #19191c;
+  border-color: #3a383c;
+  color: #f5f2f2;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.red *, html.red *::before, html.red *::after { scroll-behavior: auto !important; }
+}
