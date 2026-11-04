@@ -687,3 +687,132 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--theme-accen
     border-color: var(--theme-border) !important;
   }
 }
+
+html[data-theme] .app-lock-option,
+html[data-theme] .app-lock-credential-block,
+html[data-theme] .app-lock-security-note,
+html[data-theme] .app-lock-current-badge,
+html[data-theme] .pattern-lock-footer {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .app-lock-option.active {
+  background: var(--theme-accent-soft) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+html[data-theme] .app-lock-option-icon,
+html[data-theme] .app-lock-option-check {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent) !important;
+}
+
+html[data-theme] .app-lock-security-note strong,
+html[data-theme] .app-lock-input-label,
+html[data-theme] .pattern-lock-label,
+html[data-theme] .app-lock-current-badge,
+html[data-theme] .pattern-lock-footer button {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .app-lock-security-note span,
+html[data-theme] .app-lock-option small,
+html[data-theme] .app-lock-input-label small,
+html[data-theme] .pattern-lock-footer {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .pattern-lock-dot {
+  fill: var(--theme-surface-raised);
+  stroke: var(--theme-muted);
+}
+
+html[data-theme] .pattern-lock-dot.selected,
+html[data-theme] .pattern-lock-line {
+  fill: var(--theme-accent);
+  stroke: var(--theme-accent);
+}
+
+html[data-theme] .popover-content,
+html[data-theme] .dropdown-menu,
+html[data-theme] .command-menu,
+html[data-theme] .calendar-popover,
+html[data-theme] .select-content,
+html[data-theme] [role="dialog"],
+html[data-theme] [role="menu"],
+html[data-theme] [data-radix-popper-content-wrapper] > * {
+  background-color: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .detail-heading,
+html[data-theme] .detail-title,
+html[data-theme] .detail-title > div,
+html[data-theme] .detail-payments {
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .detail-title h1,
+html[data-theme] .detail-payments .section-head h2 {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .detail-title p,
+html[data-theme] .detail-title p svg,
+html[data-theme] .detail-payments .section-head p {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .currency-card,
+html[data-theme] .currency-card.usd-card {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .currency-card-head,
+html[data-theme] .usd-card .currency-card-head {
+  background: var(--theme-surface-soft) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .currency-lines span,
+html[data-theme] .usd-card .currency-lines span {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .currency-lines strong,
+html[data-theme] .usd-card .currency-lines strong,
+html[data-theme] .currency-balance {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .currency-badge,
+html[data-theme] .usd-card .currency-badge {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .detail-actions .secondary-btn {
+  color: var(--theme-accent) !important;
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .detail-actions .secondary-btn:hover {
+  background: var(--theme-accent-soft) !important;
+}
+
+html[data-theme] .detail-actions .danger-btn {
+  color: var(--theme-negative) !important;
+}
+
+html[data-theme] .detail-actions .primary-btn {
+  color: var(--theme-accent-contrast) !important;
+  background: var(--theme-accent) !important;
+}
