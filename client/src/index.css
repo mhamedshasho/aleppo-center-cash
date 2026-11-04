@@ -3167,3 +3167,56 @@ html.red :is(.invoice-preview,.invoice-preview-page,.invoice-paper-preview) {
 }
 
 /* Theme parity: rebuild web, Android, and Windows packages from the same global palette. */
+
+
+/* Redro parent-brand identity */
+.brand-mark img,
+.desktop-brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+.brand-mark img {
+  padding: 3px;
+}
+.brand-mark.large img {
+  padding: 2px;
+}
+.desktop-brand-logo {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 13px;
+  background: #ffffff;
+}
+.desktop-brand-parent,
+.app-parent-brand {
+  display: block;
+  margin-top: 4px;
+  color: #9acbbb;
+  font: 700 8px/1.2 'Manrope', sans-serif;
+  letter-spacing: .13em;
+}
+.credits-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.credits-brand img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 7px;
+}
+.credits-brand span {
+  display: block;
+  margin-inline-start: 5px;
+  color: #b7d9d0;
+  font-size: 9px;
+  font-weight: 600;
+}
