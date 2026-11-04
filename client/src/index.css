@@ -4,7 +4,7 @@
 @import "./cloud-auth.css";
 @import "./workspace.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *, [data-theme="red"], [data-theme="red"] *, [data-theme="yellow-black"], [data-theme="yellow-black"] *));
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
