@@ -252,9 +252,15 @@ export default function CloudAuthGate() {
         });
         if (error) throw error;
         if (!active) return;
-        setPendingLockConfig(parseWorkspaceLockConfig(data));
+        const nextConfig = parseWorkspaceLockConfig(data);
+        setPendingLockConfig(nextConfig);
         setPendingLockConfigWorkspaceId(pendingWorkspace.id);
         setPendingLockError(false);
+        if (!nextConfig.configured) {
+          setWorkspacePassword("");
+          setWorkspace(pendingWorkspace);
+          setPendingWorkspace(null);
+        }
       } catch (error) {
         console.error("[AleppoCenterCash] workspace lock config load failed", error);
         if (!active) return;
@@ -274,7 +280,7 @@ export default function CloudAuthGate() {
   }, [session?.user.id, pendingWorkspace?.id, lockConfigRetry]);
 
   // When the owner changes the shared lock, return every currently open member
-  // session to the workspace gate so nobody remains on the old access method.
+  // session to the workspace gate; removing the lock opens pending members directly.
   useEffect(() => {
     if (!session || !supabase) return;
     const watchedWorkspace = workspace ?? pendingWorkspace;
@@ -289,6 +295,22 @@ export default function CloudAuthGate() {
         table: "workspace_lock_modes",
         filter: "workspace_id=eq." + workspaceId,
       }, (payload) => {
+        if (payload.eventType === "DELETE") {
+          const deletedRow = payload.old as { workspace_id?: unknown } | null;
+          if (deletedRow?.workspace_id !== workspaceId) return;
+          setPendingLockConfig({ configured: false, lock_type: "password" });
+          setPendingLockConfigWorkspaceId(workspaceId);
+          setPendingLockError(false);
+          setWorkspacePassword("");
+          setShowWorkspacePassword(false);
+          if (pendingWorkspace?.id === workspaceId) {
+            workspaceUnlockInProgressRef.current = false;
+            setWorkspace(pendingWorkspace);
+            setPendingWorkspace(null);
+            toast.info("أزال المالك قفل مساحة العمل. دخلت للمساحة بحساب عضويتك.");
+          }
+          return;
+        }
         const nextRow = payload.new as { lock_type?: unknown; updated_at?: unknown } | null;
         if (!nextRow || (nextRow.lock_type !== "password" && nextRow.lock_type !== "pin" && nextRow.lock_type !== "pattern")) return;
 
@@ -407,9 +429,10 @@ export default function CloudAuthGate() {
   };
 
   const enterWorkspace = async () => {
-    if (!supabase || !session || !pendingWorkspace || !workspacePassword || pendingLockLoading || pendingLockError || !pendingLockConfig || pendingLockConfigWorkspaceId !== pendingWorkspace.id) return;
+    if (!supabase || !session || !pendingWorkspace || pendingLockLoading || pendingLockError || !pendingLockConfig || pendingLockConfigWorkspaceId !== pendingWorkspace.id) return;
     const targetWorkspace = pendingWorkspace;
     const lockConfig = pendingLockConfig;
+    if (lockConfig.configured && !workspacePassword) return;
     workspaceUnlockInProgressRef.current = true;
     setBusy(true);
     try {
@@ -430,18 +453,6 @@ export default function CloudAuthGate() {
           }
           return;
         }
-      } else {
-        // Legacy workspaces remain usable until the owner creates a shared lock.
-        // This is a one-time re-check of the signed-in user's own Supabase password.
-        const { error } = await supabase.auth.signInWithPassword({
-          email: session.user.email ?? "",
-          password: workspacePassword,
-        });
-        if (error) {
-          workspaceUnlockInProgressRef.current = false;
-          toast.error("كلمة مرور حسابك غير صحيحة. يمكن لمالك المساحة إعداد قفل مشترك من الإعدادات.");
-          return;
-        }
       }
 
       setWorkspacePassword("");
@@ -455,7 +466,7 @@ export default function CloudAuthGate() {
     } catch (error) {
       workspaceUnlockInProgressRef.current = false;
       console.error("[AleppoCenterCash] workspace unlock failed", error);
-      toast.error(pendingLockConfig?.configured ? "تعذر التحقق من قفل مساحة العمل. تحقق من الاتصال ثم جرّب." : "تعذر التحقق من كلمة مرور الحساب.");
+      toast.error(pendingLockConfig?.configured ? "تعذر التحقق من قفل مساحة العمل. تحقق من الاتصال ثم جرّب." : "تعذر فتح مساحة العمل. تحقق من الاتصال ثم جرّب.");
     } finally {
       setBusy(false);
     }
@@ -614,41 +625,43 @@ export default function CloudAuthGate() {
                 : pendingLockConfig.lock_type === "pattern"
                   ? "ارسم نمط الدخول المشترك الذي اختاره مالك المساحة."
                   : "أدخل كلمة مرور مساحة العمل المشتركة."
-              : "لم يضع المالك قفلاً مشتركاً بعد. أدخل كلمة مرور حسابك للمتابعة، ثم يمكن للمالك تغيير طريقة دخول المساحة للجميع من الإعدادات."}
+              : "لا يوجد قفل مشترك لهذه المساحة. حسابك مسجّل كعضو نشط؛ ادخل مباشرة دون كلمة مرور إضافية."}
           </p>
-          <label className="field-label" htmlFor="workspace-password">
-            {pendingLockConfig?.configured
-              ? pendingLockConfig.lock_type === "pin" ? "رمز PIN للمساحة" : pendingLockConfig.lock_type === "pattern" ? "نمط الشاشة للمساحة" : "كلمة مرور المساحة"
-              : "كلمة مرور حسابك"}
-          </label>
-          {pendingLockConfig?.configured && pendingLockConfig.lock_type === "pattern" ? (
-            <PatternLockPad value={workspacePassword} onChange={setWorkspacePassword} label="ارسم نمط المساحة" />
-          ) : (
-            <div className="key-input-wrap password-input-wrap">
-              <input
-                id="workspace-password"
-                type={showWorkspacePassword ? "text" : "password"}
-                value={workspacePassword}
-                onChange={(event) => setWorkspacePassword(pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? event.target.value.replace(/\D/g, "").slice(0, 4) : event.target.value)}
-                onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }}
-                placeholder={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "أدخل ٤ أرقام" : pendingLockConfig?.configured ? "أدخل قفل المساحة" : "كلمة مرور حسابك"}
-                dir={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "ltr" : "auto"}
-                inputMode={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? "numeric" : "text"}
-                maxLength={pendingLockConfig?.configured && pendingLockConfig.lock_type === "pin" ? 4 : 128}
-                autoComplete="off"
-                autoFocus
-              />
-              {(!pendingLockConfig?.configured || pendingLockConfig.lock_type === "password") && (
-                <button type="button" className="password-toggle" aria-label={showWorkspacePassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} aria-pressed={showWorkspacePassword} onClick={() => setShowWorkspacePassword((visible) => !visible)}>{showWorkspacePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+          {pendingLockConfig?.configured && (
+            <>
+              <label className="field-label" htmlFor="workspace-password">
+                {pendingLockConfig.lock_type === "pin" ? "رمز PIN للمساحة" : pendingLockConfig.lock_type === "pattern" ? "نمط الشاشة للمساحة" : "كلمة مرور المساحة"}
+              </label>
+              {pendingLockConfig.lock_type === "pattern" ? (
+                <PatternLockPad value={workspacePassword} onChange={setWorkspacePassword} label="ارسم نمط المساحة" />
+              ) : (
+                <div className="key-input-wrap password-input-wrap">
+                  <input
+                    id="workspace-password"
+                    type={showWorkspacePassword ? "text" : "password"}
+                    value={workspacePassword}
+                    onChange={(event) => setWorkspacePassword(pendingLockConfig.lock_type === "pin" ? event.target.value.replace(/\D/g, "").slice(0, 4) : event.target.value)}
+                    onKeyDown={(event) => { if (event.key === "Enter") void enterWorkspace(); }}
+                    placeholder={pendingLockConfig.lock_type === "pin" ? "أدخل ٤ أرقام" : "أدخل قفل المساحة"}
+                    dir={pendingLockConfig.lock_type === "pin" ? "ltr" : "auto"}
+                    inputMode={pendingLockConfig.lock_type === "pin" ? "numeric" : "text"}
+                    maxLength={pendingLockConfig.lock_type === "pin" ? 4 : 128}
+                    autoComplete="off"
+                    autoFocus
+                  />
+                  {pendingLockConfig.lock_type === "password" && (
+                    <button type="button" className="password-toggle" aria-label={showWorkspacePassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} aria-pressed={showWorkspacePassword} onClick={() => setShowWorkspacePassword((visible) => !visible)}>{showWorkspacePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
-          <button className="primary-btn full" disabled={busy || !workspacePassword || pendingLockLoading} onClick={() => void enterWorkspace()}>
+          <button className="primary-btn full" disabled={busy || (pendingLockConfig?.configured === true && !workspacePassword) || pendingLockLoading} onClick={() => void enterWorkspace()}>
             {busy ? <Loader2 className="spin" size={17} /> : <KeyRound size={17} />}
             {pendingLockConfig?.configured ? "فتح مساحة العمل" : "دخول إلى مساحة العمل"}
             <ArrowLeft size={17} />
           </button>
-          <div className="privacy-note"><KeyRound size={16} /> {pendingLockConfig?.configured ? "طريقة الدخول مشتركة ومحفوظة على الخادم لجميع أعضاء هذه المساحة." : "كلمة مرور الحساب مؤقتاً حتى يضبط المالك قفل المساحة المشترك."}</div>
+          <div className="privacy-note"><KeyRound size={16} /> {pendingLockConfig?.configured ? "طريقة الدخول مشتركة ومحفوظة على الخادم لجميع أعضاء هذه المساحة." : "يلزم تسجيل الدخول بحسابك وعضوية نشطة؛ لا توجد كلمة مرور إضافية للمساحة."}</div>
           <button className="text-btn auth-signout" onClick={() => { if (supabase) void supabase.auth.signOut(); }}>مو أنت؟ سجّل خروج</button>
         </section>
       </main>

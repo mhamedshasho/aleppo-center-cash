@@ -72,6 +72,16 @@ export default function WorkspaceAccessSettings({ workspaceId, workspaceRole }: 
         table: "workspace_lock_modes",
         filter: "workspace_id=eq." + workspaceId,
       }, (payload) => {
+        if (payload.eventType === "DELETE") {
+          const deletedRow = payload.old as { workspace_id?: unknown } | null;
+          if (deletedRow?.workspace_id !== workspaceId) return;
+          setConfig({ configured: false, lock_type: "password", updated_at: null });
+          setTargetType("password");
+          setCurrentCredential("");
+          setNewCredential("");
+          setConfirmCredential("");
+          return;
+        }
         const nextRow = payload.new as { lock_type?: unknown; updated_at?: unknown } | null;
         if (nextRow && (nextRow.lock_type === "password" || nextRow.lock_type === "pin" || nextRow.lock_type === "pattern")) {
           setConfig({ configured: true, lock_type: nextRow.lock_type, updated_at: typeof nextRow.updated_at === "string" ? nextRow.updated_at : null });
@@ -144,6 +154,47 @@ export default function WorkspaceAccessSettings({ workspaceId, workspaceRole }: 
     }
   };
 
+  const removeLock = async () => {
+    if (!supabase || !workspaceId || !isOwner || busy || !config.configured) return;
+    if (!currentCredential) {
+      toast.error("أدخل القفل الحالي أولاً لإثبات صلاحيتك على إزالته.");
+      return;
+    }
+    if (!window.confirm("إزالة قفل مساحة العمل؟ سيظل الدخول يتطلب حساب عضو نشط، لكن لن تُطلب كلمة مرور أو PIN أو نمط إضافي.")) return;
+
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("remove_workspace_lock", {
+        target_workspace: workspaceId,
+        current_credential: currentCredential,
+      });
+      if (error) throw error;
+
+      const next = parseConfig(data);
+      setConfig(next);
+      setTargetType(next.lock_type);
+      setCurrentCredential("");
+      setNewCredential("");
+      setConfirmCredential("");
+      toast.success("أزلنا قفل المساحة. الأعضاء النشطون المسجلون بحساباتهم يدخلون الآن دون قفل إضافي.");
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : String(error);
+      const normalized = raw.toLowerCase();
+      if (normalized.includes("current_workspace_lock_invalid")) {
+        toast.error("القفل الحالي غير صحيح.");
+      } else if (normalized.includes("current_workspace_lock_required")) {
+        toast.error("أدخل القفل الحالي قبل إزالته.");
+      } else if (normalized.includes("not_workspace_owner")) {
+        toast.error("إزالة قفل المساحة متاحة لمالكها فقط.");
+      } else {
+        console.error("[AleppoCenterCash] workspace lock removal failed", error);
+        toast.error("تعذر إزالة قفل مساحة العمل. جرّب مرة أخرى.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (loading) {
     return <div className="app-lock-security-note"><LockKeyhole size={20} /><span>جارٍ تحميل إعداد القفل المشترك من الخادم…</span></div>;
   }
@@ -161,7 +212,7 @@ export default function WorkspaceAccessSettings({ workspaceId, workspaceRole }: 
           <span>
             {config.configured
               ? "كل أعضاء هذه المساحة يستخدمون طريقة الدخول نفسها: " + modeLabel(config.lock_type) + ". تغييرها يحدّث بوابة مساحة العمل لكل الأعضاء."
-              : "بعد إعداد القفل، سيستخدمه كل أعضاء مساحة العمل عند فتح رابط المساحة. أول إعداد لا يحتاج القفل القديم."}
+              : "ما دام لا يوجد قفل مشترك، يستطيع كل عضو نشط سجّل دخوله بحسابه فتح المساحة مباشرة. ويمكن للمالك تفعيل قفل مشترك من هنا."}
           </span>
         </div>
       </div>
@@ -218,6 +269,15 @@ export default function WorkspaceAccessSettings({ workspaceId, workspaceRole }: 
             {busy ? "جارٍ حفظ إعداد الخادم…" : config.configured ? "استبدال قفل المساحة للجميع" : "تفعيل القفل المشترك للجميع"}
             <Check size={17} />
           </button>
+          {config.configured && (
+            <>
+              <button type="button" className="secondary-btn full app-lock-remove" onClick={() => void removeLock()} disabled={busy || !currentCredential}>
+                {busy ? "جارٍ إزالة قفل المساحة…" : "إزالة قفل مساحة العمل"}
+                <LockKeyhole size={17} />
+              </button>
+              <p className="app-lock-footnote">بعد الإزالة، يستطيع كل عضو نشط سجّل دخوله بحسابه الدخول مباشرة دون قفل مشترك.</p>
+            </>
+          )}
         </>
       )}
 
