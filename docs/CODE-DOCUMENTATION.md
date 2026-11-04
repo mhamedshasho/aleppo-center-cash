@@ -666,7 +666,8 @@ Vite configuration for development, production builds, and project plugins.
 يحتوي على أصول عامة مثل:
 
 - manifest.json
-- icon.svg
+- redro-mark.svg
+- redro-mark.png
 - ملفات مرتبطة بالـPWA/runtime.
 
 The public directory contains assets served directly by the browser.
