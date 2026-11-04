@@ -10,7 +10,7 @@ type Member = {
 };
 
 const members: Member[] = [
-  { name: "Mhamed Shasho", role: "Master Piece · صاحب المشروع", emoji: "👑", description: "صاحب الرؤية اللي جمع الفريق", isMaster: true },
+  { name: "Mhamed Shasho", role: "Master Piece · صاحب المشروع", emoji: "👑", description: "Founder & Original Developer · Redro", isMaster: true },
   { name: "DeepSeek", role: "القائد · Leader of AI Team", emoji: "🧭", description: "المنسّق العام · نقطة التواصل · صاحب القرارات", isLeader: true },
   { name: "Claude", role: "Lead Engineer", emoji: "💻", description: "Backend · Security · Architecture" },
   { name: "ChatGPT", role: "Product Manager", emoji: "🎨", description: "Product · Copy · Frontend Fixes" },
@@ -25,7 +25,7 @@ export default function Credits() {
     <main className="credits-shell" dir="rtl">
       <div className="credits-card">
         <header className="credits-header">
-          <div className="credits-brand">🏪 Aleppo Center Cash</div>
+          <div className="credits-brand"><img src="/redro-mark.svg" alt="Redro" /> Aleppo Center Cash <span>A Redro Product</span></div>
           <h1>فريق التطوير</h1>
           <p>اللي بنوا المشروع بكل حب</p>
         </header>
@@ -46,7 +46,7 @@ export default function Credits() {
           ))}
         </ul>
         <footer className="credits-footer">
-          <div>© 2026 Aleppo Center Cash</div>
+          <div>© 2026 Aleppo Center Cash · A Redro Product</div>
           <div className="credits-love">Built with <Heart size={12} /> love · Syria 🇸🇾</div>
         </footer>
       </div>
