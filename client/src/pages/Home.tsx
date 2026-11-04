@@ -55,6 +55,7 @@ import { createCloudBackup, createEncryptedRestorationFile, restoreCloudBackup, 
 import ActivityView from "@/pages/Activity";
 import InvoiceMaker from "@/pages/InvoiceMaker";
 import { useTheme } from "@/contexts/ThemeContext";
+import type { Theme } from "@/contexts/ThemeContext";
 import Manual from "@/pages/Manual";
 import Updates from "@/pages/Updates";
 import DesktopSidebar from "@/components/DesktopSidebar";
@@ -62,6 +63,15 @@ import WorkspaceManager, { type WorkspaceOption } from "@/components/WorkspaceMa
 import { showNativeNotification } from "@/lib/nativeNotifications";
 import { identifyOneSignalUser } from "@/lib/oneSignal";
 import { sendRemoteNotification } from "@/lib/remoteNotifications";
+
+type ReportPalette = { accent: string; accentSoft: string; background: string; surface: string; surfaceAlt: string; text: string; muted: string; border: string; positive: string; negative: string };
+const getReportPalette = (theme: Theme): ReportPalette => ({
+  light: { accent: "#173f47", accentSoft: "#e8efeb", background: "#ffffff", surface: "#ffffff", surfaceAlt: "#f5f8f6", text: "#18353a", muted: "#718883", border: "#dfe9e4", positive: "#2f896d", negative: "#b35f50" },
+  dark: { accent: "#4fba96", accentSoft: "#17352f", background: "#0d1719", surface: "#142225", surfaceAlt: "#192a2d", text: "#e5f0ed", muted: "#8fa6a2", border: "#293d40", positive: "#7ac9a4", negative: "#e18a80" },
+  gold: { accent: "#8b6716", accentSoft: "#f4e7bc", background: "#fffdf7", surface: "#fffdf7", surfaceAlt: "#fbf8ef", text: "#3f321b", muted: "#8b7b57", border: "#e6d7ad", positive: "#547b42", negative: "#a95f4d" },
+  red: { accent: "#e33445", accentSoft: "#3a2027", background: "#111113", surface: "#1b1a1d", surfaceAlt: "#242125", text: "#f4eeee", muted: "#b4a9ad", border: "#3b3035", positive: "#83c6a2", negative: "#ff8994" },
+  "yellow-black": { accent: "#f2c300", accentSoft: "#2a2408", background: "#080808", surface: "#151515", surfaceAlt: "#202020", text: "#f5f5f5", muted: "#a6a6a6", border: "#303030", positive: "#f2c300", negative: "#ff7b7b" },
+})[theme];
 
 type Currency = "SYP" | "USD";
 type InvoiceTheme = "light" | "dark" | "gold" | "red" | "yellow-black";
@@ -1355,8 +1365,9 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
 
   const exportPng = (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    const reportAccent = theme === "gold" ? "#b8891f" : "#173f47";
-    const reportAccentSoft = theme === "gold" ? "#f5ead0" : "#f5f6f3";
+    const reportPalette = getReportPalette(theme);
+    const reportAccent = reportPalette.accent;
+    const reportAccentSoft = reportPalette.accentSoft;
     if (!account) { toast.error("الحساب غير موجود"); return; }
     const reportDate = new Date().toISOString().slice(0, 10);
     const recentPayments = [...account.payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
@@ -1370,27 +1381,27 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
     canvas.width = 1200; canvas.height = 1180;
     const context = canvas.getContext("2d");
     if (!context) { toast.error("ما قدرنا نجهّز صورة التقرير"); return; }
-    const right = (text: string, x: number, y: number, font: string, color = "#18353a") => { context.font = font; context.fillStyle = color; context.textAlign = "right"; context.direction = "rtl"; context.fillText(text, x, y); };
-    const line = (y: number) => { context.strokeStyle = "#dfe9e4"; context.lineWidth = 2; context.beginPath(); context.moveTo(70, y); context.lineTo(1130, y); context.stroke(); };
-    context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
+    const right = (text: string, x: number, y: number, font: string, color = reportPalette.text) => { context.font = font; context.fillStyle = color; context.textAlign = "right"; context.direction = "rtl"; context.fillText(text, x, y); };
+    const line = (y: number) => { context.strokeStyle = reportPalette.border; context.lineWidth = 2; context.beginPath(); context.moveTo(70, y); context.lineTo(1130, y); context.stroke(); };
+    context.fillStyle = reportPalette.background; context.fillRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = reportAccent; context.fillRect(0, 0, canvas.width, 12);
     right("Aleppo Center Cash", 1130, 65, "700 28px Cairo, Arial, sans-serif", reportAccent);
-    right("تقرير حساب", 1130, 100, "600 20px Cairo, Arial, sans-serif", "#718883");
+    right("تقرير حساب", 1130, 100, "600 20px Cairo, Arial, sans-serif", reportPalette.muted);
     line(125);
     right("الحساب: " + account.name, 1130, 165, "700 22px Cairo, Arial, sans-serif");
-    if (account.owner) right("صاحب الحساب: " + account.owner, 1130, 200, "400 18px Cairo, Arial, sans-serif", "#718883");
-    right("التاريخ: " + new Intl.DateTimeFormat("ar-SY").format(new Date()), 1130, 235, "400 18px Cairo, Arial, sans-serif", "#718883");
+    if (account.owner) right("صاحب الحساب: " + account.owner, 1130, 200, "400 18px Cairo, Arial, sans-serif", reportPalette.muted);
+    right("التاريخ: " + new Intl.DateTimeFormat("ar-SY").format(new Date()), 1130, 235, "400 18px Cairo, Arial, sans-serif", reportPalette.muted);
     line(265);
     right("الإجماليات", 1130, 305, "700 21px Cairo, Arial, sans-serif", reportAccent);
     const totalRows = [["ل.س — له", formatAmount(totalsByCurrency[0].credit, "SYP")], ["ل.س — عليه", formatAmount(totalsByCurrency[0].debit, "SYP")], ["ل.س — الرصيد", formatAmount(totalsByCurrency[0].balance, "SYP")], ["$ — له", formatAmount(totalsByCurrency[1].credit, "USD")], ["$ — عليه", formatAmount(totalsByCurrency[1].debit, "USD")], ["$ — الرصيد", formatAmount(totalsByCurrency[1].balance, "USD")]];
     context.fillStyle = reportAccentSoft; context.fillRect(70, 330, 1060, 215);
-    totalRows.forEach(([label, value], index) => { const y = 365 + index * 32; const balance = index === 2 || index === 5; right(label, 1085, y, "400 17px Cairo, Arial, sans-serif", balance ? reportAccent : "#718883"); right(value, 620, y, balance ? "700 17px Cairo, Arial, sans-serif" : "600 17px Cairo, Arial, sans-serif", balance ? "#2f896d" : "#294c51"); });
+    totalRows.forEach(([label, value], index) => { const y = 365 + index * 32; const balance = index === 2 || index === 5; right(label, 1085, y, "400 17px Cairo, Arial, sans-serif", balance ? reportAccent : reportPalette.muted); right(value, 620, y, balance ? "700 17px Cairo, Arial, sans-serif" : "600 17px Cairo, Arial, sans-serif", balance ? reportPalette.positive : reportPalette.text); });
     line(575);
     right("آخر الدفعات (" + recentPayments.length + ")", 1130, 620, "700 21px Cairo, Arial, sans-serif", reportAccent);
     context.fillStyle = reportAccentSoft; context.fillRect(70, 645, 1060, 44);
-    right("تاريخ", 1085, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("وصف", 820, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("مبلغ", 455, 673, "700 15px Cairo, Arial, sans-serif", "#718883"); right("نوع", 180, 673, "700 15px Cairo, Arial, sans-serif", "#718883");
-    recentPayments.forEach((payment, index) => { const y = 725 + index * 62; if (index % 2 === 0) { context.fillStyle = "#fbfcfb"; context.fillRect(70, y - 30, 1060, 62); } right(formatDate(payment.date), 1085, y, "400 15px Cairo, Arial, sans-serif"); right(payment.name, 820, y, "400 15px Cairo, Arial, sans-serif"); right(formatAmount(payment.amount, payment.currency), 455, y, "600 15px Cairo, Arial, sans-serif"); right(payment.type === "credit" ? "له" : "عليه", 180, y, "700 15px Cairo, Arial, sans-serif", payment.type === "credit" ? "#4d9b7b" : "#c27b4e"); });
-    line(1050); right("Aleppo Center Cash — تقرير من البيانات السحابية", 600, 1090, "400 13px Cairo, Arial, sans-serif", "#8aa09a");
+    right("تاريخ", 1085, 673, "700 15px Cairo, Arial, sans-serif", reportPalette.muted); right("وصف", 820, 673, "700 15px Cairo, Arial, sans-serif", reportPalette.muted); right("مبلغ", 455, 673, "700 15px Cairo, Arial, sans-serif", reportPalette.muted); right("نوع", 180, 673, "700 15px Cairo, Arial, sans-serif", reportPalette.muted);
+    recentPayments.forEach((payment, index) => { const y = 725 + index * 62; if (index % 2 === 0) { context.fillStyle = reportPalette.surfaceAlt; context.fillRect(70, y - 30, 1060, 62); } right(formatDate(payment.date), 1085, y, "400 15px Cairo, Arial, sans-serif"); right(payment.name, 820, y, "400 15px Cairo, Arial, sans-serif"); right(formatAmount(payment.amount, payment.currency), 455, y, "600 15px Cairo, Arial, sans-serif"); right(payment.type === "credit" ? "له" : "عليه", 180, y, "700 15px Cairo, Arial, sans-serif", payment.type === "credit" ? reportPalette.positive : reportPalette.negative); });
+    line(1050); right("Aleppo Center Cash — تقرير من البيانات السحابية", 600, 1090, "400 13px Cairo, Arial, sans-serif", reportPalette.muted);
     const anchor = document.createElement("a"); anchor.href = canvas.toDataURL("image/png"); anchor.download = "aleppo-center-cash-" + account.name.replace(/[^a-zA-Z0-9\u0600-\u06FF]+/g, "-") + "-" + reportDate + ".png"; anchor.click();
     void (async () => {
       await recordAudit("export", "backup", "تقرير PNG — " + account.name);
@@ -1401,8 +1412,9 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
 
   const exportPdf = async (accountId: number) => {
     const account = accounts.find((item) => item.id === accountId);
-    const reportAccent = theme === "gold" ? "#b8891f" : "#173f47";
-    const reportAccentSoft = theme === "gold" ? "#f5ead0" : "#f5f6f3";
+    const reportPalette = getReportPalette(theme);
+    const reportAccent = reportPalette.accent;
+    const reportAccentSoft = reportPalette.accentSoft;
     if (!account) { toast.error("الحساب غير موجود"); return; }
     const dateStamp = new Date().toISOString().slice(0, 10);
     const recentPayments = [...account.payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
@@ -1412,14 +1424,14 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
       return { currency, credit, debit, balance: debit - credit };
     });
-    const rows = recentPayments.map((payment) => "<tr><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;\">" + escapeHtml(formatDate(payment.date)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;\">" + escapeHtml(payment.name) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;\">" + escapeHtml(formatAmount(payment.amount, payment.currency)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid #eef2ef;color:" + (payment.type === "credit" ? "#4d9b7b" : "#c27b4e") + ";\">" + (payment.type === "credit" ? "له" : "عليه") + "</td></tr>").join("");
+    const rows = recentPayments.map((payment) => "<tr><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};\">" + escapeHtml(formatDate(payment.date)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};\">" + escapeHtml(payment.name) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};\">" + escapeHtml(formatAmount(payment.amount, payment.currency)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};color:" + (payment.type === "credit" ? "${reportPalette.positive}" : "${reportPalette.negative}") + ";\">" + (payment.type === "credit" ? "له" : "عليه") + "</td></tr>").join("");
     const report = document.createElement("div"); report.dir = "rtl"; report.lang = "ar";
-    report.style.cssText = "position:fixed;left:-10000px;top:0;width:600px;height:760px;padding:24px;background:#fff;color:#18353a;font-family:Cairo,Arial,sans-serif;direction:rtl;box-sizing:border-box;";
-    report.innerHTML = "<div style=\"display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid " + reportAccent + ";\"><h1 style=\"margin:0;font-size:18px;color:" + reportAccent + ";\">Aleppo Center Cash</h1><span style=\"font-size:12px;color:#718883;\">تقرير حساب</span></div>"
-      + "<table style=\"width:100%;font-size:11px;margin-bottom:12px;border-collapse:collapse;\"><tr><td style=\"color:#718883;padding:2px 0;\">الحساب:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(account.name) + "</td></tr>" + (account.owner ? "<tr><td style=\"color:#718883;padding:2px 0;\">صاحب الحساب:</td><td style=\"padding:2px 0;\">" + escapeHtml(account.owner) + "</td></tr>" : "") + "<tr><td style=\"color:#718883;padding:2px 0;\">التاريخ:</td><td style=\"padding:2px 0;\">" + escapeHtml(new Intl.DateTimeFormat("ar-SY").format(new Date())) + "</td></tr></table>"
-      + "<div style=\"padding:10px 12px;margin-bottom:12px;background:" + reportAccentSoft + ";border-radius:8px;\"><h3 style=\"margin:0 0 6px;font-size:13px;color:" + reportAccent + ";\">الإجماليات</h3><table style=\"width:100%;font-size:10px;border-collapse:collapse;\"><tr><td style=\"color:#718883;padding:2px 0;\">ل.س — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].credit, "SYP")) + "</td></tr><tr><td style=\"color:#718883;padding:2px 0;\">ل.س — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].debit, "SYP")) + "</td></tr><tr><td style=\"color:" + reportAccent + ";font-weight:600;padding:2px 0;\">ل.س — الرصيد:</td><td style=\"color:#2f896d;font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].balance, "SYP")) + "</td></tr><tr><td colspan=\"2\" style=\"height:4px;\"></td></tr><tr><td style=\"color:#718883;padding:2px 0;\">$ — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].credit, "USD")) + "</td></tr><tr><td style=\"color:#718883;padding:2px 0;\">$ — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].debit, "USD")) + "</td></tr><tr><td style=\"color:" + reportAccent + ";font-weight:600;padding:2px 0;\">$ — الرصيد:</td><td style=\"color:#2f896d;font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].balance, "USD")) + "</td></tr></table></div>"
-      + "<h3 style=\"margin:0 0 6px;font-size:13px;color:" + reportAccent + ";\">آخر الدفعات (" + recentPayments.length + ")</h3><table style=\"width:100%;border-collapse:collapse;font-size:9px;\"><thead><tr style=\"background:" + reportAccentSoft + ";\"><th style=\"padding:4px;text-align:right;color:#718883;\">تاريخ</th><th style=\"padding:4px;text-align:right;color:#718883;\">وصف</th><th style=\"padding:4px;text-align:right;color:#718883;\">مبلغ</th><th style=\"padding:4px;text-align:right;color:#718883;\">نوع</th></tr></thead><tbody>" + (rows || "<tr><td colspan=\"4\" style=\"padding:8px;text-align:center;color:#718883;\">لا توجد دفعات</td></tr>") + "</tbody></table>"
-      + "<p style=\"margin:12px 0 0;padding-top:6px;border-top:1px solid #eef2ef;font-size:9px;color:#8aa09a;text-align:center;\">Aleppo Center Cash — تقرير من البيانات السحابية</p>";
+    report.style.cssText = "position:fixed;left:-10000px;top:0;width:600px;height:760px;padding:24px;background:" + reportPalette.background + ";color:" + reportPalette.text;font-family:Cairo,Arial,sans-serif;direction:rtl;box-sizing:border-box;";
+    report.innerHTML = "<div style=\"display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid " + reportAccent + ";\"><h1 style=\"margin:0;font-size:18px;color:" + reportAccent + ";\">Aleppo Center Cash</h1><span style=\"font-size:12px;color:${reportPalette.muted};\">تقرير حساب</span></div>"
+      + "<table style=\"width:100%;font-size:11px;margin-bottom:12px;border-collapse:collapse;\"><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">الحساب:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(account.name) + "</td></tr>" + (account.owner ? "<tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">صاحب الحساب:</td><td style=\"padding:2px 0;\">" + escapeHtml(account.owner) + "</td></tr>" : "") + "<tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">التاريخ:</td><td style=\"padding:2px 0;\">" + escapeHtml(new Intl.DateTimeFormat("ar-SY").format(new Date())) + "</td></tr></table>"
+      + "<div style=\"padding:10px 12px;margin-bottom:12px;background:" + reportAccentSoft + ";border-radius:8px;\"><h3 style=\"margin:0 0 6px;font-size:13px;color:" + reportAccent + ";\">الإجماليات</h3><table style=\"width:100%;font-size:10px;border-collapse:collapse;\"><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">ل.س — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].credit, "SYP")) + "</td></tr><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">ل.س — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].debit, "SYP")) + "</td></tr><tr><td style=\"color:" + reportAccent + ";font-weight:600;padding:2px 0;\">ل.س — الرصيد:</td><td style=\"color:${reportPalette.positive};font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].balance, "SYP")) + "</td></tr><tr><td colspan=\"2\" style=\"height:4px;\"></td></tr><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">$ — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].credit, "USD")) + "</td></tr><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">$ — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].debit, "USD")) + "</td></tr><tr><td style=\"color:" + reportAccent + ";font-weight:600;padding:2px 0;\">$ — الرصيد:</td><td style=\"color:${reportPalette.positive};font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].balance, "USD")) + "</td></tr></table></div>"
+      + "<h3 style=\"margin:0 0 6px;font-size:13px;color:" + reportAccent + ";\">آخر الدفعات (" + recentPayments.length + ")</h3><table style=\"width:100%;border-collapse:collapse;font-size:9px;\"><thead><tr style=\"background:" + reportAccentSoft + ";\"><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">تاريخ</th><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">وصف</th><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">مبلغ</th><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">نوع</th></tr></thead><tbody>" + (rows || "<tr><td colspan=\"4\" style=\"padding:8px;text-align:center;color:${reportPalette.muted};\">لا توجد دفعات</td></tr>") + "</tbody></table>"
+      + "<p style=\"margin:12px 0 0;padding-top:6px;border-top:1px solid ${reportPalette.border};font-size:9px;color:${reportPalette.muted};text-align:center;\">Aleppo Center Cash — تقرير من البيانات السحابية</p>";
     document.body.appendChild(report);
     try {
       const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
