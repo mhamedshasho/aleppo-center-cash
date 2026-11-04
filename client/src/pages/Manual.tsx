@@ -108,7 +108,7 @@ export default function Manual({ onBack, onNavigate }: { onBack: () => void; onN
       <button type="button" className="text-btn manual-back" onClick={onBack}><ChevronLeft size={16} /> رجوع</button>
       <div className="manual-fast-title-row">
         <div className="manual-fast-icon"><BookOpen size={25} /></div>
-        <div><div className="eyebrow">ALEPPO CENTER CASH <span>•</span> QUICK GUIDE</div><h1>دليل الاستخدام</h1><p>مو لازم تقرأ كل شيء. اختر المهمة وشوف الخطوات المختصرة.</p></div>
+        <div><div className="eyebrow">REDRO <span>•</span> ALEPPO CENTER CASH <span>•</span> QUICK GUIDE</div><h1>دليل الاستخدام</h1><p>مو لازم تقرأ كل شيء. اختر المهمة وشوف الخطوات المختصرة.</p></div>
       </div>
       <div className="manual-fast-rule"><CheckCircle2 size={16} /><span>للاستخدام اليومي: حساب ← دفعة ← مراجعة الرصيد</span></div>
     </header>
