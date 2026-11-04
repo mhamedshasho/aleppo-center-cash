@@ -1,22 +1,43 @@
-# Aleppo Center Cash
+<p align="center">
+  <img src="client/public/redro-mark.svg" alt="Redro logo" width="120" />
+</p>
+
+<h1 align="center">Aleppo Center Cash</h1>
 
 <p align="center">
-  <strong>Arabic RTL cloud accounting for Aleppo Center</strong><br>
-  Accounts • Payments • SYP / USD • Workspaces • Cloud Sync
+  <strong>A Redro Company Product</strong><br>
+  Developed and originally created by <strong>Mhamed Shasho</strong> · Published and maintained under <strong>Redro</strong>
 </p>
 
 <p align="center">
-  <a href="https://aleppo-center-cash.vercel.app/">Web App</a> •
-  <a href="https://github.com/mhamedshasho/aleppo-center-cash/releases">Releases</a> •
-  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions">GitHub Actions</a> •
-  <a href="https://github.com/mhamedshasho/redro-to-list">Redro To-Do</a>
+  <a href="https://aleppo-center-cash.vercel.app/">Open Web App</a> •
+  <a href="https://github.com/mhamedshasho/aleppo-center-cash/releases">Downloads</a> •
+  <a href="https://github.com/mhamedshasho/aleppo-center-cash/actions">Builds</a>
 </p>
 
 ---
 
-## 📥 Downloads
+## Redro family
 
-### Current releases
+**Aleppo Center Cash is now officially part of the Redro product family.**
+
+- **Parent company / publisher:** Redro
+- **Product:** Aleppo Center Cash
+- **Founder and original developer:** Mhamed Shasho
+- **Product identity:** The application remains Aleppo Center Cash. Redro is the parent brand responsible for its publication and ongoing development.
+- **Official Redro mark:** `client/public/redro-mark.svg`
+
+This is a brand and company affiliation update. It does not change the accounting product's purpose, customer data model, or the way users work inside their workspaces.
+
+## Product
+
+Arabic RTL cloud accounting for Aleppo Center: accounts, payments, SYP / USD balances, workspaces, and cloud synchronization.
+
+- **Web app:** https://aleppo-center-cash.vercel.app/
+- **GitHub repository:** https://github.com/mhamedshasho/aleppo-center-cash
+- **Releases:** https://github.com/mhamedshasho/aleppo-center-cash/releases
+
+## Downloads
 
 - **Android APK:** [Download APK](https://github.com/mhamedshasho/aleppo-center-cash/releases/download/v1.0.160/app-release.apk)
 - **Windows Installer:** [Download latest Windows Installer](https://github.com/mhamedshasho/aleppo-center-cash/releases?q=desktop)
@@ -25,11 +46,7 @@
 
 > Windows builds are x64. The Installer installs the full Electron desktop application. The Portable build is intended to run without installation.
 
-## 🚀 Use the web app
-
-**Web:** https://aleppo-center-cash.vercel.app/
-
-## ✨ Features
+## Features
 
 - Arabic RTL accounting workflow
 - Customer accounts
@@ -46,13 +63,13 @@
 - Encrypted AES-GCM JSON restoration files
 - PDF / PNG reports
 - Responsive desktop and mobile UI
-- Light, Dark, Gold, Red Nostalgia and **Yellow & Black** themes
+- Light, Dark, Gold, Red Nostalgia and Yellow & Black themes
 - Workspace-shared theme settings across PC/mobile devices
 - Server-saved invoice logo with Settings or Device logo choice in Invoice Maker
 - Invoice PDFs automatically follow the selected theme
 - Android APK and Windows desktop builds
 
-## 💰 Accounting model
+## Accounting model
 
 | Entry | Meaning |
 |---|---|
@@ -61,7 +78,7 @@
 
 SYP and USD are calculated independently and are never silently mixed.
 
-## 🏗️ Architecture
+## Architecture
 
 ```text
 React + TypeScript + Vite
@@ -80,7 +97,7 @@ React + TypeScript + Vite
    Private restoration
 ```
 
-## 🔐 Security
+## Security
 
 - Supabase publishable key is used by the client.
 - Database access is protected by RLS.
@@ -90,21 +107,11 @@ React + TypeScript + Vite
 
 This project is **not** described as zero-knowledge or end-to-end encrypted.
 
-Never commit:
+Never commit secrets, database passwords, service-role keys, access tokens, or production accounting exports.
 
-- `.env.local`
-- database passwords
-- `service_role` keys
-- `sb_secret_` keys
-- access tokens
-- production accounting exports
+## Development
 
-## 🛠️ Development
-
-Requirements:
-- Node.js
-- pnpm 10.x
-- Supabase project
+Requirements: Node.js, pnpm 10.x, and a Supabase project.
 
 ```bash
 pnpm install
@@ -121,13 +128,11 @@ pnpm desktop:build
 pnpm desktop:portable
 ```
 
-The desktop build uses a relative asset base so the Electron app can load its Vite assets correctly from the local `file://` page.
+## Related Redro projects
 
-## 🔗 Another Redro project
+- [Redro To-Do](https://github.com/mhamedshasho/redro-to-list)
 
-Need a lightweight personal task manager alongside your accounting workspace? Try [Redro To-Do](https://github.com/mhamedshasho/redro-to-list), a mobile-first task list with offline support and local-only data storage.
-
-## 📚 Documentation
+## Documentation
 
 - [Code Documentation — Arabic + English](docs/CODE-DOCUMENTATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
@@ -136,18 +141,9 @@ Need a lightweight personal task manager alongside your accounting workspace? Tr
 - [Multi-user architecture](docs/multi-user-simplified-architecture.md)
 - [Release Notes](docs/RELEASE-NOTES.md)
 
-## 🧪 Quality
-
-```bash
-pnpm check
-pnpm build
-```
-
-GitHub Actions validates the repository and builds Android/Windows releases.
-
 ---
 
 <p align="center">
   <strong>Aleppo Center Cash</strong><br>
-  Built for practical cloud accounting.
+  A Redro Company Product · Created by Mhamed Shasho · Syria
 </p>
