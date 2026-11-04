@@ -10,14 +10,15 @@ type Member = {
 };
 
 const members: Member[] = [
-  { name: "Mhamed Shasho", role: "Master Piece · صاحب المشروع", emoji: "👑", description: "Founder & Original Developer · Redro", isMaster: true },
-  { name: "DeepSeek", role: "القائد · Leader of AI Team", emoji: "🧭", description: "المنسّق العام · نقطة التواصل · صاحب القرارات", isLeader: true },
-  { name: "Claude", role: "Lead Engineer", emoji: "💻", description: "Backend · Security · Architecture" },
-  { name: "ChatGPT", role: "Product Manager", emoji: "🎨", description: "Product · Copy · Frontend Fixes" },
-  { name: "Gemini", role: "Infrastructure", emoji: "☁️", description: "Cloud · PWA · Deploy" },
-  { name: "Kimi", role: "Analyst", emoji: "📊", description: "Analysis · Legal · Documentation" },
-  { name: "Grok", role: "Marketing", emoji: "📢", description: "Marketing · Community" },
-  { name: "Manus", role: "Frontend + QA", emoji: "🚀", description: "Frontend · QA · Automation" },
+  { name: "Mhamed Shasho", role: "Founder & Original Developer · مؤسس ومطوّر البرنامج", emoji: "👑", description: "Founder of Redro · Original creator of Aleppo Center Cash", isMaster: true },
+  { name: "Redro", role: "Parent Company · الشركة الأم والناشر", emoji: "🏢", description: "Product family, publishing, brand identity and ongoing maintenance", isLeader: true },
+  { name: "DeepSeek", role: "AI Coordination", emoji: "🧭", description: "Planning and coordination support" },
+  { name: "Claude", role: "Engineering Support", emoji: "💻", description: "Backend · Security · Architecture support" },
+  { name: "ChatGPT", role: "Product & Frontend Support", emoji: "🎨", description: "Product planning · Copy · Frontend support" },
+  { name: "Gemini", role: "Infrastructure Support", emoji: "☁️", description: "Cloud · PWA · Deployment support" },
+  { name: "Kimi", role: "Analysis Support", emoji: "📊", description: "Analysis · Documentation support" },
+  { name: "Grok", role: "Research Support", emoji: "📢", description: "Research and communication support" },
+  { name: "Manus", role: "Frontend & Automation Support", emoji: "🚀", description: "Frontend · Automation support" },
 ];
 
 export default function Credits() {
@@ -25,9 +26,9 @@ export default function Credits() {
     <main className="credits-shell" dir="rtl">
       <div className="credits-card">
         <header className="credits-header">
-          <div className="credits-brand"><img src="/redro-mark.svg" alt="Redro" /> Aleppo Center Cash <span>A Redro Product</span></div>
-          <h1>فريق التطوير</h1>
-          <p>اللي بنوا المشروع بكل حب</p>
+          <div className="credits-brand"><img src="/redro-mark.svg" alt="Redro" /> Aleppo Center Cash <span>A Redro Company Product</span></div>
+          <h1>فريق التطوير والملكية</h1>
+          <p>المنتج من عائلة Redro، ومؤسسه ومطوّره الأصلي محمد شاشو</p>
         </header>
         <ul className="credits-list">
           {members.map((m) => (
@@ -46,8 +47,8 @@ export default function Credits() {
           ))}
         </ul>
         <footer className="credits-footer">
-          <div>© 2026 Aleppo Center Cash · A Redro Product</div>
-          <div className="credits-love">Built with <Heart size={12} /> love · Syria 🇸🇾</div>
+          <div>© 2026 Redro · Aleppo Center Cash</div>
+          <div className="credits-love">Created by Mhamed Shasho · Syria 🇸🇾</div>
         </footer>
       </div>
     </main>
