@@ -1,0 +1,661 @@
+:root {
+  --theme-page: #f5f6f3;
+  --theme-surface: #ffffff;
+  --theme-surface-raised: #f8faf8;
+  --theme-surface-soft: #eef1ed;
+  --theme-border: #dfe7e2;
+  --theme-text: #18353a;
+  --theme-muted: #758686;
+  --theme-accent: #173f47;
+  --theme-accent-contrast: #f4fbf8;
+  --theme-accent-soft: #dcece4;
+  --theme-sidebar: #173f47;
+  --theme-sidebar-text: #eff8f4;
+  --theme-sidebar-muted: #a8c6bc;
+  --theme-positive: #2f896d;
+  --theme-negative: #b35f50;
+  color-scheme: light;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --primary: #4fba96;
+  --primary-foreground: #071512;
+  --background: #0d1719;
+  --foreground: #e5f0ed;
+  --card: #142225;
+  --card-foreground: #e5f0ed;
+  --popover: #142225;
+  --popover-foreground: #e5f0ed;
+  --secondary: #193034;
+  --secondary-foreground: #c8dbd6;
+  --muted: #172a2d;
+  --muted-foreground: #8fa6a2;
+  --accent: #17352f;
+  --accent-foreground: #cce4dc;
+  --border: #293d40;
+  --input: #304346;
+  --ring: #4fba96;
+  --theme-page: #0d1719;
+  --theme-surface: #142225;
+  --theme-surface-raised: #192a2d;
+  --theme-surface-soft: #172a2d;
+  --theme-border: #293d40;
+  --theme-text: #e5f0ed;
+  --theme-muted: #8fa6a2;
+  --theme-accent: #4fba96;
+  --theme-accent-contrast: #071512;
+  --theme-accent-soft: #17352f;
+  --theme-sidebar: #091315;
+  --theme-sidebar-text: #e5f0ed;
+  --theme-sidebar-muted: #8fa6a2;
+  --theme-positive: #7ac9a4;
+  --theme-negative: #e18a80;
+}
+
+html[data-theme="gold"] {
+  color-scheme: light;
+  --primary: #8b6716;
+  --primary-foreground: #fffaf0;
+  --background: #fbf8ef;
+  --foreground: #3f321b;
+  --card: #fffdf7;
+  --card-foreground: #3f321b;
+  --popover: #fffdf7;
+  --popover-foreground: #3f321b;
+  --secondary: #f3ead0;
+  --secondary-foreground: #6b5219;
+  --muted: #f5efdf;
+  --muted-foreground: #8b7b57;
+  --accent: #f4e7bc;
+  --accent-foreground: #5f4610;
+  --border: #e6d7ad;
+  --input: #e1d2a7;
+  --ring: #c99a2e;
+  --theme-page: #fbf8ef;
+  --theme-surface: #fffdf7;
+  --theme-surface-raised: #fffaf0;
+  --theme-surface-soft: #f5efdf;
+  --theme-border: #e6d7ad;
+  --theme-text: #3f321b;
+  --theme-muted: #8b7b57;
+  --theme-accent: #8b6716;
+  --theme-accent-contrast: #fffaf0;
+  --theme-accent-soft: #f4e7bc;
+  --theme-sidebar: #49370f;
+  --theme-sidebar-text: #fffaf0;
+  --theme-sidebar-muted: #d8c99f;
+  --theme-positive: #547b42;
+  --theme-negative: #a95f4d;
+}
+
+html[data-theme="red"] {
+  color-scheme: dark;
+  --primary: #e33445;
+  --primary-foreground: #fff7f7;
+  --background: #111113;
+  --foreground: #f4eeee;
+  --card: #1b1a1d;
+  --card-foreground: #f4eeee;
+  --popover: #201e22;
+  --popover-foreground: #f4eeee;
+  --secondary: #292529;
+  --secondary-foreground: #f4eeee;
+  --muted: #252226;
+  --muted-foreground: #b4a9ad;
+  --accent: #3a2027;
+  --accent-foreground: #ff9ba5;
+  --border: #3b3035;
+  --input: #40343a;
+  --ring: #f0525f;
+  --theme-page: #111113;
+  --theme-surface: #1b1a1d;
+  --theme-surface-raised: #242125;
+  --theme-surface-soft: #252226;
+  --theme-border: #3b3035;
+  --theme-text: #f4eeee;
+  --theme-muted: #b4a9ad;
+  --theme-accent: #f0525f;
+  --theme-accent-contrast: #fff7f7;
+  --theme-accent-soft: #3a2027;
+  --theme-sidebar: #171417;
+  --theme-sidebar-text: #f7eeee;
+  --theme-sidebar-muted: #c3b5ba;
+  --theme-positive: #83c6a2;
+  --theme-negative: #ff8994;
+}
+
+html[data-theme="yellow-black"] {
+  color-scheme: dark;
+  --primary: #f2c300;
+  --primary-foreground: #080808;
+  --background: #080808;
+  --foreground: #f5f5f5;
+  --card: #151515;
+  --card-foreground: #f5f5f5;
+  --popover: #141414;
+  --popover-foreground: #f5f5f5;
+  --secondary: #202020;
+  --secondary-foreground: #f2f2f2;
+  --muted: #1b1b1b;
+  --muted-foreground: #a6a6a6;
+  --accent: #2a2408;
+  --accent-foreground: #ffd84a;
+  --border: #303030;
+  --input: #343434;
+  --ring: #f2c300;
+  --theme-page: #080808;
+  --theme-surface: #151515;
+  --theme-surface-raised: #202020;
+  --theme-surface-soft: #1b1b1b;
+  --theme-border: #303030;
+  --theme-text: #f5f5f5;
+  --theme-muted: #a6a6a6;
+  --theme-accent: #f2c300;
+  --theme-accent-contrast: #080808;
+  --theme-accent-soft: #2a2408;
+  --theme-sidebar: #050505;
+  --theme-sidebar-text: #f5f5f5;
+  --theme-sidebar-muted: #b7b7b7;
+  --theme-positive: #f2c300;
+  --theme-negative: #ff7b7b;
+}
+
+html[data-theme] body,
+html[data-theme] .app-shell,
+html[data-theme] .main-area,
+html[data-theme] .content-wrap,
+html[data-theme] .settings-page,
+html[data-theme] .activity-page,
+html[data-theme] .manual-page,
+html[data-theme] .updates-page,
+html[data-theme] .invoice-maker,
+html[data-theme] .credits-shell {
+  background-color: var(--theme-page) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .topbar,
+html[data-theme] .surface-card,
+html[data-theme] .stat-card,
+html[data-theme] .card,
+html[data-theme] .account-card,
+html[data-theme] .recent-card,
+html[data-theme] .currency-card,
+html[data-theme] .activity-toolbar,
+html[data-theme] .activity-row,
+html[data-theme] .manual-section,
+html[data-theme] .manual-index,
+html[data-theme] .updates-releases,
+html[data-theme] .updates-commits,
+html[data-theme] .settings-section,
+html[data-theme] .settings-copy,
+html[data-theme] .invoice-toolbar,
+html[data-theme] .invoice-payments-panel,
+html[data-theme] .invoice-template-card,
+html[data-theme] .invoice-summary-card,
+html[data-theme] .notification-panel,
+html[data-theme] .profile-menu,
+html[data-theme] .modal-card,
+html[data-theme] .workspace-manager,
+html[data-theme] .workspace-option,
+html[data-theme] .workspace-create,
+html[data-theme] .backup-hero {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .topbar {
+  background: color-mix(in srgb, var(--theme-page) 92%, transparent) !important;
+}
+
+html[data-theme] .surface-card h1,
+html[data-theme] .surface-card h2,
+html[data-theme] .surface-card h3,
+html[data-theme] .stat-card strong,
+html[data-theme] .page-heading h1,
+html[data-theme] .page-heading h2,
+html[data-theme] .page-heading h3,
+html[data-theme] .section-head h2,
+html[data-theme] .account-card-copy h3,
+html[data-theme] .settings-section-head h2,
+html[data-theme] .settings-row-copy strong,
+html[data-theme] .settings-info strong,
+html[data-theme] .activity-main strong,
+html[data-theme] .manual-section h2,
+html[data-theme] .manual-items h3,
+html[data-theme] .updates-releases h3,
+html[data-theme] .updates-commits h3,
+html[data-theme] .notification-panel strong,
+html[data-theme] .profile-menu-item strong,
+html[data-theme] .modal-head h2,
+html[data-theme] .workspace-manager-title h2,
+html[data-theme] .workspace-option-copy strong {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .surface-card p,
+html[data-theme] .stat-card span,
+html[data-theme] .page-heading p,
+html[data-theme] .section-head p,
+html[data-theme] .account-card-copy p,
+html[data-theme] .settings-section-head p,
+html[data-theme] .settings-row-copy span,
+html[data-theme] .settings-info span,
+html[data-theme] .activity-main span,
+html[data-theme] .activity-meta,
+html[data-theme] .manual-section p,
+html[data-theme] .manual-items p,
+html[data-theme] .updates-releases p,
+html[data-theme] .updates-commits p,
+html[data-theme] .notification-copy span,
+html[data-theme] .notification-copy small,
+html[data-theme] .profile-menu-item span,
+html[data-theme] .workspace-manager-title p,
+html[data-theme] .workspace-option-copy span,
+html[data-theme] .breadcrumb,
+html[data-theme] .saved-state {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .sidebar,
+html[data-theme] .desktop-sidebar,
+html[data-theme] .mobile-nav,
+html[data-theme] .mobile-bottom-nav {
+  background: var(--theme-sidebar) !important;
+  color: var(--theme-sidebar-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .brand-mark,
+html[data-theme] .brand-lockup .brand-mark,
+html[data-theme] .desktop-brand .brand-mark {
+  background: var(--theme-accent) !important;
+  color: var(--theme-accent-contrast) !important;
+}
+
+html[data-theme] .workspace-switcher,
+html[data-theme] .desktop-workspace,
+html[data-theme] .local-card {
+  background: color-mix(in srgb, var(--theme-sidebar-text) 7%, var(--theme-sidebar)) !important;
+  border-color: color-mix(in srgb, var(--theme-sidebar-text) 15%, var(--theme-sidebar)) !important;
+  color: var(--theme-sidebar-text) !important;
+}
+
+html[data-theme] .workspace-switcher span,
+html[data-theme] .workspace-id,
+html[data-theme] .sidebar-profile span,
+html[data-theme] .nav-group-label,
+html[data-theme] .desktop-nav-label,
+html[data-theme] .brand-lockup span,
+html[data-theme] .desktop-brand span {
+  color: var(--theme-sidebar-muted) !important;
+}
+
+html[data-theme] .workspace-avatar,
+html[data-theme] .profile-avatar,
+html[data-theme] .top-avatar {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent) !important;
+}
+
+html[data-theme] .main-nav button,
+html[data-theme] .desktop-nav button,
+html[data-theme] .sidebar-profile,
+html[data-theme] .desktop-profile {
+  color: var(--theme-sidebar-muted) !important;
+}
+
+html[data-theme] .main-nav button:hover,
+html[data-theme] .desktop-nav button:hover,
+html[data-theme] .profile-menu-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--theme-accent) 13%, var(--theme-sidebar)) !important;
+  color: var(--theme-sidebar-text) !important;
+}
+
+html[data-theme] .main-nav button.active,
+html[data-theme] .desktop-nav button.active,
+html[data-theme] .mobile-nav button.active,
+html[data-theme] .mobile-bottom-nav button.active {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent) !important;
+  box-shadow: inset 3px 0 0 var(--theme-accent) !important;
+}
+
+html[data-theme] .main-nav button.active svg,
+html[data-theme] .main-nav button svg,
+html[data-theme] .desktop-nav button svg {
+  color: currentColor !important;
+}
+
+html[data-theme] input,
+html[data-theme] select,
+html[data-theme] textarea,
+html[data-theme] .search-box,
+html[data-theme] .manual-search,
+html[data-theme] .toolbar,
+html[data-theme] .invoice-field input,
+html[data-theme] .invoice-field select,
+html[data-theme] .invoice-search,
+html[data-theme] .template-page-picker select,
+html[data-theme] .key-input-wrap,
+html[data-theme] .workspace-create-row input {
+  color: var(--theme-text) !important;
+  background: var(--theme-surface-raised) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] input::placeholder,
+html[data-theme] textarea::placeholder,
+html[data-theme] .search-box input::placeholder {
+  color: var(--theme-muted) !important;
+  opacity: .85;
+}
+
+html[data-theme] input:focus,
+html[data-theme] select:focus,
+html[data-theme] textarea:focus,
+html[data-theme] .search-box:focus-within,
+html[data-theme] .manual-search:focus-within,
+html[data-theme] .invoice-field input:focus,
+html[data-theme] .invoice-field select:focus {
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 18%, transparent) !important;
+}
+
+html[data-theme] .primary-btn,
+html[data-theme] .settings-theme-option.active,
+html[data-theme] .currency-switch button.active,
+html[data-theme] .filter-btn.active,
+html[data-theme] .activity-tabs button.active,
+html[data-theme] .payment-filters button.active,
+html[data-theme] .invoice-logo-source button.active,
+html[data-theme] .workspace-option.active {
+  color: var(--theme-accent-contrast) !important;
+  background: var(--theme-accent) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+html[data-theme] .secondary-btn,
+html[data-theme] .filter-btn,
+html[data-theme] .text-btn,
+html[data-theme] .round-icon-btn,
+html[data-theme] .settings-action,
+html[data-theme] .settings-copy,
+html[data-theme] .back-btn,
+html[data-theme] .icon-btn {
+  color: var(--theme-accent) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .secondary-btn:hover,
+html[data-theme] .filter-btn:hover,
+html[data-theme] .text-btn:hover,
+html[data-theme] .settings-action:hover,
+html[data-theme] .settings-copy:hover,
+html[data-theme] .icon-btn:hover {
+  background: var(--theme-accent-soft) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+html[data-theme] .settings-row,
+html[data-theme] .payment-row,
+html[data-theme] .account-card-footer,
+html[data-theme] .manual-section-head,
+html[data-theme] .manual-items article,
+html[data-theme] .release-card,
+html[data-theme] .commit-card,
+html[data-theme] .notification-item,
+html[data-theme] .invoice-row,
+html[data-theme] .invoice-payment-row,
+html[data-theme] .invoice-summary-row {
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .settings-row:hover,
+html[data-theme] .manual-items article:hover,
+html[data-theme] .notification-item:hover,
+html[data-theme] .notification-item.unread,
+html[data-theme] .invoice-row.active,
+html[data-theme] .invoice-payment-row.active {
+  background: var(--theme-surface-raised) !important;
+}
+
+html[data-theme] .settings-section-icon,
+html[data-theme] .settings-row-icon,
+html[data-theme] .stat-icon,
+html[data-theme] .export-icon,
+html[data-theme] .manual-hero-icon,
+html[data-theme] .manual-section-head > span,
+html[data-theme] .release-icon,
+html[data-theme] .commit-icon {
+  color: var(--theme-accent) !important;
+  background: var(--theme-accent-soft) !important;
+}
+
+html[data-theme] .eyebrow,
+html[data-theme] .heading-count,
+html[data-theme] .summary-kicker,
+html[data-theme] .settings-badge,
+html[data-theme] .activity-entity-icon {
+  color: var(--theme-accent) !important;
+}
+
+html[data-theme] .heading-count,
+html[data-theme] .settings-badge,
+html[data-theme] .payment-count,
+html[data-theme] .positive-pill {
+  background: var(--theme-accent-soft) !important;
+}
+
+html[data-theme] .hero-summary {
+  background: linear-gradient(115deg, var(--theme-sidebar), var(--theme-surface), var(--theme-accent-soft)) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .summary-kicker,
+html[data-theme] .summary-meta,
+html[data-theme] .summary-breakdown span {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .big-total,
+html[data-theme] .summary-breakdown strong {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .currency-switch,
+html[data-theme] .payment-filters,
+html[data-theme] .activity-tabs,
+html[data-theme] .invoice-logo-source > div,
+html[data-theme] .auth-tabs {
+  background: var(--theme-surface-soft) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .currency-switch button,
+html[data-theme] .activity-tabs button,
+html[data-theme] .payment-filters button,
+html[data-theme] .auth-tabs button {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .auth-tabs button.active {
+  color: var(--theme-accent) !important;
+  background: var(--theme-surface) !important;
+}
+
+html[data-theme] .login-shell,
+html[data-theme] .cloud-loading {
+  background: var(--theme-page) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .login-card {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .login-card h1,
+html[data-theme] .login-card h1 em {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .login-copy,
+html[data-theme] .field-label,
+html[data-theme] .privacy-note,
+html[data-theme] .login-footer {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .profile-menu,
+html[data-theme] .modal-card,
+html[data-theme] .notification-panel,
+html[data-theme] .invoice-preview-modal {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .profile-menu-item,
+html[data-theme] .notification-panel-head,
+html[data-theme] .notification-item,
+html[data-theme] .notification-footer,
+html[data-theme] .modal-head,
+html[data-theme] .invoice-preview-modal > header,
+html[data-theme] .invoice-preview-modal > footer {
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .notification-footer,
+html[data-theme] [data-sonner-toast],
+html[data-theme] .empty-search,
+html[data-theme] .empty-state,
+html[data-theme] .invoice-empty {
+  background: var(--theme-surface-raised) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .payment-amount.credit,
+html[data-theme] .payment-type.credit,
+html[data-theme] .preview-credit {
+  color: var(--theme-positive) !important;
+}
+
+html[data-theme] .payment-amount.debit,
+html[data-theme] .payment-type.debit,
+html[data-theme] .preview-debit {
+  color: var(--theme-negative) !important;
+}
+
+html[data-theme] .invoice-maker-head h1,
+html[data-theme] .invoice-maker-head p,
+html[data-theme] .invoice-field label,
+html[data-theme] .template-page-picker label {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .invoice-table th,
+html[data-theme] .invoice-preview-head {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent) !important;
+}
+
+html[data-theme] .invoice-table td,
+html[data-theme] .template-target,
+html[data-theme] .template-preview,
+html[data-theme] .template-dropzone,
+html[data-theme] .invoice-image-stage {
+  background: var(--theme-surface-raised) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .manual-header,
+html[data-theme] .manual-toolbar,
+html[data-theme] .manual-index,
+html[data-theme] .manual-section,
+html[data-theme] .manual-items article,
+html[data-theme] .manual-help,
+html[data-theme] .updates-header,
+html[data-theme] .release-card,
+html[data-theme] .commit-card {
+  background-color: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .manual-header h1,
+html[data-theme] .updates-header h1,
+html[data-theme] .manual-section-head h2,
+html[data-theme] .manual-items h3,
+html[data-theme] .release-title h3,
+html[data-theme] .commit-card strong {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .manual-header p,
+html[data-theme] .updates-header p,
+html[data-theme] .manual-section-head p,
+html[data-theme] .manual-items p,
+html[data-theme] .release-card p {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .workspace-manager-backdrop,
+html[data-theme] .modal-backdrop,
+html[data-theme] .mobile-overlay {
+  background: color-mix(in srgb, var(--theme-page) 45%, #000 55%) !important;
+}
+
+html[data-theme] .workspace-limit,
+html[data-theme] .workspace-option,
+html[data-theme] .workspace-create,
+html[data-theme] .workspace-limit-reached {
+  color: var(--theme-text) !important;
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .workspace-option.active {
+  background: var(--theme-accent-soft) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+html[data-theme] .sync-conflict { color: var(--theme-negative) !important; }
+html[data-theme] .sync-synced .saved-dot { background: var(--theme-positive) !important; }
+html[data-theme] .sync-syncing .saved-dot,
+html[data-theme] .sync-offline .saved-dot { background: #d8a65d !important; }
+
+html[data-theme] .invoice-preview-page {
+  color-scheme: light;
+}
+
+html[data-theme] ::selection {
+  background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+  color: var(--theme-text);
+}
+
+html[data-theme] ::-webkit-scrollbar-track { background: var(--theme-page); }
+html[data-theme] ::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border: 2px solid var(--theme-page);
+  border-radius: 99px;
+}
+html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--theme-accent); }
+
+@media (max-width: 820px) {
+  html[data-theme] .mobile-nav,
+  html[data-theme] .mobile-bottom-nav {
+    background: var(--theme-sidebar) !important;
+    border-color: var(--theme-border) !important;
+  }
+}
