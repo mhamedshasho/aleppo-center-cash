@@ -1514,7 +1514,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
                 <strong dir="ltr" className="mono">{cloudWorkspace?.id?.slice(0, 8) ?? "—"}{cloudWorkspace?.id ? "…" : ""}</strong>
                 <Copy size={14} />
               </button>
-              <button className="profile-menu-item" onClick={() => { toggleTheme?.(); }} role="menuitem"><span>{theme === "dark" ? "☀️ الوضع الفاتح" : theme === "gold" ? "✨ الوضع الذهبي" : theme === "red" ? "🔴 أحمر وفحمي" : "🌙 الوضع الداكن"}</span>{theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}</button>
+              <button className="profile-menu-item" onClick={() => { toggleTheme?.(); }} role="menuitem"><span>{theme === "dark" ? "☀️ الوضع الفاتح" : theme === "gold" ? "✨ الوضع الذهبي" : theme === "red" ? "🔴 أحمر وفحمي" : theme === "yellow-black" ? "🟡 Yellow & Black" : "🌙 الوضع الداكن"}</span>{theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}</button>
               <button className="profile-menu-item" onClick={() => { setShowBackupModal(true); setShowProfileMenu(false); }} role="menuitem">
                 <span>🛡️ النسخ والاستعادة</span>
                 <ShieldCheck size={14} />
