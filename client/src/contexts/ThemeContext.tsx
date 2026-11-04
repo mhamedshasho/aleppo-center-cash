@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export type Theme = "light" | "dark" | "gold" | "red" | "yellow-black";
@@ -76,7 +76,7 @@ export function ThemeProvider({ children, defaultTheme = "light", switchable = f
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
     root.style.colorScheme = theme === "dark" || theme === "red" || theme === "yellow-black" ? "dark" : "light";
