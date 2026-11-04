@@ -149,9 +149,14 @@ function ActivityView({ workspaceId, currentUserId }: Props) {
       })
       .subscribe();
 
-    const timer = window.setInterval(() => void load(), 60000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
     return () => {
-      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
       void supabase?.removeChannel(channel);
     };
   }, [workspaceId, period, page]);
