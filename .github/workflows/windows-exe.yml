@@ -12,7 +12,7 @@ on:
       - vite.config.*
       - tsconfig.json
       - patches/**
-      - client/public/icon.jpg
+      - client/public/redro-mark.png
       - .github/workflows/windows-exe.yml
       - '!client/src/App.tsx'
       - '!client/src/lib/nativeNotifications.ts'
@@ -51,7 +51,7 @@ jobs:
             choco install imagemagick.app -y --no-progress
           }
           New-Item -ItemType Directory -Force build | Out-Null
-          magick client/public/icon.jpg -background none -alpha on -define icon:auto-resize=256,128,64,48,32,16 build/icon.ico
+          magick client/public/redro-mark.png -background none -alpha on -define icon:auto-resize=256,128,64,48,32,16 build/icon.ico
           if (-not (Test-Path build/icon.ico)) {
             throw "Failed to generate build/icon.ico"
           }
