@@ -1424,14 +1424,52 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       const debit = payments.filter((payment) => payment.type === "debit").reduce((sum, payment) => sum + payment.amount, 0);
       return { currency, credit, debit, balance: debit - credit };
     });
-    const rows = recentPayments.map((payment) => "<tr><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};\">" + escapeHtml(formatDate(payment.date)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};\">" + escapeHtml(payment.name) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};\">" + escapeHtml(formatAmount(payment.amount, payment.currency)) + "</td><td style=\"padding:6px 8px;border-bottom:1px solid ${reportPalette.border};color:" + (payment.type === "credit" ? "${reportPalette.positive}" : "${reportPalette.negative}") + ";\">" + (payment.type === "credit" ? "له" : "عليه") + "</td></tr>").join("");
-    const report = document.createElement("div"); report.dir = "rtl"; report.lang = "ar";
-    report.style.cssText = "position:fixed;left:-10000px;top:0;width:600px;height:760px;padding:24px;background:" + reportPalette.background + ";color:" + reportPalette.text;font-family:Cairo,Arial,sans-serif;direction:rtl;box-sizing:border-box;";
-    report.innerHTML = "<div style=\"display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid " + reportAccent + ";\"><h1 style=\"margin:0;font-size:18px;color:" + reportAccent + ";\">Aleppo Center Cash</h1><span style=\"font-size:12px;color:${reportPalette.muted};\">تقرير حساب</span></div>"
-      + "<table style=\"width:100%;font-size:11px;margin-bottom:12px;border-collapse:collapse;\"><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">الحساب:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(account.name) + "</td></tr>" + (account.owner ? "<tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">صاحب الحساب:</td><td style=\"padding:2px 0;\">" + escapeHtml(account.owner) + "</td></tr>" : "") + "<tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">التاريخ:</td><td style=\"padding:2px 0;\">" + escapeHtml(new Intl.DateTimeFormat("ar-SY").format(new Date())) + "</td></tr></table>"
-      + "<div style=\"padding:10px 12px;margin-bottom:12px;background:" + reportAccentSoft + ";border-radius:8px;\"><h3 style=\"margin:0 0 6px;font-size:13px;color:" + reportAccent + ";\">الإجماليات</h3><table style=\"width:100%;font-size:10px;border-collapse:collapse;\"><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">ل.س — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].credit, "SYP")) + "</td></tr><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">ل.س — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].debit, "SYP")) + "</td></tr><tr><td style=\"color:" + reportAccent + ";font-weight:600;padding:2px 0;\">ل.س — الرصيد:</td><td style=\"color:${reportPalette.positive};font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[0].balance, "SYP")) + "</td></tr><tr><td colspan=\"2\" style=\"height:4px;\"></td></tr><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">$ — له:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].credit, "USD")) + "</td></tr><tr><td style=\"color:${reportPalette.muted};padding:2px 0;\">$ — عليه:</td><td style=\"font-weight:600;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].debit, "USD")) + "</td></tr><tr><td style=\"color:" + reportAccent + ";font-weight:600;padding:2px 0;\">$ — الرصيد:</td><td style=\"color:${reportPalette.positive};font-weight:700;padding:2px 0;\">" + escapeHtml(formatAmount(totalsByCurrency[1].balance, "USD")) + "</td></tr></table></div>"
-      + "<h3 style=\"margin:0 0 6px;font-size:13px;color:" + reportAccent + ";\">آخر الدفعات (" + recentPayments.length + ")</h3><table style=\"width:100%;border-collapse:collapse;font-size:9px;\"><thead><tr style=\"background:" + reportAccentSoft + ";\"><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">تاريخ</th><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">وصف</th><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">مبلغ</th><th style=\"padding:4px;text-align:right;color:${reportPalette.muted};\">نوع</th></tr></thead><tbody>" + (rows || "<tr><td colspan=\"4\" style=\"padding:8px;text-align:center;color:${reportPalette.muted};\">لا توجد دفعات</td></tr>") + "</tbody></table>"
-      + "<p style=\"margin:12px 0 0;padding-top:6px;border-top:1px solid ${reportPalette.border};font-size:9px;color:${reportPalette.muted};text-align:center;\">Aleppo Center Cash — تقرير من البيانات السحابية</p>";
+    const rows = recentPayments.map((payment) => `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid ${reportPalette.border};">${escapeHtml(formatDate(payment.date))}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid ${reportPalette.border};">${escapeHtml(payment.name)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid ${reportPalette.border};">${escapeHtml(formatAmount(payment.amount, payment.currency))}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid ${reportPalette.border};color:${payment.type === "credit" ? reportPalette.positive : reportPalette.negative};">${payment.type === "credit" ? "له" : "عليه"}</td>
+      </tr>
+    `).join("");
+    const report = document.createElement("div");
+    report.dir = "rtl";
+    report.lang = "ar";
+    report.style.cssText = `position:fixed;left:-10000px;top:0;width:600px;height:760px;padding:24px;background:${reportPalette.background};color:${reportPalette.text};font-family:Cairo,Arial,sans-serif;direction:rtl;box-sizing:border-box;`;
+    report.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid ${reportAccent};">
+        <h1 style="margin:0;font-size:18px;color:${reportAccent};">Aleppo Center Cash</h1>
+        <span style="font-size:12px;color:${reportPalette.muted};">تقرير حساب</span>
+      </div>
+      <table style="width:100%;font-size:11px;margin-bottom:12px;border-collapse:collapse;">
+        <tr><td style="color:${reportPalette.muted};padding:2px 0;">الحساب:</td><td style="font-weight:600;padding:2px 0;">${escapeHtml(account.name)}</td></tr>
+        ${account.owner ? `<tr><td style="color:${reportPalette.muted};padding:2px 0;">صاحب الحساب:</td><td style="padding:2px 0;">${escapeHtml(account.owner)}</td></tr>` : ""}
+        <tr><td style="color:${reportPalette.muted};padding:2px 0;">التاريخ:</td><td style="padding:2px 0;">${escapeHtml(new Intl.DateTimeFormat("ar-SY").format(new Date()))}</td></tr>
+      </table>
+      <div style="padding:10px 12px;margin-bottom:12px;background:${reportAccentSoft};border-radius:8px;">
+        <h3 style="margin:0 0 6px;font-size:13px;color:${reportAccent};">الإجماليات</h3>
+        <table style="width:100%;font-size:10px;border-collapse:collapse;">
+          <tr><td style="color:${reportPalette.muted};padding:2px 0;">ل.س — له:</td><td style="font-weight:600;padding:2px 0;">${escapeHtml(formatAmount(totalsByCurrency[0].credit, "SYP"))}</td></tr>
+          <tr><td style="color:${reportPalette.muted};padding:2px 0;">ل.س — عليه:</td><td style="font-weight:600;padding:2px 0;">${escapeHtml(formatAmount(totalsByCurrency[0].debit, "SYP"))}</td></tr>
+          <tr><td style="color:${reportAccent};font-weight:600;padding:2px 0;">ل.س — الرصيد:</td><td style="color:${reportPalette.positive};font-weight:700;padding:2px 0;">${escapeHtml(formatAmount(totalsByCurrency[0].balance, "SYP"))}</td></tr>
+          <tr><td colspan="2" style="height:4px;"></td></tr>
+          <tr><td style="color:${reportPalette.muted};padding:2px 0;">$ — له:</td><td style="font-weight:600;padding:2px 0;">${escapeHtml(formatAmount(totalsByCurrency[1].credit, "USD"))}</td></tr>
+          <tr><td style="color:${reportPalette.muted};padding:2px 0;">$ — عليه:</td><td style="font-weight:600;padding:2px 0;">${escapeHtml(formatAmount(totalsByCurrency[1].debit, "USD"))}</td></tr>
+          <tr><td style="color:${reportAccent};font-weight:600;padding:2px 0;">$ — الرصيد:</td><td style="color:${reportPalette.positive};font-weight:700;padding:2px 0;">${escapeHtml(formatAmount(totalsByCurrency[1].balance, "USD"))}</td></tr>
+        </table>
+      </div>
+      <h3 style="margin:0 0 6px;font-size:13px;color:${reportAccent};">آخر الدفعات (${recentPayments.length})</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:9px;">
+        <thead><tr style="background:${reportAccentSoft};">
+          <th style="padding:4px;text-align:right;color:${reportPalette.muted};">تاريخ</th>
+          <th style="padding:4px;text-align:right;color:${reportPalette.muted};">وصف</th>
+          <th style="padding:4px;text-align:right;color:${reportPalette.muted};">مبلغ</th>
+          <th style="padding:4px;text-align:right;color:${reportPalette.muted};">نوع</th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="4" style="padding:8px;text-align:center;color:${reportPalette.muted};">لا توجد دفعات</td></tr>`}</tbody>
+      </table>
+      <p style="margin:12px 0 0;padding-top:6px;border-top:1px solid ${reportPalette.border};font-size:9px;color:${reportPalette.muted};text-align:center;">Aleppo Center Cash — تقرير من البيانات السحابية</p>
+    `.trim();
     document.body.appendChild(report);
     try {
       const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
