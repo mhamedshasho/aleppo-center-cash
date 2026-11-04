@@ -729,9 +729,18 @@ html[data-theme] .pattern-lock-dot {
   stroke: var(--theme-muted);
 }
 
-html[data-theme] .pattern-lock-dot.selected,
-html[data-theme] .pattern-lock-line {
+html[data-theme] .pattern-lock-dot.selected {
   fill: var(--theme-accent);
+  stroke: var(--theme-accent);
+}
+
+html[data-theme] .pattern-lock-footer button {
+  background: var(--theme-surface-raised) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .pattern-lock-line {
+  fill: none;
   stroke: var(--theme-accent);
 }
 
