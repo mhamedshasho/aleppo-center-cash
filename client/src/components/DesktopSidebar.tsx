@@ -74,8 +74,8 @@ export default function DesktopSidebar({
   return (
     <aside className="desktop-sidebar" dir="rtl">
       <div className="desktop-brand">
-        <div className="desktop-brand-logo"><img src="/grok_1790774221995.jpg" alt="Aleppo Center Cash" /></div>
-        <div><strong>Aleppo Center</strong><span>CASH BOOK</span></div>
+        <div className="desktop-brand-logo"><img src="/redro-mark.svg" alt="Redro" /></div>
+        <div><strong>Aleppo Center</strong><span>CASH BOOK</span><small className="desktop-brand-parent">A REDRO PRODUCT</small></div>
       </div>
 
       <button className="desktop-workspace" onClick={onOpenWorkspaceManager} title="إدارة مساحات العمل">
