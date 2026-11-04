@@ -13,6 +13,7 @@ import "./web-redesign.css";
 import "./manual-upgrade.css";
 import "./password-toggle.css";
 import "./red-theme.css";
+import "./theme-system.css";
 import { checkForAppUpdateNotification, initializeNativeNotifications, scheduleUsageReminders } from "./lib/nativeNotifications";
 import { initializeOneSignal } from "./lib/oneSignal";
 type NavigationOptions = { replace?: boolean };
