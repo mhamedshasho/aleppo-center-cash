@@ -36,9 +36,9 @@ async function guardedSupabaseFetch(input: RequestInfo | URL, init?: RequestInit
   const key = method + ":" + requestUrl + ":" + authorization + ":" + body;
   const now = Date.now();
 
-  for (const [cachedKey, cached] of recentMutations) {
+  Array.from(recentMutations.entries()).forEach(([cachedKey, cached]) => {
     if (cached.expiresAt <= now) recentMutations.delete(cachedKey);
-  }
+  });
 
   const cached = recentMutations.get(key);
   if (cached && cached.expiresAt > now) return cached.response.clone();
