@@ -833,3 +833,91 @@ html[data-theme] .detail-actions .primary-btn {
   color: var(--theme-accent-contrast) !important;
   background: var(--theme-accent) !important;
 }
+
+/* Consistent theme surfaces for account lists, account details and payment history */
+html[data-theme] .filter-btn,
+html[data-theme] .secondary-btn {
+  background: var(--theme-surface) !important;
+  color: var(--theme-accent) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme] .filter-btn:hover,
+html[data-theme] .secondary-btn:hover {
+  background: var(--theme-accent-soft) !important;
+  border-color: var(--theme-accent) !important;
+  color: var(--theme-accent) !important;
+}
+
+html[data-theme] .detail-heading {
+  background: var(--theme-surface) !important;
+  border: 1px solid var(--theme-border) !important;
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--theme-text) 5%, transparent) !important;
+}
+
+html[data-theme] .detail-payments {
+  background: var(--theme-surface) !important;
+  border: 1px solid var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .payment-toolbar,
+html[data-theme] .payment-search,
+html[data-theme] .payment-filters {
+  background: var(--theme-surface-raised) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .payment-search input {
+  background: transparent !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme] .payment-search input::placeholder {
+  color: var(--theme-muted) !important;
+}
+
+html[data-theme] .payment-filters button {
+  background: transparent !important;
+  color: var(--theme-muted) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .payment-filters button.active,
+html[data-theme] .payment-filters button:hover {
+  background: var(--theme-accent) !important;
+  color: var(--theme-accent-contrast) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .payment-filters button.active.credit,
+html[data-theme] .payment-filters button.active.debit {
+  color: var(--theme-accent-contrast) !important;
+}
+
+html[data-theme] .payment-count {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent) !important;
+}
+
+html[data-theme] .detail-actions .danger-btn {
+  background: color-mix(in srgb, var(--theme-negative) 12%, var(--theme-surface)) !important;
+  border-color: color-mix(in srgb, var(--theme-negative) 35%, var(--theme-border)) !important;
+  color: var(--theme-negative) !important;
+}
+
+html[data-theme] .detail-actions .danger-btn:hover {
+  background: var(--theme-negative) !important;
+  color: var(--theme-accent-contrast) !important;
+}
+
+html[data-theme] .detail-actions .primary-btn {
+  border-color: var(--theme-accent) !important;
+}
+
+html[data-theme] .currency-card::after {
+  border-color: color-mix(in srgb, var(--theme-accent) 24%, transparent) !important;
+  box-shadow: 0 0 0 21px color-mix(in srgb, var(--theme-accent) 7%, transparent) !important;
+}
+
