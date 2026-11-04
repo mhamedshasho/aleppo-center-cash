@@ -48,6 +48,8 @@ html[data-theme="dark"] {
   --sidebar-accent: #17352f;
   --sidebar-border: #293d40;
   --sidebar-ring: #4fba96;
+  --sidebar-primary-foreground: #071512;
+  --sidebar-accent-foreground: #cce4dc;
   --theme-page: #0d1719;
   --theme-surface: #142225;
   --theme-surface-raised: #192a2d;
@@ -92,6 +94,8 @@ html[data-theme="gold"] {
   --sidebar-accent: #f4e7bc;
   --sidebar-border: #e6d7ad;
   --sidebar-ring: #c99a2e;
+  --sidebar-primary-foreground: #fffaf0;
+  --sidebar-accent-foreground: #5f4610;
   --theme-page: #fbf8ef;
   --theme-surface: #fffdf7;
   --theme-surface-raised: #fffaf0;
@@ -136,6 +140,8 @@ html[data-theme="red"] {
   --sidebar-accent: #3a2027;
   --sidebar-border: #3b3035;
   --sidebar-ring: #f0525f;
+  --sidebar-primary-foreground: #fff7f7;
+  --sidebar-accent-foreground: #ff9ba5;
   --theme-page: #111113;
   --theme-surface: #1b1a1d;
   --theme-surface-raised: #242125;
@@ -180,6 +186,8 @@ html[data-theme="yellow-black"] {
   --sidebar-accent: #2a2408;
   --sidebar-border: #303030;
   --sidebar-ring: #f2c300;
+  --sidebar-primary-foreground: #080808;
+  --sidebar-accent-foreground: #ffd84a;
   --theme-page: #080808;
   --theme-surface: #151515;
   --theme-surface-raised: #202020;
