@@ -700,6 +700,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
 
     let active = true;
     const verify = async () => {
+      if (!active || document.visibilityState !== "visible") return;
       try {
         await verifyWorkspaceAccess(cloudWorkspace.id, cloudUser.id);
       } catch (error) {
@@ -714,12 +715,22 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       }
     };
 
+    const verifyWhenVisible = () => {
+      if (document.visibilityState === "visible") void verify();
+    };
+
     void verify();
-    const verifyTimer = window.setInterval(() => void verify(), 5000);
+    const verifyTimer = window.setInterval(() => void verify(), 60000);
+    document.addEventListener("visibilitychange", verifyWhenVisible);
+    window.addEventListener("focus", verifyWhenVisible);
+    window.addEventListener("online", verifyWhenVisible);
 
     return () => {
       active = false;
       window.clearInterval(verifyTimer);
+      document.removeEventListener("visibilitychange", verifyWhenVisible);
+      window.removeEventListener("focus", verifyWhenVisible);
+      window.removeEventListener("online", verifyWhenVisible);
     };
   }, [cloudWorkspace?.id, cloudUser?.id]);
 
@@ -825,7 +836,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
 
     let active = true;
     const recoverCloudConnection = async () => {
-      if (!active || cloudRecoveryInFlightRef.current || syncInFlight.current || pendingSync.current) return;
+      if (!active || document.visibilityState !== "visible" || cloudRecoveryInFlightRef.current || syncInFlight.current || pendingSync.current) return;
       cloudRecoveryInFlightRef.current = true;
       setSyncState("syncing");
       try {
@@ -848,11 +859,19 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       }
     };
 
+    const recoverWhenAvailable = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) void recoverCloudConnection();
+    };
+
     void recoverCloudConnection();
-    const timer = window.setInterval(() => void recoverCloudConnection(), 5000);
+    const timer = window.setInterval(() => void recoverCloudConnection(), 30000);
+    document.addEventListener("visibilitychange", recoverWhenAvailable);
+    window.addEventListener("online", recoverWhenAvailable);
     return () => {
       active = false;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", recoverWhenAvailable);
+      window.removeEventListener("online", recoverWhenAvailable);
     };
   }, [syncState, cloudWorkspace?.id, cloudUser?.id]);
 
