@@ -1440,7 +1440,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
         <div className="login-ambient ambient-one" />
         <div className="login-ambient ambient-two" />
         <section className="login-card">
-          <div className="brand-mark large"><Landmark size={30} strokeWidth={1.8} /></div>
+          <div className="brand-mark large"><img src="/redro-mark.svg" alt="Redro" /></div>
           <div className="eyebrow">ALEPPO CENTER CASH <span>•</span> CLOUD ONLY</div>
           <h1>حساباتك، مرتّبة<br /><em>وبلا وجع راس.</em></h1>
           <p className="login-copy">دفتر حساباتك التجاري بمكان واحد. سريع، واضح، ومحفوظ على السحابة.</p>
@@ -1453,7 +1453,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
           <button className="primary-btn full" onClick={() => void attemptUnlock()}>فوت على الحسابات <ArrowLeft size={17} /></button>
           <div className="privacy-note"><ShieldCheck size={16} /> هذا المفتاح حماية بسيطة، مو تشفير كامل</div>
         </section>
-        <footer className="login-footer">Aleppo Center Cash <span>© 2026</span></footer>
+        <footer className="login-footer">Aleppo Center Cash <span>A Redro Product · © 2026</span></footer>
       </main>
     );
   }
@@ -1481,8 +1481,8 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
       <aside className={`sidebar mobile-sidebar ${showMobileNav ? "open" : ""}`}>
         <div className="sidebar-top">
           <div className="brand-lockup">
-            <div className="brand-mark"><Landmark size={22} strokeWidth={1.8} /></div>
-            <div><strong>Aleppo Center</strong><span>cash book</span></div>
+            <div className="brand-mark"><img src="/redro-mark.svg" alt="Redro" /></div>
+            <div><strong>Aleppo Center</strong><span>cash book</span><small className="app-parent-brand">A REDRO PRODUCT</small></div>
           </div>
           <button className="close-mobile" onClick={() => setShowMobileNav(false)} aria-label="إغلاق القائمة"><X size={20} /></button>
         </div>
@@ -1736,7 +1736,7 @@ function SettingsView({ theme, setTheme, onOpenWorkspaceManager, workspaceName, 
     <section id="settings-workspace" className={"surface-card settings-section " + (activeSettingsTab === "workspace" ? "" : "settings-tab-hidden")}><div className="settings-section-head"><div><h2>مساحة العمل والاتصال</h2><p>معلومات المساحة والحالة الحالية.</p></div><div className="settings-section-icon"><Landmark size={18} /></div></div><div className="settings-info-list"><div className="settings-info"><span>المساحة</span><strong>{workspaceName ?? "—"}</strong></div><div className="settings-info"><span>الدور</span><strong>{roleLabel}</strong></div><div className="settings-info"><span>البريد</span><strong dir="ltr">{email ?? "—"}</strong></div><div className="settings-info"><span>Supabase</span><strong className={connected ? "settings-ok" : "settings-muted"}>{connected ? "متصل" : syncState === "syncing" ? "جارٍ الاتصال" : syncState === "conflict" ? "تعارض" : "غير متصل"}</strong></div><button className="settings-copy" onClick={onCopyWorkspace} disabled={!workspaceId}><Copy size={15} /> نسخ Workspace ID</button><button className="settings-copy settings-workspace-manager-button" onClick={onOpenWorkspaceManager}><Building2 size={15} /> إدارة مساحات العمل</button></div></section>
     <section id="settings-security" className={"surface-card settings-section settings-security-section " + (activeSettingsTab === "security" ? "" : "settings-tab-hidden")}><div className="settings-section-head"><div><h2>قفل مساحة العمل للجميع</h2><p>غيّر طريقة دخول المساحة من مكان واحد، وسيستخدم الإعداد الجديد جميع الأعضاء.</p></div><div className="settings-section-icon"><LockKeyhole size={18} /></div></div><WorkspaceAccessSettings workspaceId={workspaceId} workspaceRole={workspaceRole} /></section>
     <section id="settings-redro-promo" className="surface-card settings-section"><div className="settings-section-head"><div><h2>جرّب تطبيقاً آخر من Redro</h2><p>نظّم مهامك ومشاريعك اليومية مع Redro To-Do، تطبيق خفيف للجوال والكمبيوتر يعمل دون حساب ويحفظ مهامك على جهازك.</p></div><div className="settings-section-icon"><Sparkles size={18} /></div></div><a href="https://mhamedshasho.github.io/redro-to-list/" target="_blank" rel="noopener noreferrer" className="settings-row settings-action" style={{textDecoration:"none"}}><div className="settings-row-icon"><CheckSquare size={18} /></div><div className="settings-row-copy"><strong>تجربة Redro To-Do</strong><span>افتح قائمة المهام في نافذة جديدة</span></div><ArrowLeft size={17} /></a></section>
-    <section id="settings-app" className={"surface-card settings-section " + (activeSettingsTab === "account" ? "" : "settings-tab-hidden")}><div className="settings-section-head"><div><h2>معلومات التطبيق</h2><p>معلومات سريعة عن النسخة الحالية.</p></div><div className="settings-section-icon"><GitBranch size={18} /></div></div><div className="settings-info-list"><div className="settings-info"><span>التطبيق</span><strong>Aleppo Center Cash</strong></div><div className="settings-info"><span>المنصة</span><strong>Web / PWA</strong></div><div className="settings-info"><span>البيانات</span><strong>Supabase Cloud</strong></div><div className="settings-info"><span>المزامنة</span><strong className={connected ? "settings-ok" : "settings-muted"}>{connected ? "مفعّلة" : "تحتاج اتصال"}</strong></div></div></section>
+    <section id="settings-app" className={"surface-card settings-section " + (activeSettingsTab === "account" ? "" : "settings-tab-hidden")}><div className="settings-section-head"><div><h2>معلومات التطبيق</h2><p>معلومات سريعة عن النسخة الحالية.</p></div><div className="settings-section-icon"><GitBranch size={18} /></div></div><div className="settings-info-list"><div className="settings-info"><span>التطبيق</span><strong>Aleppo Center Cash</strong><small>A Redro Product</small></div><div className="settings-info"><span>المنصة</span><strong>Web / PWA</strong></div><div className="settings-info"><span>البيانات</span><strong>Supabase Cloud</strong></div><div className="settings-info"><span>المزامنة</span><strong className={connected ? "settings-ok" : "settings-muted"}>{connected ? "مفعّلة" : "تحتاج اتصال"}</strong></div></div></section>
     <section id="settings-session" className={"surface-card settings-section settings-danger-section " + (activeSettingsTab === "account" ? "" : "settings-tab-hidden")}><div className="settings-section-head"><div><h2>الجلسة</h2><p>إنهاء جلسة الدخول الحالية.</p></div><div className="settings-section-icon"><LogOut size={18} /></div></div><button className="settings-row settings-danger-action" onClick={onLogout}><div className="settings-row-icon"><LogOut size={18} /></div><div className="settings-row-copy"><strong>تسجيل الخروج</strong><span>ستحتاج إلى تسجيل الدخول مجدداً للوصول إلى المساحة.</span></div><ArrowLeft size={17} /></button></section>
   </div></div>;
 }
