@@ -1,0 +1,431 @@
+html.red {
+  color-scheme: dark;
+  --primary: #e33445;
+  --primary-foreground: #fff7f7;
+  --background: #111113;
+  --foreground: #f4eeee;
+  --card: #1b1a1d;
+  --card-foreground: #f4eeee;
+  --popover: #201e22;
+  --popover-foreground: #f4eeee;
+  --secondary: #292529;
+  --secondary-foreground: #f4eeee;
+  --muted: #252226;
+  --muted-foreground: #b4a9ad;
+  --accent: #3a2027;
+  --accent-foreground: #ff9ba5;
+  --destructive: #f0525f;
+  --destructive-foreground: #fff;
+  --border: #3b3035;
+  --input: #40343a;
+  --ring: #f0525f;
+  --sidebar: #171417;
+  --sidebar-foreground: #f7eeee;
+}
+html.red,
+html.red body {
+  background: #111113 !important;
+  color: #f4eeee !important;
+}
+html.red body,
+html.red .app-shell,
+html.red .main-area,
+html.red .content-wrap,
+html.red .invoice-maker,
+html.red .manual-page,
+html.red .updates-page,
+html.red .activity-page,
+html.red .settings-page {
+  background-color: #111113 !important;
+  color: #f4eeee !important;
+}
+html.red .sidebar,
+html.red .desktop-sidebar,
+html.red .mobile-nav,
+html.red .mobile-bottom-nav {
+  background: #171417 !important;
+  color: #f4eeee !important;
+  border-color: #382b31 !important;
+}
+html.red .brand-mark,
+html.red .brand-lockup .brand-mark,
+html.red .desktop-brand .brand-mark {
+  background: #e33445 !important;
+  color: #fff !important;
+}
+html.red .workspace-switcher,
+html.red .desktop-workspace {
+  background: #211c20 !important;
+  border-color: #3b3035 !important;
+}
+html.red .workspace-avatar {
+  background: #54252e !important;
+  color: #ffb2ba !important;
+}
+html.red .main-nav button,
+html.red .desktop-nav button,
+html.red .sidebar-profile,
+html.red .desktop-profile {
+  color: #c3b5ba !important;
+}
+html.red .main-nav button:hover,
+html.red .desktop-nav button:hover,
+html.red .profile-menu-item:hover:not(:disabled) {
+  background: #2a2025 !important;
+  color: #fff !important;
+}
+html.red .main-nav button.active,
+html.red .desktop-nav button.active {
+  color: #fff !important;
+  background: #42232b !important;
+  box-shadow: inset 3px 0 0 #f0525f !important;
+}
+html.red .main-nav button.active svg,
+html.red .main-nav button svg,
+html.red .desktop-nav button svg,
+html.red .nav-group-label,
+html.red .desktop-nav-label,
+html.red .brand-lockup span,
+html.red .desktop-brand span {
+  color: #f07883 !important;
+}
+html.red .topbar {
+  background: rgba(20, 18, 21, .96) !important;
+  border-color: #382b31 !important;
+  color: #f4eeee !important;
+}
+html.red .breadcrumb,
+html.red .breadcrumb strong,
+html.red .icon-btn,
+html.red .text-btn,
+html.red .back-btn {
+  color: #d8c9ce !important;
+}
+html.red .icon-btn:hover,
+html.red .round-icon-btn:hover {
+  background: #332329 !important;
+  color: #ff8d98 !important;
+}
+html.red .surface-card,
+html.red .stat-card,
+html.red .card,
+html.red .account-card,
+html.red .recent-card,
+html.red .currency-card,
+html.red .activity-toolbar,
+html.red .activity-row,
+html.red .manual-section,
+html.red .manual-index,
+html.red .updates-releases,
+html.red .updates-commits,
+html.red .settings-section,
+html.red .settings-copy,
+html.red .invoice-toolbar,
+html.red .invoice-payments-panel,
+html.red .invoice-template-card,
+html.red .invoice-summary-card,
+html.red .notification-panel {
+  background: #1b1a1d !important;
+  border-color: #3b3035 !important;
+  color: #f0e8eb !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .2) !important;
+}
+html.red .surface-card h2,
+html.red .surface-card h3,
+html.red .stat-card strong,
+html.red .section-head h2,
+html.red .page-heading h1,
+html.red .account-card-copy h3,
+html.red .settings-section-head h2,
+html.red .manual-section h2,
+html.red .manual-items h3,
+html.red .updates-releases h3,
+html.red .updates-commits h3,
+html.red .activity-main strong {
+  color: #fff2f3 !important;
+}
+html.red .surface-card p,
+html.red .stat-card span,
+html.red .section-head p,
+html.red .page-heading p,
+html.red .account-card-copy p,
+html.red .settings-section-head p,
+html.red .settings-row-copy span,
+html.red .manual-section p,
+html.red .manual-items p,
+html.red .activity-main span,
+html.red .activity-meta,
+html.red .invoice-maker-head p {
+  color: #b5a8ad !important;
+}
+html.red .eyebrow,
+html.red .heading-count,
+html.red .summary-kicker,
+html.red .settings-badge {
+  color: #ff8994 !important;
+}
+html.red .heading-count,
+html.red .settings-badge {
+  background: #392128 !important;
+}
+html.red .hero-summary {
+  background: linear-gradient(115deg, #1b171a, #2b1b21 58%, #421f29) !important;
+  border: 1px solid #59303a !important;
+  color: #fff !important;
+}
+html.red .summary-kicker,
+html.red .summary-meta,
+html.red .summary-breakdown span {
+  color: #d1bfc4 !important;
+}
+html.red .big-total,
+html.red .summary-breakdown strong {
+  color: #fff4f5 !important;
+}
+html.red .orbit-ring {
+  border-color: rgba(240, 82, 95, .35) !important;
+}
+html.red .orbit-core {
+  color: #ff8994 !important;
+  border-color: rgba(240, 82, 95, .5) !important;
+  background: rgba(227, 52, 69, .12) !important;
+}
+html.red .primary-btn,
+html.red .settings-theme-option.active,
+html.red .currency-switch button.active,
+html.red .filter-btn.active,
+html.red .activity-tabs button.active,
+html.red .payment-filters button.active,
+html.red .invoice-logo-source button.active {
+  background: #e33445 !important;
+  border-color: #e33445 !important;
+  color: #fff !important;
+}
+html.red .primary-btn:hover {
+  background: #f04b5b !important;
+  border-color: #f04b5b !important;
+}
+html.red .secondary-btn,
+html.red .filter-btn,
+html.red .text-btn,
+html.red .round-icon-btn,
+html.red .settings-action,
+html.red .settings-copy {
+  background: #242024 !important;
+  border-color: #44353c !important;
+  color: #ff9ba5 !important;
+}
+html.red .secondary-btn:hover,
+html.red .filter-btn:hover,
+html.red .text-btn:hover,
+html.red .settings-action:hover,
+html.red .settings-copy:hover {
+  background: #35232a !important;
+  border-color: #75404b !important;
+}
+html.red input,
+html.red select,
+html.red textarea,
+html.red .search-box,
+html.red .manual-search,
+html.red .toolbar,
+html.red .invoice-field input,
+html.red .invoice-field select,
+html.red .invoice-search,
+html.red .template-page-picker select,
+html.red .key-input-wrap {
+  background: #141316 !important;
+  border-color: #44363d !important;
+  color: #f6edef !important;
+}
+html.red input::placeholder,
+html.red textarea::placeholder,
+html.red .search-box input::placeholder {
+  color: #8d7e84 !important;
+}
+html.red input:focus,
+html.red select:focus,
+html.red textarea:focus,
+html.red .search-box:focus-within,
+html.red .manual-search:focus-within,
+html.red .invoice-field input:focus,
+html.red .invoice-field select:focus {
+  border-color: #e85a68 !important;
+  box-shadow: 0 0 0 3px rgba(227, 52, 69, .15) !important;
+}
+html.red .account-card:hover,
+html.red .surface-card:hover,
+html.red .stat-card:hover {
+  background: #211c20 !important;
+  border-color: #75404b !important;
+}
+html.red .account-card-footer,
+html.red .payment-row,
+html.red .settings-row,
+html.red .settings-copy,
+html.red .activity-row,
+html.red .manual-section-head,
+html.red .manual-items article,
+html.red .release-card,
+html.red .commit-card {
+  border-color: #3b3035 !important;
+}
+html.red .account-card-footer strong,
+html.red .payment-amount.credit,
+html.red .payment-amount.debit,
+html.red .payment-type.credit,
+html.red .payment-type.debit,
+html.red .stat-icon,
+html.red .export-icon,
+html.red .settings-section-icon,
+html.red .settings-row-icon,
+html.red .manual-hero-icon,
+html.red .manual-section-head > span,
+html.red .release-icon,
+html.red .commit-icon,
+html.red .activity-entity-icon {
+  color: #ff8994 !important;
+}
+html.red .stat-icon,
+html.red .export-icon,
+html.red .settings-section-icon,
+html.red .settings-row-icon,
+html.red .manual-hero-icon,
+html.red .manual-section-head > span,
+html.red .release-icon,
+html.red .commit-icon {
+  background: #392128 !important;
+}
+html.red .currency-switch,
+html.red .payment-filters,
+html.red .activity-tabs {
+  background: #171518 !important;
+  border-color: #3b3035 !important;
+}
+html.red .currency-switch button,
+html.red .activity-tabs button,
+html.red .payment-filters button {
+  color: #b9aab0 !important;
+}
+html.red .invoice-table th,
+html.red .invoice-preview-head {
+  background: #392128 !important;
+  color: #ffdce0 !important;
+}
+html.red .invoice-table td,
+html.red .invoice-row,
+html.red .invoice-payment-row,
+html.red .template-target,
+html.red .template-preview,
+html.red .template-dropzone,
+html.red .invoice-summary-row {
+  background: #171518 !important;
+  border-color: #40343a !important;
+  color: #e8dfe2 !important;
+}
+html.red .invoice-table td strong,
+html.red .template-target strong,
+html.red .invoice-summary-row strong {
+  color: #fff0f2 !important;
+}
+html.red .invoice-table tbody tr:hover,
+html.red .invoice-table tbody tr.selected,
+html.red .invoice-row.active,
+html.red .invoice-payment-row.active {
+  background: #342027 !important;
+  border-color: #e33445 !important;
+}
+html.red .invoice-field label,
+html.red .template-page-picker label,
+html.red .settings-row-copy strong,
+html.red .settings-info strong {
+  color: #e9dce0 !important;
+}
+html.red .invoice-preview-modal {
+  background: #1b1a1d !important;
+  border-color: #44363d !important;
+}
+html.red .invoice-preview-modal > header,
+html.red .invoice-preview-modal > footer {
+  background: #211c20 !important;
+  border-color: #44363d !important;
+}
+html.red .profile-menu,
+html.red .modal-card {
+  background: #201e22 !important;
+  border-color: #44363d !important;
+  color: #f4eeee !important;
+}
+html.red .profile-menu-item,
+html.red .modal-head h2 {
+  color: #f4eeee !important;
+}
+html.red .profile-menu-item span,
+html.red .profile-menu-item strong {
+  color: #e6d9dd !important;
+}
+html.red .login-shell {
+  background: #111113 !important;
+  color: #f4eeee !important;
+}
+html.red .login-shell::before {
+  opacity: .16 !important;
+  background-image: radial-gradient(#e33445 1px, transparent 1px) !important;
+}
+html.red .login-card {
+  background: rgba(28, 25, 29, .97) !important;
+  border-color: #49343b !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .5) !important;
+}
+html.red .login-card h1,
+html.red .login-card h1 em {
+  color: #fff0f2 !important;
+}
+html.red .login-copy,
+html.red .field-label,
+html.red .privacy-note,
+html.red .login-footer {
+  color: #b8a9af !important;
+}
+html.red .key-input-wrap:focus-within {
+  border-color: #e85a68 !important;
+}
+html.red .mobile-overlay {
+  background: rgba(0, 0, 0, .7) !important;
+}
+html.red .empty-search,
+html.red .empty-state,
+html.red .invoice-empty,
+html.red .notification-empty {
+  background: #1b1a1d !important;
+  border-color: #44363d !important;
+  color: #e8dfe2 !important;
+}
+html.red [data-sonner-toast] {
+  background: #211c20 !important;
+  border-color: #44363d !important;
+  color: #f4eeee !important;
+}
+html.red ::selection {
+  background: rgba(227, 52, 69, .35);
+  color: #fff;
+}
+html.red ::-webkit-scrollbar-track { background: #141316; }
+html.red ::-webkit-scrollbar-thumb {
+  background: #49343b;
+  border: 2px solid #141316;
+  border-radius: 99px;
+}
+html.red ::-webkit-scrollbar-thumb:hover { background: #e33445; }
+@media (max-width: 820px) {
+  html.red .mobile-nav,
+  html.red .mobile-bottom-nav {
+    background: #171417 !important;
+    border-color: #3b3035 !important;
+  }
+  html.red .mobile-nav button.active,
+  html.red .mobile-bottom-nav button.active {
+    color: #ff8994 !important;
+    background: #2a2025 !important;
+  }
+}
