@@ -563,8 +563,7 @@ html[data-theme] .template-page-picker label {
   color: var(--theme-text) !important;
 }
 
-html[data-theme] .invoice-table th,
-html[data-theme] .invoice-preview-head {
+html[data-theme] .invoice-table th {
   background: var(--theme-accent-soft) !important;
   color: var(--theme-accent) !important;
 }
@@ -635,9 +634,6 @@ html[data-theme] .sync-synced .saved-dot { background: var(--theme-positive) !im
 html[data-theme] .sync-syncing .saved-dot,
 html[data-theme] .sync-offline .saved-dot { background: #d8a65d !important; }
 
-html[data-theme] .invoice-preview-page {
-  color-scheme: light;
-}
 
 html[data-theme] ::selection {
   background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
