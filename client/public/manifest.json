@@ -1,7 +1,7 @@
 {
   "name": "Aleppo Center Cash",
-  "short_name": "Aleppo Cash",
-  "description": "دفتر حسابات سحابي آمن لمركز حلب",
+  "short_name": "Center Cash",
+  "description": "Aleppo Center Cash — A Redro Product. دفتر حسابات سحابي.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/",
@@ -11,9 +11,9 @@
   "theme_color": "#173f47",
   "icons": [
     {
-      "src": "/grok_1790774221995.jpg",
+      "src": "/redro-mark.svg",
       "sizes": "any",
-      "type": "image/jpeg",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]
