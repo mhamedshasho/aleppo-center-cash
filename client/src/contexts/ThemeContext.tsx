@@ -78,10 +78,10 @@ export function ThemeProvider({ children, defaultTheme = "light", switchable = f
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    root.classList.toggle("gold", theme === "gold");
-    root.classList.toggle("red", theme === "red");
-    root.classList.toggle("yellow-black", theme === "yellow-black");
+    root.dataset.theme = theme;
+    root.style.colorScheme = theme === "dark" || theme === "red" || theme === "yellow-black" ? "dark" : "light";
+    root.classList.remove("dark", "gold", "red", "yellow-black");
+    if (theme !== "light") root.classList.add(theme);
   }, [theme]);
 
   const toggleTheme = switchable
