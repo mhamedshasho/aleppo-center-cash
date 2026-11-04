@@ -991,6 +991,7 @@ export default function Home({ cloudUser, cloudWorkspace, availableWorkspaces = 
   useEffect(() => {
     if (!cloudWorkspace) return;
     const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible" || !navigator.onLine) return;
       void saveCloudBackup(false);
     }, 5 * 60 * 1000);
     return () => window.clearInterval(interval);
