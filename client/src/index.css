@@ -3220,3 +3220,81 @@ html.red :is(.invoice-preview,.invoice-preview-page,.invoice-paper-preview) {
   font-size: 9px;
   font-weight: 600;
 }
+
+
+/* Red + charcoal theme: account details and currency cards */
+html.red .detail-heading,
+html.red .detail-title,
+html.red .detail-title > div {
+  color: #f5f2f2 !important;
+}
+html.red .detail-title h1 {
+  color: #fff !important;
+}
+html.red .detail-title p,
+html.red .detail-title p svg {
+  color: #b7aeb1 !important;
+}
+html.red .detail-actions .secondary-btn {
+  background: #242125 !important;
+  color: #ff858d !important;
+  border: 1px solid #493238 !important;
+  box-shadow: none !important;
+}
+html.red .detail-actions .secondary-btn:hover {
+  background: #352329 !important;
+  border-color: #e63946 !important;
+  color: #ffb0b5 !important;
+}
+html.red .detail-actions .danger-btn {
+  background: #2c1b20 !important;
+  color: #ff9299 !important;
+  border: 1px solid #62313a !important;
+}
+html.red .detail-actions .primary-btn {
+  background: #e63946 !important;
+  color: #fff !important;
+  border: 1px solid #e63946 !important;
+}
+html.red .currency-card,
+html.red .currency-card.usd-card {
+  color: #f7f3f4 !important;
+  background: linear-gradient(135deg, #242125 0%, #2b2025 58%, #3a2027 100%) !important;
+  border: 1px solid #563039 !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.28) !important;
+}
+html.red .currency-card::after {
+  border-color: rgba(230,57,70,.24) !important;
+  box-shadow: 0 0 0 21px rgba(230,57,70,.055) !important;
+}
+html.red .currency-card-head,
+html.red .usd-card .currency-card-head {
+  color: #c5b8bc !important;
+}
+html.red .currency-badge,
+html.red .usd-card .currency-badge {
+  color: #ff9ba2 !important;
+  background: rgba(230,57,70,.16) !important;
+}
+html.red .currency-balance {
+  color: #fff !important;
+}
+html.red .currency-lines span,
+html.red .usd-card .currency-lines span {
+  color: #c5b8bc !important;
+}
+html.red .currency-lines strong,
+html.red .usd-card .currency-lines strong {
+  color: #f7f3f4 !important;
+}
+html.red .detail-payments {
+  background: #222225 !important;
+  border-color: #3a383c !important;
+  color: #f5f2f2 !important;
+}
+html.red .detail-payments .section-head h2 {
+  color: #f5f2f2 !important;
+}
+html.red .detail-payments .section-head p {
+  color: #aaa5a7 !important;
+}
