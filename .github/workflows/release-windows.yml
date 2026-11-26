@@ -32,7 +32,7 @@ jobs:
       - name: Generate Windows application icon
         shell: pwsh
         run: |
-          npm install --no-save sharp png-to-ico
+          pnpm add -D sharp png-to-ico
           node --input-type=module -e "import fs from 'node:fs/promises'; import sharp from 'sharp'; import pngToIco from 'png-to-ico'; const png = await sharp('client/public/redro-mark.svg').resize(256,256).png().toBuffer(); await fs.mkdir('build',{recursive:true}); await fs.writeFile('build/icon.ico', await pngToIco([png]));"
 
       - name: Build Windows installer and portable app
