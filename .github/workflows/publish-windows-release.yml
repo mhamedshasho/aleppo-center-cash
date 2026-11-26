@@ -36,12 +36,11 @@ jobs:
           fi
           mkdir -p release-assets
           for file in "${assets[@]}"; do cp "$file" release-assets/; done
-      - name: Publish Windows preview release
+      - name: Publish Windows release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          gh release create "windows-preview-$GITHUB_RUN_ID" release-assets/*.exe \
-            --title "Redro Center Cash Windows Preview $GITHUB_RUN_NUMBER" \
-            --notes "Automated Windows preview build. Test build; verify on your system before regular use." \
-            --prerelease
+          gh release create "windows-v1.0.$GITHUB_RUN_NUMBER" release-assets/*.exe \
+            --title "Redro Center Cash for Windows v1.0.$GITHUB_RUN_NUMBER" \
+            --notes "Windows EXE build. Requires an internet connection and loads the Redro Center Cash web application."
