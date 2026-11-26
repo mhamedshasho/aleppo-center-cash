@@ -1,0 +1,47 @@
+name: Publish Windows EXE Release
+
+on:
+  push:
+    paths:
+      - ".github/workflows/publish-windows-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download latest Windows build artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          artifact="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" --jq '[.artifacts[] | select(.name == "aleppo-center-cash-windows" and .expired == false)] | sort_by(.created_at) | last')"
+          if [ -z "$artifact" ] || [ "$artifact" = "null" ]; then
+            echo "No unexpired Windows build artifact found"
+            exit 1
+          fi
+          run_id="$(echo "$artifact" | jq -r '.workflow_run.id')"
+          mkdir -p windows-build
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "aleppo-center-cash-windows" --dir windows-build
+          find windows-build -type f -iname '*.exe' -print
+          mapfile -t assets < <(find windows-build -type f -iname '*.exe' -print)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No EXE files found in the Windows artifact"
+            exit 1
+          fi
+          mkdir -p release-assets
+          for file in "${assets[@]}"; do cp "$file" release-assets/; done
+      - name: Publish Windows preview release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release create "windows-preview-$GITHUB_RUN_ID" release-assets/*.exe \
+            --title "Redro Center Cash Windows Preview $GITHUB_RUN_NUMBER" \
+            --notes "Automated Windows preview build. Test build; verify on your system before regular use." \
+            --prerelease
